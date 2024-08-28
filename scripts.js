@@ -15,9 +15,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 id: "introduction",
                 title: "About Me",
                 paragraphs: [
-                    "As a working student on the Platform Engineering team since 2023. I'm passionate about learning and growing both professionally and personally.",
+                    "Started as a Working Student on the IT Team from 2021-2023 and working on the Platform Engineering Team from 2023-present in Onefootball GmbH. I'm passionate about learning and growing both professionally and personally.",
                     "In engineering, I design and optimize software systems, leveraging my knowledge of programming languages and tools to create efficient and scalable solutions.",
-                    "I'm driven by a love for continuous learning, embracing new challenges and technologies with enthusiasm."
+                    "I'm driven by a love for continuous learning, embracing new challenges and technologies with enthusiasm. I am a great team player, consistently contributing positively to team dynamics and collaborative efforts."
                 ]
             },
             {
@@ -29,16 +29,17 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             {
                 id: "skills",
-                title: "Technical Skills",
+                title: "Technical Skills and Knowledge",
                 skills: [
                     "Git, GitHub and Github Actions",
-                    "Python",
-                    "Golang",
-                    "Scripting",
+                    "Python, Golang, C",
                     "Terraform",
                     "Amazon Web Services (AWS)",
                     "Kubernetes",
-                    "Docker"
+                    "Docker",
+                    "Microsoft Word, Excel and Powerpoint",
+                    "Digital Proficiency",
+                    "Internet Competence"
                 ]
             },
             {
@@ -46,6 +47,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 title: "Professional Experience",
                 paragraphs: [
                     "I am currently working as a Platform Engineer since the beginning of 2023 and finishing my Bachelor's Degree in the Field of Computer Engineering. I am a team player and have been involved in various projects at Onefootball."
+                ]
+            },
+            {
+                id: "projects",
+                title: "Projects I have worked on",
+                projects: [
+                    "Codeowners Automation",
+                    "Created Tests for our Terraform Modules",
+                    "Updating Templating System for Helm-Chart-Generator",
+                    "Migration for Honeycomb from US to EU Account",
+                    "Upgrading Redis",
+                    "Upgrading AWS Aurora RDS",
+                    "Soundcheck(Spotify) in Backstage",
+                    "Created Automated Documentation for tf-modules",
+                    "Daily Maintenace in IAC-Repo and tf-modules"
                 ]
             }
         ],
@@ -65,9 +81,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const detailsDiv = document.createElement("div");
     detailsDiv.innerHTML = `<h2>${content.personalDetails.name}</h2>
-                            <p>Profession: ${content.personalDetails.profession}</p>
-                            <p>Address: ${content.personalDetails.address}</p>
-                            <p><a href="${content.personalDetails.linkedinUrl}" target="_blank">LinkedIn Profile</a></p>`;
+                            <p><strong>Main Profession:</strong> ${content.personalDetails.profession}</p>
+                            <p><strong>Address:</strong> ${content.personalDetails.address}</p>
+                            <p><strong><a href="${content.personalDetails.linkedinUrl}" target="_blank">LinkedIn Profile</a></strong></p>`;
 
     const profileImage = document.createElement("img");
     profileImage.src = content.personalDetails.imageUrl;
@@ -110,9 +126,19 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             sectionElement.appendChild(ul);
         }
+        
+        if (section.projects) {
+            const ul = document.createElement("ul");
+            section.projects.forEach(skill => {
+                const li = document.createElement("li");
+                li.textContent = skill;
+                ul.appendChild(li);
+            });
+            sectionElement.appendChild(ul);
+        }
 
         // Assign sections to the correct container based on the ID
-        if (["introduction", "skills"].includes(section.id)) {
+        if (["introduction", "skills", "projects"].includes(section.id)) {
             topFlexContainer.appendChild(sectionElement);
         } else if (["experience", "languages"].includes(section.id)) {
             bottomFlexContainer.appendChild(sectionElement);

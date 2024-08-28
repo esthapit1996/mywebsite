@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     "Updating Templating System for Helm-Chart-Generator",
                     "Migration for Honeycomb from US to EU Account",
                     "Upgrading Redis",
-                    "Upgrading AWS Aurora RDS",
+                    "Upgrading AWS RDS",
                     "Soundcheck(Spotify) in Backstage",
                     "Created Automated Documentation for tf-modules",
                     "Daily Maintenace in IAC-Repo and tf-modules"

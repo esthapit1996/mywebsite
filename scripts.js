@@ -39,7 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     "Docker",
                     "Microsoft Word, Excel and Powerpoint",
                     "Digital Proficiency",
-                    "Internet Competence"
+                    "Internet Competence",
+                    "Basics in ML"
                 ]
             },
             {

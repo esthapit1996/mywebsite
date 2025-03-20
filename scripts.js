@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
         },
         personalDetails: {
             name: "Evan Sthapit",
-            profession: "Platform Engineer",
+            profession: "Junior Platform Engineer",
             address: "Berlin, Germany",
             linkedinUrl: "https://www.linkedin.com/in/evan-sthapit/", 
             imageUrl: "assets/evan.jpeg"

@@ -296,7 +296,7 @@ export default function GroupDetail() {
       case 'expense_deleted':
         return `${userName} deleted expense: "${activity.description}"`;
       case 'settlement':
-        return `${userName} settled up with ${relatedName}`;
+        return `${userName} made a free-form payment to ${relatedName}`;
       case 'payment':
         return `${userName} paid ${relatedName} - ${activity.description}`;
       case 'member_added':
@@ -412,7 +412,7 @@ export default function GroupDetail() {
           {myBalance >= 0 ? '+' : ''}{formatCurrency(myBalance)}
         </div>
         <p className="text-muted" style={{ marginTop: '8px' }}>
-          {myBalance > 0 ? 'You are owed money' : myBalance < 0 ? 'You owe money' : 'All settled up!'}
+          {myBalance > 0 ? 'You are owed money' : myBalance < 0 ? 'You owe money' : 'All balanced!'}
         </p>
         <button
           className="btn btn-outline btn-sm"
@@ -429,7 +429,7 @@ export default function GroupDetail() {
           + Add Expense
         </button>
         <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowSettleModal(true)}>
-          Settle Up
+          Free-form Payment
         </button>
       </div>
 
@@ -450,6 +450,21 @@ export default function GroupDetail() {
       <div className="card">
         {activeTab === 'expenses' && (
           <>
+            {activities.some(a => a.action_type === 'settlement') && (
+              <div style={{ 
+                padding: '12px 16px', 
+                background: 'var(--card-bg)', 
+                borderBottom: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>💸</span>
+                <span>Free-form Payment was made. Check History for details.</span>
+              </div>
+            )}
             {expenses.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">💸</div>
@@ -716,7 +731,7 @@ export default function GroupDetail() {
         <div className="modal-overlay" onClick={() => setShowSettleModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Settle Up</h3>
+              <h3 className="modal-title">Free-form Payment</h3>
               <button className="modal-close" onClick={() => setShowSettleModal(false)}>×</button>
             </div>
             <form onSubmit={handleSettle}>

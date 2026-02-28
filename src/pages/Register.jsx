@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import logo from '../images/GopherDebt_Mascot.png';
 
 export default function Register() {
@@ -10,6 +11,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register, login } = useAuth();
+  const { theme, setTheme, currentTheme, themes } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -30,6 +32,20 @@ export default function Register() {
 
   return (
     <div className="auth-container">
+      <div className="theme-dropdown" style={{ position: 'absolute', top: 20, right: 20 }}>
+        <span className="theme-icon">{currentTheme.icon}</span>
+        <select 
+          className="theme-select" 
+          value={theme} 
+          onChange={(e) => setTheme(e.target.value)}
+        >
+          {themes.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="auth-card card">
         <div className="auth-header">
           <img src={logo} alt="GopherDebt" className="auth-logo" />

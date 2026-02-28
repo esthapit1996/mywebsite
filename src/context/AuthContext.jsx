@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { loadUserTheme } = useTheme();
 
   useEffect(() => {
     checkAuth();
@@ -17,6 +19,10 @@ export function AuthProvider({ children }) {
       try {
         const response = await api.getProfile();
         setUser(response.data);
+        // Load user's saved theme preference
+        if (response.data?.theme_preference) {
+          loadUserTheme(response.data.theme_preference);
+        }
       } catch (err) {
         localStorage.removeItem('token');
       }
@@ -27,6 +33,10 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const response = await api.login(email, password);
     setUser(response.data.user);
+    // Load user's saved theme preference
+    if (response.data.user?.theme_preference) {
+      loadUserTheme(response.data.user.theme_preference);
+    }
     return response;
   };
 

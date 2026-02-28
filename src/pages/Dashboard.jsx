@@ -14,6 +14,9 @@ export default function Dashboard() {
   const [allUsers, setAllUsers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [debtOverview, setDebtOverview] = useState([]);
+  const [loadingDebt, setLoadingDebt] = useState(true);
+  const [debtError, setDebtError] = useState(null);
 
   // Available emojis for groups
   const availableEmojis = [
@@ -30,6 +33,7 @@ export default function Dashboard() {
   useEffect(() => {
     loadGroups();
     loadCurrentUser();
+    loadDebtOverview();
   }, []);
 
   const loadGroups = async () => {
@@ -49,6 +53,21 @@ export default function Dashboard() {
       setCurrentUser(response.data);
     } catch (err) {
       console.error('Failed to load profile');
+    }
+  };
+
+  const loadDebtOverview = async () => {
+    try {
+      const response = await api.getDebtOverview();
+      // Filter out any items with missing user data
+      const validDebts = (response.data || []).filter(item => item && item.user);
+      setDebtOverview(validDebts);
+      setDebtError(null);
+    } catch (err) {
+      console.error('Failed to load debt overview:', err);
+      setDebtError(err.message || 'Failed to load debt overview');
+    } finally {
+      setLoadingDebt(false);
     }
   };
 
@@ -130,6 +149,49 @@ export default function Dashboard() {
 
   return (
     <div className="container">
+      {/* Debt Overview Card */}
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div className="card-header">
+          <h2 className="card-title">Debt Overview</h2>
+        </div>
+        
+        {loadingDebt ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            Loading...
+          </div>
+        ) : debtError ? (
+          <div className="alert alert-error" style={{ margin: '16px' }}>{debtError}</div>
+        ) : debtOverview.length === 0 ? (
+          <div className="empty-state" style={{ padding: '30px' }}>
+            <div className="empty-state-icon">✨</div>
+            <h3>All balanced!</h3>
+            <p>You have no outstanding debts.</p>
+          </div>
+        ) : (
+          <ul className="list">
+            {debtOverview.map((item) => (
+              <li key={item.user.id} className="list-item" style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center' 
+              }}>
+                <span>{item.user.name}</span>
+                <span style={{ 
+                  fontWeight: '600',
+                  color: item.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)'
+                }}>
+                  {item.amount > 0 ? (
+                    <>+€{item.amount.toFixed(2)}</>
+                  ) : (
+                    <>-€{Math.abs(item.amount).toFixed(2)}</>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">My Groups</h2>
@@ -152,10 +214,23 @@ export default function Dashboard() {
               <li key={group.id} className="list-item">
                 <Link to={`/groups/${group.id}`} style={{ flex: 1, textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '1.5rem' }}>{group.emoji || '💰'}</span>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div className="list-item-title">{group.name}</div>
                     {group.description && (
                       <div className="list-item-subtitle">{group.description}</div>
+                    )}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.8rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    color: group.my_balance === 0 ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)'
+                  }}>
+                    {group.my_balance === 0 ? (
+                      <>✅ Settled</>
+                    ) : (
+                      <>💸 Outstanding</>
                     )}
                   </div>
                 </Link>

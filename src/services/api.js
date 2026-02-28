@@ -74,8 +74,27 @@ class ApiService {
     return this.request('/profile');
   }
 
+  async updateTheme(theme) {
+    return this.request('/profile/theme', {
+      method: 'PUT',
+      body: JSON.stringify({ theme }),
+    });
+  }
+
   async getAllUsers() {
     return this.request('/users');
+  }
+
+  async getDebtOverview() {
+    return this.request('/debt-overview');
+  }
+
+  async getPaymentHistory() {
+    return this.request('/payment-history');
+  }
+
+  async clearPaymentHistory() {
+    return this.request('/payment-history', { method: 'DELETE' });
   }
 
   // Groups

@@ -1,8 +1,9 @@
 # Dependencies
 node_modules/
 
-# Build output (not ignored because we deploy from dist/)
-# dist/
+# Build output (not ignored because we deploy from docs/)
+# docs/
+dist/
 
 # Environment
 .env

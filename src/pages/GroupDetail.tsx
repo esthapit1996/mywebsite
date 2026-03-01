@@ -500,7 +500,7 @@ export default function GroupDetail(): JSX.Element {
           ))}
           <button
             className="member-badge"
-            style={{ cursor: 'pointer', border: 'none', background: 'var(--primary)', color: 'white' }}
+            style={{ cursor: 'pointer', border: 'none', background: 'var(--primary)', color: 'var(--btn-text, white)' }}
             onClick={() => {
               loadAllUsers();
               setShowMemberModal(true);
@@ -586,7 +586,14 @@ export default function GroupDetail(): JSX.Element {
                   onClick={() => openExpenseDetail(expense)}
                 >
                   <div className="expense-info">
-                    <div className="expense-description">{expense.description}</div>
+                    <div className="expense-description" style={{ 
+                      wordBreak: 'break-word', 
+                      hyphens: 'auto', 
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>{expense.description}</div>
                     <div className="expense-meta">
                       Paid by {expense.paid_by_user?.name || 'Unknown'} • {expense.split_type}
                     </div>
@@ -626,7 +633,7 @@ export default function GroupDetail(): JSX.Element {
               balances.map((balance, idx) => (
                 <div key={idx} className="expense-item">
                   <div className="expense-info">
-                    <div className="expense-description">
+                    <div className="expense-description" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {balance.from_user?.name} owes {balance.to_user?.name}
                     </div>
                   </div>
@@ -701,14 +708,27 @@ export default function GroupDetail(): JSX.Element {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Description</label>
-                  <input
-                    type="text"
+                  <textarea
                     className="form-input"
                     value={expenseDesc}
-                    onChange={(e) => setExpenseDesc(e.target.value)}
+                    onChange={(e) => setExpenseDesc(e.target.value.slice(0, 69))}
                     placeholder="e.g., Dinner"
+                    maxLength={69}
                     required
+                    style={{ 
+                      minHeight: '60px', 
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
                   />
+                  <div style={{ 
+                    textAlign: 'right', 
+                    fontSize: '0.85rem', 
+                    color: expenseDesc.length >= 69 ? 'var(--error-color, #ef4444)' : 'var(--text-muted)',
+                    marginTop: '4px'
+                  }}>
+                    {expenseDesc.length}/69
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Amount</label>
@@ -1045,7 +1065,7 @@ export default function GroupDetail(): JSX.Element {
         <div className="modal-overlay" onClick={() => setShowExpenseDetailModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">{selectedExpense.description}</h3>
+              <h3 className="modal-title" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', hyphens: 'auto' }}>{selectedExpense.description}</h3>
               <button className="modal-close" onClick={() => setShowExpenseDetailModal(false)}>×</button>
             </div>
             <div className="modal-body">

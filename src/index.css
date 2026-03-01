@@ -100,8 +100,8 @@
   --warning: #ffff00;
   --bg: #0d0d0d;
   --card-bg: #1a1a2e;
-  --text: #eaeaea;
-  --text-muted: #00fff9;
+  --text: #00fff9;
+  --text-muted: #7a8899;
   --border: #ff00ff;
   --shadow: 0 0 10px rgba(255,0,255,0.3);
   --shadow-lg: 0 0 20px rgba(0,255,249,0.3);
@@ -110,6 +110,7 @@
   --alert-error-border: #ff0055;
   --alert-success-bg: #002d2b;
   --alert-success-border: #00fff9;
+  --btn-text: #0d0d0d;
 }
 
 /* 6. Ocean - Deep blue/teal */
@@ -183,6 +184,7 @@
   --danger: #f87171;
   --warning: #fbbf24;
   --bg: #f5f3ff;
+  --bg-secondary: #ede9fe;
   --card-bg: #ffffff;
   --text: #3b0764;
   --text-muted: #7c3aed;
@@ -194,6 +196,7 @@
   --alert-error-border: #fecaca;
   --alert-success-bg: #f5f3ff;
   --alert-success-border: #c4b5fd;
+  --btn-text: #1a1a2e;
 }
 
 /* 10. Sakura - Cherry blossom pink */
@@ -204,6 +207,7 @@
   --danger: #f43f5e;
   --warning: #fb923c;
   --bg: #fdf2f8;
+  --bg-secondary: #fce7f3;
   --card-bg: #ffffff;
   --text: #4a1942;
   --text-muted: #9d4a8a;
@@ -215,6 +219,7 @@
   --alert-error-border: #fecdd3;
   --alert-success-bg: #fdf2f8;
   --alert-success-border: #f9a8d4;
+  --btn-text: #4a1942;
 }
 
 /* 11. Solarized Light - Warm cream */
@@ -225,6 +230,7 @@
   --danger: #dc322f;
   --warning: #b58900;
   --bg: #fdf6e3;
+  --bg-secondary: #eee8d5;
   --card-bg: #eee8d5;
   --text: #073642;
   --text-muted: #586e75;
@@ -236,6 +242,7 @@
   --alert-error-border: #dc322f;
   --alert-success-bg: #f6fdf4;
   --alert-success-border: #859900;
+  --btn-text: #073642;
 }
 
 /* 12. Light - Clean white */
@@ -246,6 +253,7 @@
   --danger: #ef4444;
   --warning: #f59e0b;
   --bg: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --card-bg: #ffffff;
   --text: #1e293b;
   --text-muted: #64748b;
@@ -257,6 +265,7 @@
   --alert-error-border: #fecaca;
   --alert-success-bg: #f0fdf4;
   --alert-success-border: #bbf7d0;
+  --btn-text: #1e293b;
 }
 
 body {
@@ -353,7 +362,7 @@ body {
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--btn-text, white);
 }
 
 .btn-primary:hover {
@@ -362,7 +371,7 @@ body {
 
 .btn-secondary {
   background: var(--secondary);
-  color: white;
+  color: var(--btn-text, white);
 }
 
 .btn-danger {

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
 import type { CurrencyConvertResponse, CurrencyHistoryPoint, CurrencyInfo } from '../types';
@@ -33,7 +32,6 @@ const POPULAR_CURRENCIES: CurrencyInfo[] = [
 ];
 
 export default function CurrencyConverter() {
-  const navigate = useNavigate();
   const [amount, setAmount] = useState('1');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('EUR');
@@ -107,9 +105,6 @@ export default function CurrencyConverter() {
   return (
     <div className="page-container">
       <div className="page-header" style={{ textAlign: 'center' }}>
-        <button className="btn-back" onClick={() => navigate('/')} style={{ position: 'absolute', left: '1rem' }}>
-          ← Back to Dashboard
-        </button>
         <h1>💱 Currency Converter</h1>
         <p className="subtitle">Convert between currencies with live exchange rates</p>
       </div>
@@ -147,7 +142,7 @@ export default function CurrencyConverter() {
                 onChange={(e) => setFromCurrency(e.target.value)}
                 style={{ fontSize: '1.1rem', padding: '0.75rem' }}
               >
-                {POPULAR_CURRENCIES.map(currency => (
+                {POPULAR_CURRENCIES.filter(c => c.code !== toCurrency).map(currency => (
                   <option key={currency.code} value={currency.code}>
                     {currency.code} - {currency.name}
                   </option>
@@ -177,7 +172,7 @@ export default function CurrencyConverter() {
                 onChange={(e) => setToCurrency(e.target.value)}
                 style={{ fontSize: '1.1rem', padding: '0.75rem' }}
               >
-                {POPULAR_CURRENCIES.map(currency => (
+                {POPULAR_CURRENCIES.filter(c => c.code !== fromCurrency).map(currency => (
                   <option key={currency.code} value={currency.code}>
                     {currency.code} - {currency.name}
                   </option>

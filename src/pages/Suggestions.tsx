@@ -144,7 +144,7 @@ export default function Suggestions() {
           }}>
             <span style={{ 
               background: 'var(--primary-color)', 
-              color: 'white',
+              color: 'var(--btn-text, white)',
               padding: '2px 8px',
               borderRadius: '12px',
               fontSize: '0.75rem',
@@ -261,16 +261,17 @@ export default function Suggestions() {
               padding: '12px',
               background: 'var(--bg-secondary, #1f2937)',
               borderRadius: '8px',
-              fontSize: '0.85rem'
+              fontSize: '0.85rem',
+              color: 'var(--text)'
             }}>
               <strong>Voters:</strong>
               {voters.length === 0 ? (
                 <p style={{ margin: '8px 0 0', color: 'var(--text-muted)' }}>No votes yet</p>
               ) : (
-                <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '20px', color: 'var(--text)' }}>
                   {voters.map(v => (
-                    <li key={v.id} style={{ marginBottom: '4px' }}>
-                      {v.vote_type === 'like' ? '👍' : '👎'} {v.name}
+                    <li key={v.id} style={{ marginBottom: '4px', color: 'var(--text)' }}>
+                      {v.vote_type === 'like' ? '👍' : '👎'} {v.user_name}
                     </li>
                   ))}
                 </ul>

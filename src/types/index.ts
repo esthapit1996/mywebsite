@@ -186,7 +186,7 @@ export interface SuggestionsResponse {
 
 export interface Voter {
   id: number;
-  name: string;
+  user_name: string;
   vote_type: 'like' | 'dislike';
 }
 

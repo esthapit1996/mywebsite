@@ -137,6 +137,13 @@ class ApiService {
     });
   }
 
+  async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<ApiResponse> {
+    return this.request('/profile/password', {
+      method: 'PUT',
+      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword, confirm_password: confirmPassword }),
+    });
+  }
+
   async getAllUsers(): Promise<ApiResponse<User[]>> {
     return this.request<User[]>('/users');
   }

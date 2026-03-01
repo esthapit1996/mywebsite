@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider, useCurrency } from './context/CurrencyContext';
+import api from './services/api';
 import logo from './images/GopherDebt_Mascot.png';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -53,12 +54,112 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
   return <>{children}</>;
 }
 
+function ChangePasswordModal({ onClose }: { onClose: () => void }): JSX.Element {
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      setError('New password must be different from old password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.changePassword(oldPassword, newPassword, confirmPassword);
+      setSuccess('Password changed successfully!');
+      setTimeout(() => onClose(), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>🔒 Change Password</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Current Password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              placeholder="Enter current password"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">New Password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password (min 6 chars)"
+              required
+              minLength={6}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Confirm New Password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-type new password"
+              required
+              minLength={6}
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function Header(): JSX.Element | null {
   const { user, logout } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
   const { displayCurrency, setDisplayCurrency, currentCurrency, currencies, ratesLoading } = useCurrency();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const currencyMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -192,6 +293,12 @@ function Header(): JSX.Element | null {
                 >
                   💱 Currency Converter
                 </button>
+                <button 
+                  className="user-menu-item"
+                  onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); }}
+                >
+                  🔒 Reset Password
+                </button>
                 <div className="user-menu-divider"></div>
                 <button 
                   className="user-menu-item user-menu-logout"
@@ -204,6 +311,7 @@ function Header(): JSX.Element | null {
           </div>
         </nav>
       </div>
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </header>
   );
 }

@@ -1045,14 +1045,14 @@ export default function GroupDetail(): JSX.Element {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {group.members.map((member) => (
-                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ minWidth: '120px', fontWeight: member.id === user?.id ? 'bold' : 'normal' }}>
+                        <div key={member.id} className="split-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span className="split-name" style={{ minWidth: '120px', fontWeight: member.id === user?.id ? 'bold' : 'normal' }}>
                             {member.name} {member.id === user?.id ? '(you)' : ''}
                           </span>
                           <input
                             type="number"
-                            className="form-input"
-                            style={{ width: '120px' }}
+                            className="form-input split-input"
+                            style={{ width: '100px' }}
                             value={memberSplits[member.id] || ''}
                             onChange={(e) => setMemberSplits(prev => ({
                               ...prev,

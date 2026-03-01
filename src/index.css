@@ -776,24 +776,280 @@ body {
   gap: 16px;
 }
 
-/* Responsive */
+/* ===== RESPONSIVE ===== */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 12px;
+  }
+
+  .currency-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .currency-picker-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Phone */
 @media (max-width: 600px) {
+  /* Header */
+  .header {
+    padding: 10px 12px;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
-  
+
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  .header-logo {
+    width: 28px;
+    height: 28px;
+  }
+
   .nav {
-    width: 100%;
-    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
-  
+
+  .nav a {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Container */
+  .container {
+    padding: 12px 10px;
+  }
+
+  /* Cards */
   .card {
     padding: 16px;
+    border-radius: 10px;
   }
-  
-  .modal {
-    margin: 10px;
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Modal */
+  .modal,
+  .modal-content {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 12px;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-header {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  /* Tabs */
+  .tabs {
+    margin-bottom: 16px;
+  }
+
+  .tab {
+    padding: 8px 8px;
+    font-size: 0.8rem;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  /* Forms — touch-friendly */
+  .form-input,
+  .form-select {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  /* Balance */
+  .balance-card {
+    padding: 20px;
+  }
+
+  .balance-amount {
+    font-size: 2rem;
+  }
+
+  /* Currency dropdowns */
+  .currency-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .currency-picker-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .currency-grid-menu {
+    right: auto;
+    left: -60px;
+  }
+
+  .currency-picker-menu {
+    right: auto;
+    left: 0;
+  }
+
+  .theme-select {
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+
+  .theme-dropdown {
+    padding: 4px 8px;
+  }
+
+  .user-menu-trigger {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .currency-trigger {
+    padding: 6px 10px;
+  }
+
+  /* Expense items */
+  .expense-amount {
+    font-size: 1rem;
+  }
+
+  .expense-item {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .list-item {
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Auth pages */
+  .auth-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .auth-logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* ---- Currency Converter page ---- */
+  .currency-select-row {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .currency-select-row .form-group {
+    width: 100%;
+  }
+
+  .currency-swap-btn {
+    align-self: center !important;
+    margin-top: 0 !important;
+  }
+
+  .converter-result {
+    font-size: 1.5rem !important;
+    word-break: break-word;
+  }
+
+  .converter-rate-detail {
+    word-break: break-word;
+  }
+
+  .trend-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .trend-periods {
+    flex-wrap: wrap !important;
+  }
+
+  /* ---- Group Detail split rows ---- */
+  .split-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .split-row .split-name {
+    min-width: 0 !important;
+    flex: 1 1 100%;
+  }
+
+  .split-row .split-input {
+    width: 80px !important;
+  }
+}
+
+/* Extra small */
+@media (max-width: 380px) {
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .logo {
+    font-size: 1rem;
+    justify-content: center;
+  }
+
+  .nav {
+    justify-content: center;
+  }
+
+  .balance-amount {
+    font-size: 1.5rem;
+  }
+
+  .tab {
+    padding: 6px 6px;
+    font-size: 0.75rem;
+  }
+
+  .user-menu-trigger span:first-child {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
   }
 }
 

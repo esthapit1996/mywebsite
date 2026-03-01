@@ -125,7 +125,7 @@ export default function CurrencyConverter() {
           </div>
 
           {/* Currency Selection */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="currency-select-row" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div className="form-group" style={{ flex: 1 }}>
               <label className="form-label">From</label>
               <select
@@ -143,7 +143,7 @@ export default function CurrencyConverter() {
             </div>
 
             <button
-              className="btn"
+              className="btn currency-swap-btn"
               onClick={swapCurrencies}
               style={{ 
                 marginTop: '1.5rem', 
@@ -194,13 +194,13 @@ export default function CurrencyConverter() {
               borderRadius: '12px',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              <div className="converter-result" style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
                 {getCurrencySymbol(toCurrency)} {result.converted.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 4
                 })}
               </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <div className="converter-rate-detail" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                 {getCurrencySymbol(fromCurrency)} {parseFloat(amount).toLocaleString()} {fromCurrency} = {getCurrencySymbol(toCurrency)} {result.converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {toCurrency}
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
@@ -227,9 +227,9 @@ export default function CurrencyConverter() {
       {/* Historical Trend Chart */}
       {fromCurrency !== toCurrency && (
         <div className="card" style={{ maxWidth: '600px', margin: '1.5rem auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div className="trend-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0 }}>📈 {fromCurrency}/{toCurrency} Trend</h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="trend-periods" style={{ display: 'flex', gap: '0.5rem' }}>
               {[7, 30, 90, 365].map(period => (
                 <button
                   key={period}

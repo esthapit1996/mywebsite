@@ -586,7 +586,7 @@ export default function GroupDetail(): JSX.Element {
               </div>
             ) : (
               <div
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', minWidth: 0 }}
                 onClick={() => {
                   setEditName(group.name);
                   setEditDescription(group.description || '');
@@ -594,8 +594,8 @@ export default function GroupDetail(): JSX.Element {
                 }}
                 title="Click to edit"
               >
-                <h2 className="card-title" style={{ margin: 0 }}>{group.name}</h2>
-                {group.description && <p className="text-muted" style={{ margin: 0 }}>{group.description}</p>}
+                <h2 className="card-title" style={{ margin: 0, wordBreak: 'break-word' }}>{group.name}</h2>
+                {group.description && <p className="text-muted" style={{ margin: 0, wordBreak: 'break-word' }}>{group.description}</p>}
               </div>
             )}
           </div>

@@ -293,9 +293,20 @@ export default function CurrencyConverter() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center" style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
-              No historical data available for this currency pair
-            </div>
+            (() => {
+              const ecbCurrencies = ['AUD','BGN','BRL','CAD','CHF','CNY','CZK','DKK','EUR','GBP','HKD','HUF','IDR','ILS','INR','ISK','JPY','KRW','MXN','MYR','NOK','NZD','PHP','PLN','RON','SEK','SGD','THB','TRY','USD','ZAR'];
+              const unsupported = [fromCurrency, toCurrency].filter(c => !ecbCurrencies.includes(c));
+              return (
+                <div className="text-center" style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
+                  <div>No historical data available</div>
+                  {unsupported.length > 0 && (
+                    <div style={{ fontSize: '0.85rem', marginTop: '6px', color: 'var(--warning)' }}>
+                      {unsupported.join(', ')} {unsupported.length === 1 ? 'is' : 'are'} not supported by the ECB for trend data
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           )}
           <div style={{ textAlign: 'right', marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
             Data by <a href="https://www.frankfurter.app" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Frankfurter</a> · <a href="https://www.ecb.europa.eu" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>European Central Bank</a>

@@ -484,8 +484,8 @@ export default function GroupDetail(): JSX.Element {
 
       {/* Group Header */}
       <div className="card">
-        <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+        <div className="card-header" style={{ alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: '2rem' }}>{group.emoji || '💰'}</span>
             {editingGroup ? (
               <div style={{ flex: 1 }}>

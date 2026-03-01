@@ -23,7 +23,6 @@ export const DISPLAY_CURRENCIES: CurrencyInfo[] = [
   { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
   { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
   { code: 'NPR', symbol: 'रू', name: 'Nepalese Rupee' },
-  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
   { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
   { code: 'PLN', symbol: 'zł', name: 'Polish Zloty' },
   { code: 'RUB', symbol: '₽', name: 'Russian Ruble' },
@@ -34,6 +33,7 @@ export const DISPLAY_CURRENCIES: CurrencyInfo[] = [
   { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
   { code: 'UAH', symbol: '₴', name: 'Ukrainian Hryvnia' },
   { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' },
   { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
 ];
 

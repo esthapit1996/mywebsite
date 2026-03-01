@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useCurrency } from '../context/CurrencyContext';
+import type { Group, User, DebtOverviewItem } from '../types';
 
 export default function Dashboard() {
   const { formatAmount } = useCurrency();
-  const [groups, setGroups] = useState([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -13,12 +14,12 @@ export default function Dashboard() {
   const [newGroupEmoji, setNewGroupEmoji] = useState('💰');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
-  const [allUsers, setAllUsers] = useState([]);
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [debtOverview, setDebtOverview] = useState([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [debtOverview, setDebtOverview] = useState<DebtOverviewItem[]>([]);
   const [loadingDebt, setLoadingDebt] = useState(true);
-  const [debtError, setDebtError] = useState(null);
+  const [debtError, setDebtError] = useState<string | null>(null);
 
   // Available emojis for groups
   const availableEmojis = [
@@ -43,7 +44,7 @@ export default function Dashboard() {
       const response = await api.getGroups();
       setGroups(response.data || []);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to load groups');
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,10 @@ export default function Dashboard() {
   const loadCurrentUser = async () => {
     try {
       const response = await api.getProfile();
-      setCurrentUser(response.data);
-    } catch (err) {
+      if (response.data) {
+        setCurrentUser(response.data);
+      }
+    } catch {
       console.error('Failed to load profile');
     }
   };
@@ -67,7 +70,7 @@ export default function Dashboard() {
       setDebtError(null);
     } catch (err) {
       console.error('Failed to load debt overview:', err);
-      setDebtError(err.message || 'Failed to load debt overview');
+      setDebtError(err instanceof Error ? err.message : 'Failed to load debt overview');
     } finally {
       setLoadingDebt(false);
     }
@@ -77,7 +80,7 @@ export default function Dashboard() {
     try {
       const response = await api.getAllUsers();
       setAllUsers(response.data || []);
-    } catch (err) {
+    } catch {
       console.error('Failed to load users');
     }
   };
@@ -91,7 +94,7 @@ export default function Dashboard() {
     setShowModal(true);
   };
 
-  const toggleMember = (userId) => {
+  const toggleMember = (userId: number) => {
     setSelectedMembers(prev => 
       prev.includes(userId) 
         ? prev.filter(id => id !== userId)
@@ -99,16 +102,18 @@ export default function Dashboard() {
     );
   };
 
-  const handleCreateGroup = async (e) => {
+  const handleCreateGroup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreating(true);
     try {
       const response = await api.createGroup(newGroupName, newGroupDesc, newGroupEmoji);
-      const groupId = response.data.id;
+      const groupId = response.data?.id;
       
-      // Add selected members to the group
-      for (const userId of selectedMembers) {
-        await api.addMember(groupId, userId);
+      if (groupId) {
+        // Add selected members to the group
+        for (const userId of selectedMembers) {
+          await api.addMember(groupId, userId);
+        }
       }
       
       setShowModal(false);
@@ -118,7 +123,7 @@ export default function Dashboard() {
       setSelectedMembers([]);
       loadGroups();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to create group');
     } finally {
       setCreating(false);
     }
@@ -220,19 +225,6 @@ export default function Dashboard() {
                     <div className="list-item-title">{group.name}</div>
                     {group.description && (
                       <div className="list-item-subtitle">{group.description}</div>
-                    )}
-                  </div>
-                  <div style={{ 
-                    fontSize: '0.8rem', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '4px',
-                    color: group.my_balance === 0 ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)'
-                  }}>
-                    {group.my_balance === 0 ? (
-                      <>✅ Settled</>
-                    ) : (
-                      <>💸 Outstanding</>
                     )}
                   </div>
                 </Link>

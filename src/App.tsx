@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -12,7 +12,11 @@ import PaymentHistory from './pages/PaymentHistory';
 import Suggestions from './pages/Suggestions';
 import CurrencyConverter from './pages/CurrencyConverter';
 
-function ProtectedRoute({ children }) {
+interface RouteProps {
+  children: ReactNode;
+}
+
+function ProtectedRoute({ children }: RouteProps): JSX.Element {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -27,10 +31,10 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
-function PublicRoute({ children }) {
+function PublicRoute({ children }: RouteProps): JSX.Element {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -45,26 +49,26 @@ function PublicRoute({ children }) {
     return <Navigate to="/" />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
-function Header() {
+function Header(): JSX.Element | null {
   const { user, logout } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
   const { displayCurrency, setDisplayCurrency, currentCurrency, currencies, ratesLoading } = useCurrency();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
-  const menuRef = useRef(null);
-  const currencyMenuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const currencyMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-      if (currencyMenuRef.current && !currencyMenuRef.current.contains(event.target)) {
+      if (currencyMenuRef.current && !currencyMenuRef.current.contains(event.target as Node)) {
         setShowCurrencyMenu(false);
       }
     }
@@ -74,7 +78,7 @@ function Header() {
 
   if (!user) return null;
 
-  const handleNavigation = (path) => {
+  const handleNavigation = (path: string) => {
     setShowUserMenu(false);
     navigate(path);
   };
@@ -195,7 +199,7 @@ function Header() {
   );
 }
 
-function AppRoutes() {
+function AppRoutes(): JSX.Element {
   return (
     <>
       <Header />
@@ -262,7 +266,7 @@ function AppRoutes() {
   );
 }
 
-export default function App() {
+export default function App(): JSX.Element {
   return (
     <ThemeProvider>
       <CurrencyProvider>

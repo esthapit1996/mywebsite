@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
+import type { CurrencyConvertResponse, CurrencyHistoryPoint, CurrencyInfo } from '../types';
 
-const POPULAR_CURRENCIES = [
+const POPULAR_CURRENCIES: CurrencyInfo[] = [
   { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
   { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
   { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
@@ -36,10 +37,10 @@ export default function CurrencyConverter() {
   const [amount, setAmount] = useState('1');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('EUR');
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<CurrencyConvertResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [historyData, setHistoryData] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+  const [historyData, setHistoryData] = useState<CurrencyHistoryPoint[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPeriod, setHistoryPeriod] = useState(7);
 
@@ -55,7 +56,7 @@ export default function CurrencyConverter() {
       const data = await api.convertCurrency(fromCurrency, toCurrency, amount);
       setResult(data);
     } catch (err) {
-      setError(err.message || 'Failed to convert currency');
+      setError(err instanceof Error ? err.message : 'Failed to convert currency');
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export default function CurrencyConverter() {
     fetchHistory();
   }, [fromCurrency, toCurrency, historyPeriod]);
 
-  const getCurrencySymbol = (code) => {
+  const getCurrencySymbol = (code: string): string => {
     const currency = POPULAR_CURRENCIES.find(c => c.code === code);
     return currency ? currency.symbol : '';
   };
@@ -242,34 +243,16 @@ export default function CurrencyConverter() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0 }}>📈 {fromCurrency}/{toCurrency} Trend</h3>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                className={`btn ${historyPeriod === 7 ? 'btn-primary' : ''}`}
-                onClick={() => setHistoryPeriod(7)}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-              >
-                7D
-              </button>
-              <button
-                className={`btn ${historyPeriod === 30 ? 'btn-primary' : ''}`}
-                onClick={() => setHistoryPeriod(30)}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-              >
-                1M
-              </button>
-              <button
-                className={`btn ${historyPeriod === 90 ? 'btn-primary' : ''}`}
-                onClick={() => setHistoryPeriod(90)}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-              >
-                3M
-              </button>
-              <button
-                className={`btn ${historyPeriod === 365 ? 'btn-primary' : ''}`}
-                onClick={() => setHistoryPeriod(365)}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-              >
-                1Y
-              </button>
+              {[7, 30, 90, 365].map(period => (
+                <button
+                  key={period}
+                  className={`btn ${historyPeriod === period ? 'btn-primary' : ''}`}
+                  onClick={() => setHistoryPeriod(period)}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                >
+                  {period === 7 ? '7D' : period === 30 ? '1M' : period === 90 ? '3M' : '1Y'}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -283,7 +266,6 @@ export default function CurrencyConverter() {
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite'
               }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading trend data...</span>
             </div>
           ) : historyData.length > 0 ? (
@@ -293,7 +275,7 @@ export default function CurrencyConverter() {
                   <XAxis 
                     dataKey="date" 
                     tick={{ fontSize: 11 }}
-                    tickFormatter={(value) => {
+                    tickFormatter={(value: string) => {
                       const date = new Date(value);
                       if (historyPeriod >= 365) {
                         return `${date.getMonth() + 1}/${date.getFullYear().toString().slice(2)}`;
@@ -305,11 +287,11 @@ export default function CurrencyConverter() {
                   <YAxis 
                     domain={['auto', 'auto']}
                     tick={{ fontSize: 11 }}
-                    tickFormatter={(value) => value.toFixed(4)}
+                    tickFormatter={(value: number) => value.toFixed(4)}
                     width={60}
                   />
                   <Tooltip 
-                    formatter={(value) => [value.toFixed(6), 'Rate']}
+                    formatter={(value) => [typeof value === 'number' ? value.toFixed(6) : value, 'Rate']}
                     labelFormatter={(label) => `Date: ${label}`}
                     contentStyle={{ 
                       background: 'var(--bg-secondary)', 

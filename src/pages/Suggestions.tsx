@@ -1,29 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import type { Suggestion, Voter } from '../types';
 
 const MAX_CHARS = 800;
 const CREATOR_EMAIL = 'evansthapit20@gmail.com';
 
-const STATUS_CONFIG = {
-  open: { label: '📋 Open', color: '#3b82f6' },
-  wip: { label: '🔨 Work in Progress', color: '#f59e0b' },
-  done: { label: '✅ Done', color: '#22c55e' }
-};
-
 export default function Suggestions() {
   const { user } = useAuth();
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [count, setCount] = useState(0);
   const [max, setMax] = useState(20);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newSuggestion, setNewSuggestion] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [voters, setVoters] = useState(null);
-  const [showVotersFor, setShowVotersFor] = useState(null);
-  const [activeTab, setActiveTab] = useState('open');
+  const [voters, setVoters] = useState<Voter[] | null>(null);
+  const [showVotersFor, setShowVotersFor] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'open' | 'wip' | 'done'>('open');
 
   const isCreator = user?.email === CREATOR_EMAIL;
 
@@ -38,13 +33,13 @@ export default function Suggestions() {
       setCount(response.data?.count || 0);
       setMax(response.data?.max || 20);
     } catch (err) {
-      setError(err.message || 'Failed to load suggestions');
+      setError(err instanceof Error ? err.message : 'Failed to load suggestions');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newSuggestion.trim()) return;
     
@@ -55,23 +50,23 @@ export default function Suggestions() {
       setNewSuggestion('');
       loadSuggestions();
     } catch (err) {
-      setError(err.message || 'Failed to submit suggestion');
+      setError(err instanceof Error ? err.message : 'Failed to submit suggestion');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (suggestionId) => {
+  const handleDelete = async (suggestionId: number) => {
     if (!confirm('Delete this suggestion?')) return;
     try {
       await api.deleteSuggestion(suggestionId);
       loadSuggestions();
     } catch (err) {
-      setError(err.message || 'Failed to delete suggestion');
+      setError(err instanceof Error ? err.message : 'Failed to delete suggestion');
     }
   };
 
-  const handleVote = async (suggestionId, voteType) => {
+  const handleVote = async (suggestionId: number, voteType: 'like' | 'dislike') => {
     try {
       const suggestion = suggestions.find(s => s.id === suggestionId);
       if (suggestion?.user_vote === voteType) {
@@ -81,20 +76,20 @@ export default function Suggestions() {
       }
       loadSuggestions();
     } catch (err) {
-      setError(err.message || 'Failed to record vote');
+      setError(err instanceof Error ? err.message : 'Failed to record vote');
     }
   };
 
-  const handleStatusChange = async (suggestionId, newStatus) => {
+  const handleStatusChange = async (suggestionId: number, newStatus: string) => {
     try {
       await api.updateSuggestionStatus(suggestionId, newStatus);
       loadSuggestions();
     } catch (err) {
-      setError(err.message || 'Failed to update status');
+      setError(err instanceof Error ? err.message : 'Failed to update status');
     }
   };
 
-  const handleShowVoters = async (suggestionId) => {
+  const handleShowVoters = async (suggestionId: number) => {
     if (showVotersFor === suggestionId) {
       setShowVotersFor(null);
       setVoters(null);
@@ -105,15 +100,15 @@ export default function Suggestions() {
       setVoters(response.data || []);
       setShowVotersFor(suggestionId);
     } catch (err) {
-      setError(err.message || 'Failed to load voters');
+      setError(err instanceof Error ? err.message : 'Failed to load voters');
     }
   };
 
-  const canDelete = (suggestion) => {
+  const canDelete = (suggestion: Suggestion) => {
     return user?.id === suggestion.user_id || isCreator;
   };
 
-  const formatDate = (dateStr) => {
+  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       month: 'short',
@@ -128,7 +123,7 @@ export default function Suggestions() {
   const wipSuggestions = suggestions.filter(s => s.status === 'wip');
   const doneSuggestions = suggestions.filter(s => s.status === 'done');
 
-  const renderSuggestionCard = (suggestion) => (
+  const renderSuggestionCard = (suggestion: Suggestion) => (
     <li key={suggestion.id} className="list-item" style={{ 
       display: 'block',
       padding: '16px'
@@ -275,7 +270,7 @@ export default function Suggestions() {
                 <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
                   {voters.map(v => (
                     <li key={v.id} style={{ marginBottom: '4px' }}>
-                      {v.vote_type === 'like' ? '👍' : '👎'} {v.user_name} ({v.user_email})
+                      {v.vote_type === 'like' ? '👍' : '👎'} {v.name}
                     </li>
                   ))}
                 </ul>
@@ -298,37 +293,6 @@ export default function Suggestions() {
         )}
       </div>
     </li>
-  );
-
-  const renderSection = (title, color, items) => (
-    <div style={{ marginBottom: '24px' }}>
-      <h3 style={{ 
-        margin: '0 0 12px 0',
-        padding: '8px 16px',
-        background: color,
-        color: 'white',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        fontWeight: '600'
-      }}>
-        {title} ({items.length})
-      </h3>
-      {items.length === 0 ? (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center', 
-          color: 'var(--text-muted)',
-          background: 'var(--bg-secondary, #1f2937)',
-          borderRadius: '8px'
-        }}>
-          No suggestions here
-        </div>
-      ) : (
-        <ul className="list" style={{ margin: 0 }}>
-          {items.map(renderSuggestionCard)}
-        </ul>
-      )}
-    </div>
   );
 
   if (loading) {
@@ -424,57 +388,34 @@ export default function Suggestions() {
             marginBottom: '16px',
             flexWrap: 'wrap'
           }}>
-            <button
-              onClick={() => setActiveTab('open')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                background: activeTab === 'open' ? '#3b82f6' : 'var(--bg-secondary, #374151)',
-                color: activeTab === 'open' ? 'white' : 'var(--text-color)',
-                transition: 'all 0.2s',
-                boxShadow: activeTab === 'open' ? '0 2px 8px rgba(59, 130, 246, 0.4)' : 'none'
-              }}
-            >
-              📋 Open ({openSuggestions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('wip')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                background: activeTab === 'wip' ? '#f59e0b' : 'var(--bg-secondary, #374151)',
-                color: activeTab === 'wip' ? 'white' : 'var(--text-color)',
-                transition: 'all 0.2s',
-                boxShadow: activeTab === 'wip' ? '0 2px 8px rgba(245, 158, 11, 0.4)' : 'none'
-              }}
-            >
-              🔨 WIP ({wipSuggestions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('done')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                background: activeTab === 'done' ? '#22c55e' : 'var(--bg-secondary, #374151)',
-                color: activeTab === 'done' ? 'white' : 'var(--text-color)',
-                transition: 'all 0.2s',
-                boxShadow: activeTab === 'done' ? '0 2px 8px rgba(34, 197, 94, 0.4)' : 'none'
-              }}
-            >
-              ✅ Done ({doneSuggestions.length})
-            </button>
+            {(['open', 'wip', 'done'] as const).map(tab => {
+              const tabConfig = {
+                open: { label: '📋 Open', count: openSuggestions.length, color: '#3b82f6' },
+                wip: { label: '🔨 WIP', count: wipSuggestions.length, color: '#f59e0b' },
+                done: { label: '✅ Done', count: doneSuggestions.length, color: '#22c55e' }
+              };
+              const config = tabConfig[tab];
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    background: activeTab === tab ? config.color : 'var(--bg-secondary, #374151)',
+                    color: activeTab === tab ? 'white' : 'var(--text-color)',
+                    transition: 'all 0.2s',
+                    boxShadow: activeTab === tab ? `0 2px 8px ${config.color}66` : 'none'
+                  }}
+                >
+                  {config.label} ({config.count})
+                </button>
+              );
+            })}
           </div>
 
           {/* Active tab content */}

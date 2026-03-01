@@ -1,42 +1,30 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../images/GopherDebt_Mascot.png';
 
-const funGreetings = [
-  "The gopher remembers who owes what... 🐹",
-  "Back for more debt drama? Let's go!",
-  "Your debts missed you! 💸",
-  "Money never forgets. Neither do we. 🐹",
-  "Time to settle some scores!",
-  "Who owes you money today? 🤔",
-  "The gopher has been expecting you...",
-  "Ready to chase some IOUs? 🏃",
-  "Friendships are priceless. Dinners aren't.",
-  "Split bills, not friendships! 🤝",
-];
-
-export default function Login() {
+export default function Register() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [greeting] = useState(() => funGreetings[Math.floor(Math.random() * funGreetings.length)]);
-  const { login } = useAuth();
+  const { register, login } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
+      await register(email, password, name);
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -62,12 +50,24 @@ export default function Login() {
         <div className="auth-header">
           <img src={logo} alt="GopherDebt" className="auth-logo" />
           <h1>GopherDebt</h1>
-          <p>{greeting}</p>
+          <p>Create an account to start splitting expenses.</p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Doe"
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">Email</label>
             <input
@@ -88,17 +88,21 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              minLength={6}
               required
             />
           </div>
 
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
         <div className="auth-footer">
-          Don't have an account? <Link to="/register">Sign up</Link>
+          <p>
+            Already have an account?{' '}
+            <Link to="/login">Sign in</Link>
+          </p>
         </div>
       </div>
     </div>

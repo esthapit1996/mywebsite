@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import type { PaymentHistoryItem } from '../types';
 
 export default function PaymentHistory() {
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [clearing, setClearing] = useState(false);
@@ -17,7 +18,7 @@ export default function PaymentHistory() {
       const response = await api.getPaymentHistory();
       setHistory(response.data || []);
     } catch (err) {
-      setError(err.message || 'Failed to load payment history');
+      setError(err instanceof Error ? err.message : 'Failed to load payment history');
     } finally {
       setLoading(false);
     }
@@ -30,13 +31,13 @@ export default function PaymentHistory() {
       await api.clearPaymentHistory();
       setHistory([]);
     } catch (err) {
-      setError(err.message || 'Failed to clear history');
+      setError(err instanceof Error ? err.message : 'Failed to clear history');
     } finally {
       setClearing(false);
     }
   };
 
-  const formatDate = (dateStr) => {
+  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',

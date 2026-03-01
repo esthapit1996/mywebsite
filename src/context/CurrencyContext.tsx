@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import api from '../services/api';
+import type { CurrencyInfo, CurrencyContextType, FormatOptions } from '../types';
 
-const CurrencyContext = createContext();
+const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export const DISPLAY_CURRENCIES = [
+export const DISPLAY_CURRENCIES: CurrencyInfo[] = [
   { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
   { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
@@ -31,19 +32,26 @@ export const DISPLAY_CURRENCIES = [
   { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
 ];
 
-export function useCurrency() {
-  return useContext(CurrencyContext);
+export function useCurrency(): CurrencyContextType {
+  const context = useContext(CurrencyContext);
+  if (!context) {
+    throw new Error('useCurrency must be used within a CurrencyProvider');
+  }
+  return context;
 }
 
-export function CurrencyProvider({ children }) {
-  const [displayCurrency, setDisplayCurrencyState] = useState(() => {
+interface CurrencyProviderProps {
+  children: ReactNode;
+}
+
+export function CurrencyProvider({ children }: CurrencyProviderProps) {
+  const [displayCurrency, setDisplayCurrencyState] = useState<string>(() => {
     const saved = localStorage.getItem('gopherdebt-display-currency');
     return saved || 'EUR';
   });
   
-  const [rates, setRates] = useState({});
-  const [ratesLoading, setRatesLoading] = useState(false);
-  const [lastFetched, setLastFetched] = useState(null);
+  const [rates, setRates] = useState<Record<string, number>>({});
+  const [ratesLoading, setRatesLoading] = useState<boolean>(false);
 
   // Fetch rates when display currency changes (if not EUR)
   useEffect(() => {
@@ -72,7 +80,6 @@ export function CurrencyProvider({ children }) {
           rate: result.rate,
           timestamp: Date.now()
         }));
-        setLastFetched(Date.now());
       } catch (err) {
         console.error('Failed to fetch rates:', err);
       } finally {
@@ -83,13 +90,13 @@ export function CurrencyProvider({ children }) {
     fetchRates();
   }, [displayCurrency]);
 
-  const setDisplayCurrency = useCallback((currency) => {
+  const setDisplayCurrency = useCallback((currency: string): void => {
     setDisplayCurrencyState(currency);
     localStorage.setItem('gopherdebt-display-currency', currency);
   }, []);
 
   // Convert EUR amount to display currency
-  const convertAmount = useCallback((eurAmount) => {
+  const convertAmount = useCallback((eurAmount: number): number => {
     if (!eurAmount || displayCurrency === 'EUR') {
       return eurAmount;
     }
@@ -99,7 +106,7 @@ export function CurrencyProvider({ children }) {
   }, [displayCurrency, rates]);
 
   // Format amount in display currency
-  const formatAmount = useCallback((eurAmount, options = {}) => {
+  const formatAmount = useCallback((eurAmount: number, options: FormatOptions = {}): string => {
     const { showCode = false, decimals = 2 } = options;
     const currentCurrency = DISPLAY_CURRENCIES.find(c => c.code === displayCurrency) || DISPLAY_CURRENCIES[0];
     
@@ -134,7 +141,7 @@ export function CurrencyProvider({ children }) {
 
   const currentCurrency = DISPLAY_CURRENCIES.find(c => c.code === displayCurrency) || DISPLAY_CURRENCIES[0];
 
-  const value = {
+  const value: CurrencyContextType = {
     displayCurrency,
     setDisplayCurrency,
     currentCurrency,

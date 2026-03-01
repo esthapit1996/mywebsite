@@ -1,57 +1,112 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
+import type { 
+  Group, 
+  GroupMember, 
+  Expense, 
+  Balance, 
+  ExpensePayment,
+  PaymentStatus,
+  CurrencyInfo
+} from '../types';
 
-export default function GroupDetail() {
-  const { id } = useParams();
+// Local type for activities since it has nested user objects
+interface Activity {
+  id: number;
+  group_id: number;
+  user_id: number;
+  action_type: string;
+  description: string;
+  amount?: number;
+  created_at: string;
+  user?: { id: number; name: string };
+  related_user?: { id: number; name: string };
+}
+
+interface ExpenseWithUser extends Expense {
+  paid_by_user?: { name: string };
+}
+
+interface ExpenseSplitWithUser {
+  user_id: number;
+  amount: number;
+  user?: { name: string };
+}
+
+interface ExpenseDetail extends Expense {
+  paid_by_user?: { name: string };
+  splits?: ExpenseSplitWithUser[];
+}
+
+interface ExpensePaymentWithUsers extends ExpensePayment {
+  paid_by_user?: { name: string };
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface ExpenseDebt {
+  expense: ExpenseWithUser;
+  splitAmount: number;
+  payerName: string;
+}
+
+const CURRENCIES: CurrencyInfo[] = DISPLAY_CURRENCIES;
+
+export default function GroupDetail(): JSX.Element {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
-  const [group, setGroup] = useState(null);
-  const [expenses, setExpenses] = useState([]);
-  const [balances, setBalances] = useState([]);
-  const [myBalance, setMyBalance] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('expenses');
-  const [error, setError] = useState('');
-  const [expensePaymentStatus, setExpensePaymentStatus] = useState({}); // {expenseId: {totalOwed, totalPaid}}
-  const [activities, setActivities] = useState([]);
+  const [group, setGroup] = useState<Group | null>(null);
+  const [expenses, setExpenses] = useState<ExpenseWithUser[]>([]);
+  const [balances, setBalances] = useState<Balance[]>([]);
+  const [myBalance, setMyBalance] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'history'>('expenses');
+  const [error, setError] = useState<string>('');
+  const [expensePaymentStatus, setExpensePaymentStatus] = useState<Record<number, PaymentStatus>>({});
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   // Modal states
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [showSettleModal, setShowSettleModal] = useState(false);
-  const [showMemberModal, setShowMemberModal] = useState(false);
-  const [showExpenseDetailModal, setShowExpenseDetailModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState<boolean>(false);
+  const [showSettleModal, setShowSettleModal] = useState<boolean>(false);
+  const [showMemberModal, setShowMemberModal] = useState<boolean>(false);
+  const [showExpenseDetailModal, setShowExpenseDetailModal] = useState<boolean>(false);
 
   // Expense detail/payment states
-  const [selectedExpense, setSelectedExpense] = useState(null);
-  const [expensePayments, setExpensePayments] = useState([]);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentNote, setPaymentNote] = useState('');
-  const [paymentError, setPaymentError] = useState('');
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseDetail | null>(null);
+  const [expensePayments, setExpensePayments] = useState<ExpensePaymentWithUsers[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [paymentNote, setPaymentNote] = useState<string>('');
+  const [paymentError, setPaymentError] = useState<string>('');
 
   // Expense form
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [expenseDesc, setExpenseDesc] = useState('');
-  const [splitType, setSplitType] = useState('equal');
-  const [memberSplits, setMemberSplits] = useState({});
-  const [expenseCurrency, setExpenseCurrency] = useState('EUR');
-  const [convertedAmount, setConvertedAmount] = useState(null);
-  const [conversionRate, setConversionRate] = useState(null);
-  const [converting, setConverting] = useState(false);
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const currencyPickerRef = useRef(null);
+  const [expenseAmount, setExpenseAmount] = useState<string>('');
+  const [expenseDesc, setExpenseDesc] = useState<string>('');
+  const [splitType, setSplitType] = useState<'equal' | 'percentage'>('equal');
+  const [memberSplits, setMemberSplits] = useState<Record<number, string>>({});
+  const [expenseCurrency, setExpenseCurrency] = useState<string>('EUR');
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
+  const [conversionRate, setConversionRate] = useState<number | null>(null);
+  const [converting, setConverting] = useState<boolean>(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState<boolean>(false);
+  const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // Settlement form
-  const [settleUser, setSettleUser] = useState('');
-  const [settleAmount, setSettleAmount] = useState('');
-  const [goPayMode, setGoPayMode] = useState('select'); // 'select' or 'freeform'
+  const [settleUser, setSettleUser] = useState<string>('');
+  const [settleAmount, setSettleAmount] = useState<string>('');
+  const [goPayMode, setGoPayMode] = useState<'select' | 'freeform'>('select');
 
   // Add member
-  const [allUsers, setAllUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -59,8 +114,8 @@ export default function GroupDetail() {
 
   // Close currency picker when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (currencyPickerRef.current && !currencyPickerRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (currencyPickerRef.current && !currencyPickerRef.current.contains(event.target as Node)) {
         setShowCurrencyPicker(false);
       }
     }
@@ -97,32 +152,29 @@ export default function GroupDetail() {
 
   const loadData = async () => {
     try {
-      // Fetch ALL data in parallel - single call for payment statuses instead of N+1
-      // Non-critical requests have .catch() so they don't break the page
       const [groupRes, expensesRes, balancesRes, myBalanceRes, paymentStatusRes, activitiesRes] = await Promise.all([
-        api.getGroup(id),
-        api.getExpenses(id),
-        api.getGroupBalances(id).catch(() => ({ data: { balances: [] } })),
-        api.getMyBalance(id).catch(() => ({ data: { balance: 0 } })),
-        api.getGroupExpensePaymentStatuses(id).catch(() => ({ data: {} })),
-        api.getGroupActivities(id).catch(() => ({ data: [] })),
+        api.getGroup(id!),
+        api.getExpenses(id!),
+        api.getGroupBalances(id!).catch(() => ({ data: { balances: [] } })),
+        api.getMyBalance(id!).catch(() => ({ data: { balance: 0 } })),
+        api.getGroupExpensePaymentStatuses(id!).catch(() => ({ data: {} })),
+        api.getGroupActivities(id!).catch(() => ({ data: [] })),
       ]);
       
-      setGroup(groupRes.data);
+      setGroup(groupRes.data || null);
       setExpenses(expensesRes.data || []);
       setBalances(balancesRes.data?.balances || []);
       setMyBalance(myBalanceRes.data?.balance || 0);
       
-      // Payment statuses come as {expense_id: {total_owed, total_paid}}
       const statusData = paymentStatusRes.data || {};
-      const statusMap = {};
-      Object.entries(statusData).forEach(([expenseId, status]) => {
-        statusMap[expenseId] = { totalOwed: status.total_owed, totalPaid: status.total_paid };
+      const statusMap: Record<number, PaymentStatus> = {};
+      Object.entries(statusData).forEach(([expenseId, status]: [string, any]) => {
+        statusMap[parseInt(expenseId)] = { totalOwed: status.total_owed, totalPaid: status.total_paid };
       });
       setExpensePaymentStatus(statusMap);
       
       setActivities(activitiesRes.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -149,87 +201,83 @@ export default function GroupDetail() {
     setConversionRate(null);
   };
 
-  const handleAddExpense = async (e) => {
+  const handleAddExpense = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      // Use converted amount for non-EUR currencies
       const finalAmount = expenseCurrency === 'EUR' ? expenseAmount : convertedAmount;
       if (!finalAmount) {
         setError('Please wait for currency conversion');
         return;
       }
 
-      // Add original currency info to description if converted
       let finalDesc = expenseDesc;
       if (expenseCurrency !== 'EUR') {
         const currencySymbol = CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || expenseCurrency;
         finalDesc = `${expenseDesc} (${currencySymbol}${expenseAmount} ${expenseCurrency})`;
       }
 
-      let splitWith = [];
+      let splitWith: Array<{ user_id: number; amount: number }> = [];
       
       if (splitType === 'percentage') {
-        // Validate percentages add up to 100
         const totalPercent = Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
         if (Math.abs(totalPercent - 100) > 0.01) {
           setError('Percentages must add up to 100%');
           return;
         }
-        // Convert to split_with format
         splitWith = Object.entries(memberSplits).map(([userId, percent]) => ({
           user_id: parseInt(userId),
           amount: parseFloat(percent) || 0
         }));
       }
-      await api.createExpense(id, finalAmount, finalDesc, splitType, splitWith);
+      await api.createExpense(id!, finalAmount, finalDesc, splitType, splitWith);
       closeExpenseModal();
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleSettle = async (e) => {
+  const handleSettle = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await api.createSettlement(id, parseInt(settleUser), settleAmount);
+      await api.createSettlement(id!, parseInt(settleUser), settleAmount);
       setShowSettleModal(false);
       setSettleUser('');
       setSettleAmount('');
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleAddMember = async (e) => {
+  const handleAddMember = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await api.addMember(id, parseInt(selectedUser));
+      await api.addMember(id!, parseInt(selectedUser));
       setShowMemberModal(false);
       setSelectedUser('');
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleRemoveMember = async (memberId, memberName) => {
+  const handleRemoveMember = async (memberId: number, memberName: string) => {
     if (!confirm(`Remove ${memberName} from the group?`)) return;
     try {
-      await api.removeMember(id, memberId);
+      await api.removeMember(id!, memberId);
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleDeleteExpense = async (expenseId) => {
+  const handleDeleteExpense = async (expenseId: number) => {
     if (!confirm('Delete this expense?')) return;
     try {
-      await api.deleteExpense(id, expenseId);
+      await api.deleteExpense(id!, expenseId);
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
@@ -241,33 +289,32 @@ export default function GroupDetail() {
     }
     if (!confirm('Delete this group? This cannot be undone.')) return;
     try {
-      await api.deleteGroup(id);
+      await api.deleteGroup(id!);
       navigate('/');
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const openExpenseDetail = async (expense) => {
+  const openExpenseDetail = async (expense: ExpenseWithUser) => {
     setPaymentAmount('');
     setPaymentNote('');
     setPaymentError('');
     setShowExpenseDetailModal(true);
     try {
-      // Fetch full expense details (includes splits with user info)
       const [expenseRes, paymentsRes] = await Promise.all([
-        api.getExpense(id, expense.id),
+        api.getExpense(id!, expense.id),
         api.getExpensePayments(expense.id)
       ]);
       setSelectedExpense(expenseRes.data || expense);
       setExpensePayments(paymentsRes.data || []);
     } catch (err) {
-      setSelectedExpense(expense);
+      setSelectedExpense(expense as ExpenseDetail);
       setExpensePayments([]);
     }
   };
 
-  const handleMakePayment = async (e) => {
+  const handleMakePayment = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedExpense) return;
     setPaymentError('');
@@ -275,75 +322,49 @@ export default function GroupDetail() {
       await api.createExpensePayment(selectedExpense.id, paymentAmount, paymentNote);
       setPaymentAmount('');
       setPaymentNote('');
-      // Reload all data (which includes payment status and activities)
       await loadData();
-      // Refresh payments for modal after loadData completes
       const res = await api.getExpensePayments(selectedExpense.id);
       setExpensePayments(res.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setPaymentError(err.message);
     }
   };
 
-  const handleDeletePayment = async (paymentId) => {
+  const handleDeletePayment = async (paymentId: number) => {
     if (!confirm('Delete this payment?')) return;
     try {
       await api.deleteExpensePayment(paymentId);
-      // Reload all data (which includes payment status and activities)
       await loadData();
-      // Refresh payments for modal after loadData completes
-      const res = await api.getExpensePayments(selectedExpense.id);
+      const res = await api.getExpensePayments(selectedExpense!.id);
       setExpensePayments(res.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
-  // Calculate user's remaining debt for an expense
-  const getUserDebtForExpense = (expense) => {
-    if (!expense.splits || expense.paid_by === user?.id) return 0;
-    const userSplit = expense.splits.find(s => s.user_id === user?.id);
-    if (!userSplit) return 0;
-    const paidBack = expensePayments
-      .filter(p => p.paid_by === user?.id)
-      .reduce((sum, p) => sum + p.amount, 0);
-    return Math.max(0, userSplit.amount - paidBack);
-  };
-
-  // Check if an expense is fully paid (all non-payer splits have been paid back)
-  const isExpenseFullyPaid = () => {
+  const isExpenseFullyPaid = (): boolean => {
     if (!selectedExpense?.splits) return false;
-    // Total owed by non-payers (people who didn't pay the expense)
     const totalOwed = selectedExpense.splits
       .filter(s => s.user_id !== selectedExpense.paid_by)
       .reduce((sum, s) => sum + s.amount, 0);
-    // Total paid back
     const totalPaidBack = expensePayments.reduce((sum, p) => sum + p.amount, 0);
-    return totalPaidBack >= totalOwed - 0.01; // Small tolerance for floating point
+    return totalPaidBack >= totalOwed - 0.01;
   };
 
-  // Get debts where current user owes money to someone
-  const getMyDebts = () => {
-    return balances.filter(b => b.from_user?.id === user?.id);
-  };
-
-  // Get expenses where user owes money (has a split and is not the payer)
-  const getMyExpenseDebts = () => {
+  const getMyExpenseDebts = (): ExpenseDebt[] => {
     return expenses.filter(expense => {
-      // Use == for type-coerced comparison (id might be int or string)
-      if (expense.paid_by == user?.id) return false; // User paid this expense
+      if (expense.paid_by == user?.id) return false;
       if (!expense.splits || expense.splits.length === 0) return false;
       const userSplit = expense.splits.find(s => s.user_id == user?.id);
-      if (!userSplit) return false; // User not in split
+      if (!userSplit) return false;
       
-      // Check remaining debt using payment status
       const status = expensePaymentStatus[expense.id];
-      if (status && status.totalPaid >= status.totalOwed - 0.01) return false; // Fully paid
+      if (status && status.totalPaid >= status.totalOwed - 0.01) return false;
       
       return true;
     }).map(expense => {
-      const userSplit = expense.splits.find(s => s.user_id == user?.id);
-      const payer = group.members?.find(m => m.id == expense.paid_by);
+      const userSplit = expense.splits!.find(s => s.user_id == user?.id);
+      const payer = group?.members?.find(m => m.id == expense.paid_by);
       return {
         expense,
         splitAmount: userSplit?.amount || 0,
@@ -352,16 +373,9 @@ export default function GroupDetail() {
     });
   };
 
-  const selectDebtToPay = (debt) => {
-    setSettleUser(debt.to_user.id.toString());
-    setSettleAmount(debt.amount.toFixed(2));
-    setGoPayMode('freeform');
-  };
+  const formatCurrency = (amount: number): string => formatAmount(amount);
 
-  // Use global currency display from context
-  const formatCurrency = (amount) => formatAmount(amount);
-
-  const getActivityIcon = (actionType) => {
+  const getActivityIcon = (actionType: string): string => {
     switch (actionType) {
       case 'expense_created': return '💰';
       case 'expense_deleted': return '🗑️';
@@ -374,19 +388,11 @@ export default function GroupDetail() {
     }
   };
 
-  const getActivityColor = (actionType) => {
-    switch (actionType) {
-      case 'expense_created': return 'var(--card-bg)';
-      case 'expense_deleted': return 'var(--card-bg)';
-      case 'settlement': return 'var(--card-bg)';
-      case 'payment': return 'var(--card-bg)';
-      case 'member_added': return 'var(--card-bg)';
-      case 'member_removed': return 'var(--card-bg)';
-      default: return 'var(--card-bg)';
-    }
+  const getActivityColor = (actionType: string): string => {
+    return 'var(--card-bg)';
   };
 
-  const formatActivityMessage = (activity) => {
+  const formatActivityMessage = (activity: Activity): string => {
     const userName = activity.user?.name || 'Someone';
     const relatedName = activity.related_user?.name || 'someone';
     
@@ -774,10 +780,9 @@ export default function GroupDetail() {
                     className="form-select"
                     value={splitType}
                     onChange={(e) => {
-                      setSplitType(e.target.value);
+                      setSplitType(e.target.value as 'equal' | 'percentage');
                       if (e.target.value === 'percentage' && group?.members) {
-                        // Initialize with equal split by default
-                        const initialSplits = {};
+                        const initialSplits: Record<number, string> = {};
                         const share = (100 / group.members.length).toFixed(1);
                         group.members.forEach(m => {
                           initialSplits[m.id] = share;
@@ -800,9 +805,9 @@ export default function GroupDetail() {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => {
-                          const share = (100 / group.members.length).toFixed(1);
-                          const splits = {};
-                          group.members.forEach(m => { splits[m.id] = share; });
+                          const share = (100 / group.members!.length).toFixed(1);
+                          const splits: Record<number, string> = {};
+                          group.members!.forEach(m => { splits[m.id] = share; });
                           setMemberSplits(splits);
                         }}
                       >
@@ -812,10 +817,10 @@ export default function GroupDetail() {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => {
-                          const others = group.members.filter(m => m.id !== user?.id);
+                          const others = group.members!.filter(m => m.id !== user?.id);
                           const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
-                          const splits = {};
-                          group.members.forEach(m => {
+                          const splits: Record<number, string> = {};
+                          group.members!.forEach(m => {
                             splits[m.id] = m.id === user?.id ? '0' : share;
                           });
                           setMemberSplits(splits);

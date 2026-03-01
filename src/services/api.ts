@@ -1,0 +1,309 @@
+import type {
+  ApiResponse,
+  User,
+  LoginResponse,
+  Group,
+  Expense,
+  ExpensePayment,
+  PaymentHistoryItem,
+  Settlement,
+  BalancesResponse,
+  MyBalanceResponse,
+  DebtOverviewItem,
+  Activity,
+  Suggestion,
+  SuggestionsResponse,
+  Voter,
+  CurrencyRatesResponse,
+  CurrencyConvertResponse,
+  CurrencyHistoryResponse,
+  SplitWith,
+} from '../types';
+
+// API Configuration
+// Change this to your backend URL when deployed
+const API_BASE = 'http://localhost:8080/api';
+
+interface RequestOptions extends RequestInit {
+  headers?: Record<string, string>;
+}
+
+class ApiService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = API_BASE;
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  setToken(token: string): void {
+    localStorage.setItem('token', token);
+  }
+
+  clearToken(): void {
+    localStorage.removeItem('token');
+  }
+
+  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      ...options.headers,
+    };
+
+    const token = this.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      cache: 'no-store',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Something went wrong');
+    }
+
+    return data as ApiResponse<T>;
+  }
+
+  // Auth
+  async register(email: string, password: string, name: string): Promise<ApiResponse> {
+    return this.request('/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+  }
+
+  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    const response = await this.request<LoginResponse>('/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (response.data?.token) {
+      this.setToken(response.data.token);
+    }
+    return response;
+  }
+
+  logout(): void {
+    this.clearToken();
+  }
+
+  async getProfile(): Promise<ApiResponse<User>> {
+    return this.request<User>('/profile');
+  }
+
+  async updateTheme(theme: string): Promise<ApiResponse> {
+    return this.request('/profile/theme', {
+      method: 'PUT',
+      body: JSON.stringify({ theme }),
+    });
+  }
+
+  async getAllUsers(): Promise<ApiResponse<User[]>> {
+    return this.request<User[]>('/users');
+  }
+
+  async getDebtOverview(): Promise<ApiResponse<DebtOverviewItem[]>> {
+    return this.request<DebtOverviewItem[]>('/debt-overview');
+  }
+
+  async getPaymentHistory(): Promise<ApiResponse<PaymentHistoryItem[]>> {
+    return this.request<PaymentHistoryItem[]>('/payment-history');
+  }
+
+  async clearPaymentHistory(): Promise<ApiResponse> {
+    return this.request('/payment-history', { method: 'DELETE' });
+  }
+
+  // Groups
+  async createGroup(name: string, description: string, emoji: string = '💰'): Promise<ApiResponse<Group>> {
+    return this.request<Group>('/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, emoji }),
+    });
+  }
+
+  async getGroups(): Promise<ApiResponse<Group[]>> {
+    return this.request<Group[]>('/groups');
+  }
+
+  async getGroup(groupId: number | string): Promise<ApiResponse<Group>> {
+    return this.request<Group>(`/groups/${groupId}`);
+  }
+
+  async deleteGroup(groupId: number | string): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addMember(groupId: number | string, userId: number): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async removeMember(groupId: number | string, memberId: number): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}/members/${memberId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Expenses
+  async createExpense(
+    groupId: number | string,
+    amount: number | string,
+    description: string,
+    splitType: string,
+    splitWith: SplitWith[] = []
+  ): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>(`/groups/${groupId}/expenses`, {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: parseFloat(String(amount)),
+        description,
+        split_type: splitType,
+        split_with: splitWith,
+      }),
+    });
+  }
+
+  async getExpenses(groupId: number | string): Promise<ApiResponse<Expense[]>> {
+    return this.request<Expense[]>(`/groups/${groupId}/expenses`);
+  }
+
+  async getExpense(groupId: number | string, expenseId: number | string): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>(`/groups/${groupId}/expenses/${expenseId}`);
+  }
+
+  async deleteExpense(groupId: number | string, expenseId: number | string): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}/expenses/${expenseId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Expense Payments (partial repayments)
+  async getExpensePayments(expenseId: number | string): Promise<ApiResponse<ExpensePayment[]>> {
+    return this.request<ExpensePayment[]>(`/expenses/${expenseId}/payments`);
+  }
+
+  async getGroupExpensePaymentStatuses(groupId: number | string): Promise<ApiResponse<Record<number, { total_owed: number; total_paid: number }>>> {
+    return this.request<Record<number, { total_owed: number; total_paid: number }>>(`/groups/${groupId}/expense-payment-statuses`);
+  }
+
+  async createExpensePayment(expenseId: number | string, amount: number | string, note: string = ''): Promise<ApiResponse<ExpensePayment>> {
+    return this.request<ExpensePayment>(`/expenses/${expenseId}/payments`, {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: parseFloat(String(amount)),
+        note,
+      }),
+    });
+  }
+
+  async deleteExpensePayment(paymentId: number | string): Promise<ApiResponse> {
+    return this.request(`/payments/${paymentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Settlements
+  async createSettlement(groupId: number | string, paidTo: number, amount: number | string): Promise<ApiResponse<Settlement>> {
+    return this.request<Settlement>(`/groups/${groupId}/settlements`, {
+      method: 'POST',
+      body: JSON.stringify({
+        paid_to: paidTo,
+        amount: parseFloat(String(amount)),
+      }),
+    });
+  }
+
+  async getSettlements(groupId: number | string): Promise<ApiResponse<Settlement[]>> {
+    return this.request<Settlement[]>(`/groups/${groupId}/settlements`);
+  }
+
+  // Balances
+  async getGroupBalances(groupId: number | string): Promise<ApiResponse<BalancesResponse>> {
+    return this.request<BalancesResponse>(`/groups/${groupId}/balances`);
+  }
+
+  async getMyBalance(groupId: number | string): Promise<ApiResponse<MyBalanceResponse>> {
+    return this.request<MyBalanceResponse>(`/groups/${groupId}/my-balance`);
+  }
+
+  // Activity history
+  async getGroupActivities(groupId: number | string, limit: number = 50): Promise<ApiResponse<Activity[]>> {
+    return this.request<Activity[]>(`/groups/${groupId}/activities?limit=${limit}`);
+  }
+
+  // Suggestions
+  async getSuggestions(): Promise<ApiResponse<SuggestionsResponse>> {
+    return this.request<SuggestionsResponse>('/suggestions');
+  }
+
+  async createSuggestion(content: string): Promise<ApiResponse<Suggestion>> {
+    return this.request<Suggestion>('/suggestions', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteSuggestion(suggestionId: number | string): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async voteSuggestion(suggestionId: number | string, voteType: 'like' | 'dislike'): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ vote_type: voteType }),
+    });
+  }
+
+  async removeVote(suggestionId: number | string): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}/vote`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getSuggestionVoters(suggestionId: number | string): Promise<ApiResponse<Voter[]>> {
+    return this.request<Voter[]>(`/suggestions/${suggestionId}/voters`);
+  }
+
+  async updateSuggestionStatus(suggestionId: number | string, status: string): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Currency
+  async getCurrencyRates(base: string = 'USD'): Promise<ApiResponse<CurrencyRatesResponse>> {
+    return this.request<CurrencyRatesResponse>(`/currency/rates?base=${base}`);
+  }
+
+  async convertCurrency(from: string, to: string, amount: number | string): Promise<CurrencyConvertResponse> {
+    const response = await this.request<CurrencyConvertResponse>(`/currency/convert?from=${from}&to=${to}&amount=${amount}`);
+    return response as unknown as CurrencyConvertResponse;
+  }
+
+  async getCurrencyHistory(from: string, to: string, days: number = 7): Promise<CurrencyHistoryResponse> {
+    const response = await this.request<CurrencyHistoryResponse>(`/currency/history?from=${from}&to=${to}&days=${days}`);
+    return response as unknown as CurrencyHistoryResponse;
+  }
+}
+
+export const api = new ApiService();
+export default api;

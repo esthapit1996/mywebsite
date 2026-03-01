@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import api from '../services/api';
+import type { Theme, ThemeContextType } from '../types';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // Themes sorted from darkest to brightest, with category labels
-export const THEMES = [
+export const THEMES: Theme[] = [
   // Dark themes
   { id: 'dark', name: 'Dark', icon: '🌙', category: 'dark' },
   { id: 'espresso', name: 'Espresso', icon: '☕', category: 'dark' },
@@ -21,12 +22,20 @@ export const THEMES = [
   { id: 'light', name: 'Light', icon: '🌤️', category: 'light' },
 ];
 
-export function useTheme() {
-  return useContext(ThemeContext);
+export function useTheme(): ThemeContextType {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
 }
 
-export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(() => {
+interface ThemeProviderProps {
+  children: ReactNode;
+}
+
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<string>(() => {
     // Default to dark, but check localStorage first
     const saved = localStorage.getItem('gopherdebt-theme');
     return saved || 'dark';
@@ -39,7 +48,7 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   // Function to set theme and optionally sync to backend
-  const setTheme = useCallback(async (newTheme, syncToBackend = true) => {
+  const setTheme = useCallback(async (newTheme: string, syncToBackend: boolean = true): Promise<void> => {
     setThemeState(newTheme);
     
     // Try to sync to backend if user is logged in
@@ -54,16 +63,16 @@ export function ThemeProvider({ children }) {
   }, []);
 
   // Function to load theme from user profile (called after login)
-  const loadUserTheme = useCallback((userTheme) => {
+  const loadUserTheme = useCallback((userTheme: string): void => {
     if (userTheme && THEMES.some(t => t.id === userTheme)) {
       setThemeState(userTheme);
       localStorage.setItem('gopherdebt-theme', userTheme);
     }
   }, []);
 
-  const currentTheme = THEMES.find(t => t.id === theme) || THEMES[1];
+  const currentTheme = THEMES.find(t => t.id === theme) || THEMES[0];
 
-  const value = {
+  const value: ThemeContextType = {
     theme,
     setTheme,
     loadUserTheme,

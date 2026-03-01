@@ -76,6 +76,11 @@ export default function GroupDetail(): JSX.Element {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
+  // Edit group states
+  const [editingGroup, setEditingGroup] = useState<boolean>(false);
+  const [editName, setEditName] = useState<string>('');
+  const [editDescription, setEditDescription] = useState<string>('');
+
   // Modal states
   const [showExpenseModal, setShowExpenseModal] = useState<boolean>(false);
   const [showSettleModal, setShowSettleModal] = useState<boolean>(false);
@@ -400,6 +405,7 @@ export default function GroupDetail(): JSX.Element {
       case 'member_added': return '👋';
       case 'member_removed': return '👤';
       case 'group_created': return '🎉';
+      case 'group_updated': return '✏️';
       default: return '📝';
     }
   };
@@ -427,6 +433,8 @@ export default function GroupDetail(): JSX.Element {
         return `${userName} removed ${relatedName} from the group`;
       case 'group_created':
         return `${userName} created the group`;
+      case 'group_updated':
+        return `${userName}: ${activity.description}`;
       default:
         return activity.description;
     }
@@ -477,12 +485,68 @@ export default function GroupDetail(): JSX.Element {
       {/* Group Header */}
       <div className="card">
         <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
             <span style={{ fontSize: '2rem' }}>{group.emoji || '💰'}</span>
-            <div>
-              <h2 className="card-title" style={{ margin: 0 }}>{group.name}</h2>
-              {group.description && <p className="text-muted" style={{ margin: 0 }}>{group.description}</p>}
-            </div>
+            {editingGroup ? (
+              <div style={{ flex: 1 }}>
+                <input
+                  type="text"
+                  className="input"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  maxLength={69}
+                  style={{ marginBottom: '6px', width: '100%' }}
+                  placeholder="Group name"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  className="input"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  maxLength={128}
+                  style={{ width: '100%' }}
+                  placeholder="Description (optional)"
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={async () => {
+                      try {
+                        const res = await api.updateGroup(id!, editName.trim(), editDescription.trim());
+                        setGroup(res.data || null);
+                        setEditingGroup(false);
+                        loadData();
+                      } catch (err: any) {
+                        setError(err.message);
+                      }
+                    }}
+                    disabled={!editName.trim()}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setEditingGroup(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setEditName(group.name);
+                  setEditDescription(group.description || '');
+                  setEditingGroup(true);
+                }}
+                title="Click to edit"
+              >
+                <h2 className="card-title" style={{ margin: 0 }}>{group.name}</h2>
+                {group.description && <p className="text-muted" style={{ margin: 0 }}>{group.description}</p>}
+              </div>
+            )}
           </div>
           <button className="btn btn-outline btn-sm" onClick={() => navigate('/')}>
             ← Back

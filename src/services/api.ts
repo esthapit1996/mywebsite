@@ -186,6 +186,13 @@ class ApiService {
     });
   }
 
+  async updateGroup(groupId: number | string, name: string, description: string): Promise<ApiResponse<Group>> {
+    return this.request<Group>(`/groups/${groupId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, description }),
+    });
+  }
+
   async addMember(groupId: number | string, userId: number): Promise<ApiResponse> {
     return this.request(`/groups/${groupId}/members`, {
       method: 'POST',

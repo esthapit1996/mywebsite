@@ -49,12 +49,12 @@
   --alert-success-border: #5a8040;
 }
 
-/* 3. Dracula - Purple/pink vampire theme */
+/* 3. Dracula - Purple/blood red vampire theme */
 [data-theme="dracula"] {
-  --primary: #50fa7b;
-  --primary-dark: #3ad35f;
+  --primary: #ff5555;
+  --primary-dark: #cc4444;
   --secondary: #bd93f9;
-  --danger: #ff5555;
+  --danger: #ff7979;
   --warning: #f1fa8c;
   --bg: #282a36;
   --card-bg: #44475a;
@@ -65,9 +65,9 @@
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
   --input-bg: #44475a;
   --alert-error-bg: #3d1515;
-  --alert-error-border: #ff5555;
-  --alert-success-bg: #1a3d1a;
-  --alert-success-border: #50fa7b;
+  --alert-error-border: #ff7979;
+  --alert-success-bg: #2d1a1a;
+  --alert-success-border: #ff5555;
 }
 
 /* 4. Monokai - Warm brownish dark */

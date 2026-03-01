@@ -205,7 +205,10 @@ function Header(): JSX.Element | null {
       <div className="header-content">
         <Link to="/" className="logo" onClick={handleLogoClick} title={location.pathname === '/' ? 'Refresh app' : 'Go to dashboard'}>
           <img src={logo} alt="GopherDebt" className="header-logo" />
-          GopherDebt
+          <span>
+            GopherDebt
+            <span className="motto">GopherDebt Good, GoForDebt Bad.</span>
+          </span>
         </Link>
         <nav className="nav">
           {/* Currency Display Selector */}

@@ -62,6 +62,7 @@ export default function Login() {
         <div className="auth-header">
           <img src={logo} alt="GopherDebt" className="auth-logo" />
           <h1>GopherDebt</h1>
+          <p className="motto" style={{ fontSize: '0.85rem', fontStyle: 'italic', opacity: 0.7, marginBottom: '8px' }}>GopherDebt Good, GoForDebt Bad.</p>
           <p>{greeting}</p>
         </div>
 

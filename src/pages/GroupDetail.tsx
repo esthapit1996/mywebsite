@@ -525,6 +525,9 @@ export default function GroupDetail(): JSX.Element {
                   placeholder="Group name"
                   autoFocus
                 />
+                <div style={{ fontSize: '0.75rem', color: editName.length >= 60 ? 'var(--warning)' : 'var(--text-muted)', textAlign: 'right' }}>
+                  {editName.length}/69
+                </div>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -561,6 +564,9 @@ export default function GroupDetail(): JSX.Element {
                   }}
                   placeholder="Description (optional)"
                 />
+                <div style={{ fontSize: '0.75rem', color: editDescription.length >= 120 ? 'var(--warning)' : 'var(--text-muted)', textAlign: 'right' }}>
+                  {editDescription.length}/128
+                </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                   <button
                     className="btn btn-primary btn-sm"

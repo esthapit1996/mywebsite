@@ -24,8 +24,10 @@ import type {
 } from '../types';
 
 // API Configuration
-// Change this to your backend URL when deployed
-const API_BASE = 'http://localhost:8080/api';
+// Uses production URL on deployed site, localhost for development
+const API_BASE = import.meta.env.PROD 
+  ? 'https://gopherdebt.onrender.com/api'
+  : 'http://localhost:8080/api';
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;

@@ -491,21 +491,72 @@ export default function GroupDetail(): JSX.Element {
               <div style={{ flex: 1 }}>
                 <input
                   type="text"
-                  className="input"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editName.trim()) {
+                      (async () => {
+                        try {
+                          const res = await api.updateGroup(id!, editName.trim(), editDescription.trim());
+                          setGroup(res.data || null);
+                          setEditingGroup(false);
+                          loadData();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      })();
+                    }
+                    if (e.key === 'Escape') setEditingGroup(false);
+                  }}
                   maxLength={69}
-                  style={{ marginBottom: '6px', width: '100%' }}
+                  style={{ 
+                    background: 'transparent', 
+                    border: 'none', 
+                    borderBottom: '1px solid var(--primary)',
+                    outline: 'none',
+                    color: 'var(--text)', 
+                    fontSize: '1.25rem', 
+                    fontWeight: 700, 
+                    width: '100%',
+                    padding: '2px 0',
+                    margin: 0,
+                    fontFamily: 'inherit'
+                  }}
                   placeholder="Group name"
                   autoFocus
                 />
                 <input
                   type="text"
-                  className="input"
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editName.trim()) {
+                      (async () => {
+                        try {
+                          const res = await api.updateGroup(id!, editName.trim(), editDescription.trim());
+                          setGroup(res.data || null);
+                          setEditingGroup(false);
+                          loadData();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      })();
+                    }
+                    if (e.key === 'Escape') setEditingGroup(false);
+                  }}
                   maxLength={128}
-                  style={{ width: '100%' }}
+                  style={{ 
+                    background: 'transparent', 
+                    border: 'none', 
+                    borderBottom: '1px solid var(--border)',
+                    outline: 'none',
+                    color: 'var(--text-muted)', 
+                    fontSize: '0.9rem', 
+                    width: '100%',
+                    padding: '2px 0',
+                    marginTop: '4px',
+                    fontFamily: 'inherit'
+                  }}
                   placeholder="Description (optional)"
                 />
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>

@@ -108,15 +108,16 @@ export default function CurrencyConverter() {
 
   return (
     <div className="page-container">
-      <div className="page-header" style={{ textAlign: 'center', position: 'relative' }}>
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() => navigate('/')}
-          style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
-        >
-          ← Back
-        </button>
-        <h1>💱 Currency Converter</h1>
+      <div className="page-header" style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+          <h1 style={{ margin: 0 }}>💱 Currency Converter</h1>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => navigate('/')}
+          >
+            ← Back
+          </button>
+        </div>
         <p className="subtitle">Convert between currencies with live exchange rates</p>
       </div>
 

@@ -525,12 +525,12 @@ export default function GroupDetail(): JSX.Element {
                   placeholder="Group name"
                   autoFocus
                 />
-                <input
-                  type="text"
+                <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && editName.trim()) {
+                    if (e.key === 'Enter' && !e.shiftKey && editName.trim()) {
+                      e.preventDefault();
                       (async () => {
                         try {
                           const res = await api.updateGroup(id!, editName.trim(), editDescription.trim());
@@ -545,6 +545,7 @@ export default function GroupDetail(): JSX.Element {
                     if (e.key === 'Escape') setEditingGroup(false);
                   }}
                   maxLength={128}
+                  rows={2}
                   style={{ 
                     background: 'transparent', 
                     border: 'none', 
@@ -555,7 +556,8 @@ export default function GroupDetail(): JSX.Element {
                     width: '100%',
                     padding: '2px 0',
                     marginTop: '4px',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    resize: 'none'
                   }}
                   placeholder="Description (optional)"
                 />

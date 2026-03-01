@@ -26,7 +26,7 @@ import type {
 // API Configuration
 // Uses production URL on deployed site, localhost for development
 const API_BASE = import.meta.env.PROD 
-  ? 'https://gopherdebt.onrender.com/api'
+  ? 'https://gopherdebt-api.fly.dev/api'
   : 'http://localhost:8080/api';
 
 interface RequestOptions extends RequestInit {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
+import { useCurrency } from '../context/CurrencyContext';
 import type { CurrencyConvertResponse, CurrencyHistoryPoint, CurrencyInfo } from '../types';
 
 const POPULAR_CURRENCIES: CurrencyInfo[] = [
@@ -32,9 +33,10 @@ const POPULAR_CURRENCIES: CurrencyInfo[] = [
 ];
 
 export default function CurrencyConverter() {
+  const { displayCurrency } = useCurrency();
   const [amount, setAmount] = useState('1');
-  const [fromCurrency, setFromCurrency] = useState('USD');
-  const [toCurrency, setToCurrency] = useState('EUR');
+  const [fromCurrency, setFromCurrency] = useState(() => displayCurrency);
+  const [toCurrency, setToCurrency] = useState(() => displayCurrency === 'USD' ? 'EUR' : 'USD');
   const [result, setResult] = useState<CurrencyConvertResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,7 +271,8 @@ export default function CurrencyConverter() {
                 <LineChart data={historyData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: '#ffffff' }}
+                    stroke="#ffffff"
                     tickFormatter={(value: string) => {
                       const date = new Date(value);
                       if (historyPeriod >= 365) {
@@ -281,7 +284,8 @@ export default function CurrencyConverter() {
                   />
                   <YAxis 
                     domain={['auto', 'auto']}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: '#ffffff' }}
+                    stroke="#ffffff"
                     tickFormatter={(value: number) => value.toFixed(4)}
                     width={60}
                   />

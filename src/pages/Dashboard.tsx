@@ -284,10 +284,13 @@ export default function Dashboard() {
                       className="form-input"
                       style={{ flex: 1 }}
                       value={newGroupName}
-                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onChange={(e) => setNewGroupName(e.target.value.slice(0, 69))}
                       placeholder="e.g., Roommates"
                       required
                     />
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
+                    {newGroupName.length}/69
                   </div>
                 </div>
                 <div className="form-group">

@@ -190,6 +190,15 @@ export interface Voter {
   vote_type: 'like' | 'dislike';
 }
 
+export interface SuggestionComment {
+  id: number;
+  suggestion_id: number;
+  user_id: number;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
 // ============================================
 // Currency Types
 // ============================================
@@ -269,4 +278,23 @@ export interface CurrencyContextType {
 export interface FormatOptions {
   showCode?: boolean;
   decimals?: number;
+}
+
+// ============================================
+// Access Control Types
+// ============================================
+
+export interface WhitelistEntry {
+  id: number;
+  email: string;
+  added_by?: number;
+  created_at: string;
+}
+
+export interface BlacklistEntry {
+  id: number;
+  email: string;
+  reason: string;
+  added_by?: number;
+  created_at: string;
 }

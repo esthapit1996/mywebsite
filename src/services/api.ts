@@ -14,10 +14,13 @@ import type {
   Suggestion,
   SuggestionsResponse,
   Voter,
+  SuggestionComment,
   CurrencyRatesResponse,
   CurrencyConvertResponse,
   CurrencyHistoryResponse,
   SplitWith,
+  WhitelistEntry,
+  BlacklistEntry,
 } from '../types';
 
 // API Configuration
@@ -111,6 +114,10 @@ class ApiService {
 
   async getAllUsers(): Promise<ApiResponse<User[]>> {
     return this.request<User[]>('/users');
+  }
+
+  async deleteUser(userId: number): Promise<ApiResponse> {
+    return this.request(`/users/${userId}`, { method: 'DELETE' });
   }
 
   async getDebtOverview(): Promise<ApiResponse<DebtOverviewItem[]>> {
@@ -289,6 +296,23 @@ class ApiService {
     });
   }
 
+  async getSuggestionComments(suggestionId: number | string): Promise<ApiResponse<SuggestionComment[]>> {
+    return this.request<SuggestionComment[]>(`/suggestions/${suggestionId}/comments`);
+  }
+
+  async createSuggestionComment(suggestionId: number | string, content: string): Promise<ApiResponse<SuggestionComment>> {
+    return this.request<SuggestionComment>(`/suggestions/${suggestionId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteSuggestionComment(suggestionId: number | string, commentId: number): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Currency
   async getCurrencyRates(base: string = 'USD'): Promise<ApiResponse<CurrencyRatesResponse>> {
     return this.request<CurrencyRatesResponse>(`/currency/rates?base=${base}`);
@@ -302,6 +326,37 @@ class ApiService {
   async getCurrencyHistory(from: string, to: string, days: number = 7): Promise<CurrencyHistoryResponse> {
     const response = await this.request<CurrencyHistoryResponse>(`/currency/history?from=${from}&to=${to}&days=${days}`);
     return response as unknown as CurrencyHistoryResponse;
+  }
+
+  // Access Control (Whitelist/Blacklist)
+  async getWhitelist(): Promise<ApiResponse<WhitelistEntry[]>> {
+    return this.request<WhitelistEntry[]>('/whitelist');
+  }
+
+  async addToWhitelist(email: string): Promise<ApiResponse<WhitelistEntry>> {
+    return this.request<WhitelistEntry>('/whitelist', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async removeFromWhitelist(id: number): Promise<ApiResponse> {
+    return this.request(`/whitelist/${id}`, { method: 'DELETE' });
+  }
+
+  async getBlacklist(): Promise<ApiResponse<BlacklistEntry[]>> {
+    return this.request<BlacklistEntry[]>('/blacklist');
+  }
+
+  async addToBlacklist(email: string, reason?: string): Promise<ApiResponse<BlacklistEntry>> {
+    return this.request<BlacklistEntry>('/blacklist', {
+      method: 'POST',
+      body: JSON.stringify({ email, reason: reason || '' }),
+    });
+  }
+
+  async removeFromBlacklist(id: number): Promise<ApiResponse> {
+    return this.request(`/blacklist/${id}`, { method: 'DELETE' });
   }
 }
 

@@ -11,6 +11,7 @@ import GroupDetail from './pages/GroupDetail';
 import PaymentHistory from './pages/PaymentHistory';
 import Suggestions from './pages/Suggestions';
 import CurrencyConverter from './pages/CurrencyConverter';
+import Members from './pages/Members';
 
 interface RouteProps {
   children: ReactNode;
@@ -177,6 +178,14 @@ function Header(): JSX.Element | null {
                 >
                   💡 Suggestion Box
                 </button>
+                {user.email === 'evansthapit20@gmail.com' && (
+                  <button 
+                    className="user-menu-item"
+                    onClick={() => handleNavigation('/members')}
+                  >
+                    👥 Members
+                  </button>
+                )}
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/currency')}
@@ -257,6 +266,14 @@ function AppRoutes(): JSX.Element {
           element={
             <ProtectedRoute>
               <CurrencyConverter />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/members"
+          element={
+            <ProtectedRoute>
+              <Members />
             </ProtectedRoute>
           }
         />

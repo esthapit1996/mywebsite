@@ -2,10 +2,12 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import type { Suggestion, Voter } from '../types';
+import type { Suggestion, Voter, SuggestionComment } from '../types';
 
-const MAX_CHARS = 800;
-const CREATOR_EMAIL = 'evansthapit20@gmail.com';
+const MAX_CHARS = 420;
+const MAX_COMMENT_CHARS = 420;
+const MAX_COMMENTS_PER_USER = 4;
+const FOUNDER_EMAIL = 'evansthapit20@gmail.com';
 
 export default function Suggestions() {
   const { user } = useAuth();
@@ -19,8 +21,12 @@ export default function Suggestions() {
   const [voters, setVoters] = useState<Voter[] | null>(null);
   const [showVotersFor, setShowVotersFor] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'open' | 'wip' | 'done'>('open');
+  const [comments, setComments] = useState<Record<number, SuggestionComment[]>>({});
+  const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null);
+  const [newComment, setNewComment] = useState<Record<number, string>>({});
+  const [commentSubmitting, setCommentSubmitting] = useState<number | null>(null);
 
-  const isCreator = user?.email === CREATOR_EMAIL;
+  const isFounder = user?.email === FOUNDER_EMAIL;
 
   useEffect(() => {
     loadSuggestions();
@@ -104,8 +110,61 @@ export default function Suggestions() {
     }
   };
 
+  const handleShowComments = async (suggestionId: number) => {
+    if (showCommentsFor === suggestionId) {
+      setShowCommentsFor(null);
+      return;
+    }
+    try {
+      const response = await api.getSuggestionComments(suggestionId);
+      setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
+      setShowCommentsFor(suggestionId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load comments');
+    }
+  };
+
+  const handleAddComment = async (suggestionId: number) => {
+    const content = newComment[suggestionId]?.trim();
+    if (!content) return;
+
+    setCommentSubmitting(suggestionId);
+    try {
+      await api.createSuggestionComment(suggestionId, content);
+      setNewComment(prev => ({ ...prev, [suggestionId]: '' }));
+      // Reload comments
+      const response = await api.getSuggestionComments(suggestionId);
+      setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add comment');
+    } finally {
+      setCommentSubmitting(null);
+    }
+  };
+
+  const handleDeleteComment = async (suggestionId: number, commentId: number) => {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      await api.deleteSuggestionComment(suggestionId, commentId);
+      // Reload comments
+      const response = await api.getSuggestionComments(suggestionId);
+      setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete comment');
+    }
+  };
+
+  const canComment = (suggestion: Suggestion) => {
+    return user?.id === suggestion.user_id || isFounder;
+  };
+
+  const getUserCommentCount = (suggestionId: number) => {
+    const suggestionComments = comments[suggestionId] || [];
+    return suggestionComments.filter(c => c.user_id === user?.id).length;
+  };
+
   const canDelete = (suggestion: Suggestion) => {
-    return user?.id === suggestion.user_id || isCreator;
+    return user?.id === suggestion.user_id || isFounder;
   };
 
   const formatDate = (dateStr: string) => {
@@ -215,8 +274,8 @@ export default function Suggestions() {
               👎 {suggestion.dislikes || 0}
             </button>
             
-            {/* Creator controls */}
-            {isCreator && (
+            {/* Founder controls */}
+            {isFounder && (
               <>
                 <select
                   value={suggestion.status || 'open'}
@@ -252,10 +311,29 @@ export default function Suggestions() {
                 </button>
               </>
             )}
+            
+            {/* Comments toggle (only for suggestion owner or founder) */}
+            {canComment(suggestion) && (
+              <button
+                onClick={() => handleShowComments(suggestion.id)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--border-color)',
+                  background: showCommentsFor === suggestion.id ? 'var(--primary-color)' : 'transparent',
+                  color: showCommentsFor === suggestion.id ? 'white' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+                title="View/add comments"
+              >
+                💬 Comments
+              </button>
+            )}
           </div>
           
-          {/* Voters list (only for creator) */}
-          {isCreator && showVotersFor === suggestion.id && voters && (
+          {/* Voters list (only for founder) */}
+          {isFounder && showVotersFor === suggestion.id && voters && (
             <div style={{
               marginTop: '12px',
               padding: '12px',
@@ -275,6 +353,135 @@ export default function Suggestions() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          )}
+          
+          {/* Comments section (only for suggestion owner or founder) */}
+          {canComment(suggestion) && showCommentsFor === suggestion.id && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: 'var(--bg-secondary, #1f2937)',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              color: 'var(--text)'
+            }}>
+              <strong>💬 Comments:</strong>
+              
+              {/* Existing comments */}
+              {(comments[suggestion.id] || []).length === 0 ? (
+                <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>No comments yet</p>
+              ) : (
+                <div style={{ marginTop: '8px', marginBottom: '12px' }}>
+                  {(comments[suggestion.id] || []).map(comment => (
+                    <div key={comment.id} style={{
+                      padding: '10px',
+                      marginBottom: '8px',
+                      background: 'var(--card-bg)',
+                      borderRadius: '8px',
+                      borderLeft: comment.user_id === suggestion.user_id 
+                        ? '3px solid var(--primary-color)' 
+                        : '3px solid var(--success-color, #22c55e)'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '6px'
+                      }}>
+                        <span style={{ 
+                          fontWeight: '600',
+                          color: comment.user_id === suggestion.user_id 
+                            ? 'var(--primary-color)' 
+                            : 'var(--success-color, #22c55e)',
+                          fontSize: '0.8rem'
+                        }}>
+                          {comment.user_name} {comment.user_id === suggestion.user_id ? '(Owner)' : '(Evan)'}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {formatDate(comment.created_at)}
+                          </span>
+                          {(user?.id === comment.user_id || isFounder) && (
+                            <button
+                              onClick={() => handleDeleteComment(suggestion.id, comment.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--error-color, #ef4444)',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                fontSize: '0.8rem'
+                              }}
+                              title="Delete comment"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, lineHeight: '1.4', wordBreak: 'break-word' }}>
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Add comment form */}
+              {getUserCommentCount(suggestion.id) < MAX_COMMENTS_PER_USER ? (
+                <div style={{ marginTop: '8px' }}>
+                  <textarea
+                    value={newComment[suggestion.id] || ''}
+                    onChange={(e) => setNewComment(prev => ({ 
+                      ...prev, 
+                      [suggestion.id]: e.target.value.slice(0, MAX_COMMENT_CHARS)
+                    }))}
+                    placeholder="Add a comment..."
+                    style={{
+                      width: '100%',
+                      minHeight: '60px',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--card-bg)',
+                      color: 'var(--text-color)',
+                      fontSize: '0.85rem',
+                      resize: 'vertical'
+                    }}
+                  />
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginTop: '6px'
+                  }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {(newComment[suggestion.id] || '').length}/{MAX_COMMENT_CHARS} chars • {getUserCommentCount(suggestion.id)}/{MAX_COMMENTS_PER_USER} comments used
+                    </span>
+                    <button
+                      onClick={() => handleAddComment(suggestion.id)}
+                      disabled={!(newComment[suggestion.id]?.trim()) || commentSubmitting === suggestion.id}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        cursor: !(newComment[suggestion.id]?.trim()) ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        opacity: !(newComment[suggestion.id]?.trim()) ? 0.5 : 1
+                      }}
+                    >
+                      {commentSubmitting === suggestion.id ? 'Posting...' : 'Post Comment'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ margin: '8px 0 0', color: 'var(--warning-color, #f59e0b)', fontSize: '0.8rem' }}>
+                  You've reached the maximum of {MAX_COMMENTS_PER_USER} comments on this suggestion.
+                </p>
               )}
             </div>
           )}

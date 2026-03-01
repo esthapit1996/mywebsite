@@ -2,36 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
-import { useCurrency } from '../context/CurrencyContext';
-import type { CurrencyConvertResponse, CurrencyHistoryPoint, CurrencyInfo } from '../types';
+import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
+import type { CurrencyConvertResponse, CurrencyHistoryPoint } from '../types';
 
-const POPULAR_CURRENCIES: CurrencyInfo[] = [
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-  { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr' },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-  { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'GBP', name: 'British Pound', symbol: '£' },
-  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
-  { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
-  { code: 'NPR', name: 'Nepalese Rupee', symbol: 'रू' },
-  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
-  { code: 'PLN', name: 'Polish Zloty', symbol: 'zł' },
-  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
-  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
-  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
-  { code: 'THB', name: 'Thai Baht', symbol: '฿' },
-  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
-  { code: 'UAH', name: 'Ukrainian Hryvnia', symbol: '₴' },
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-];
+const CURRENCIES = DISPLAY_CURRENCIES;
 
 export default function CurrencyConverter() {
   const navigate = useNavigate();
@@ -102,7 +76,7 @@ export default function CurrencyConverter() {
   }, [fromCurrency, toCurrency, historyPeriod]);
 
   const getCurrencySymbol = (code: string): string => {
-    const currency = POPULAR_CURRENCIES.find(c => c.code === code);
+    const currency = CURRENCIES.find(c => c.code === code);
     return currency ? currency.symbol : '';
   };
 
@@ -154,7 +128,7 @@ export default function CurrencyConverter() {
                 onChange={(e) => setFromCurrency(e.target.value)}
                 style={{ fontSize: '1.1rem', padding: '0.75rem' }}
               >
-                {POPULAR_CURRENCIES.filter(c => c.code !== toCurrency).map(currency => (
+                {CURRENCIES.filter(c => c.code !== toCurrency).map(currency => (
                   <option key={currency.code} value={currency.code}>
                     {currency.code} - {currency.name}
                   </option>
@@ -184,7 +158,7 @@ export default function CurrencyConverter() {
                 onChange={(e) => setToCurrency(e.target.value)}
                 style={{ fontSize: '1.1rem', padding: '0.75rem' }}
               >
-                {POPULAR_CURRENCIES.filter(c => c.code !== fromCurrency).map(currency => (
+                {CURRENCIES.filter(c => c.code !== fromCurrency).map(currency => (
                   <option key={currency.code} value={currency.code}>
                     {currency.code} - {currency.name}
                   </option>

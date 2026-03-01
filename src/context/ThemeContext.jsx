@@ -3,20 +3,22 @@ import api from '../services/api';
 
 const ThemeContext = createContext();
 
-// Themes sorted from darkest to brightest
+// Themes sorted from darkest to brightest, with category labels
 export const THEMES = [
-  { id: 'dark', name: 'Dark', icon: '🌙' },
-  { id: 'espresso', name: 'Espresso', icon: '☕' },
-  { id: 'dracula', name: 'Dracula', icon: '🧛' },
-  { id: 'monokai', name: 'Monokai', icon: '🪵' },
-  { id: 'cyberpunk', name: 'Cyberpunk', icon: '🤖' },
-  { id: 'ocean', name: 'Ocean', icon: '🌊' },
-  { id: 'matcha', name: 'Matcha', icon: '🍵' },
-  { id: 'rosegold', name: 'Rose Gold', icon: '🌹' },
-  { id: 'lavender', name: 'Lavender', icon: '💜' },
-  { id: 'sakura', name: 'Sakura', icon: '🌸' },
-  { id: 'solarized', name: 'Solarized', icon: '☀️' },
-  { id: 'light', name: 'Light', icon: '🌤️' },
+  // Dark themes
+  { id: 'dark', name: 'Dark', icon: '🌙', category: 'dark' },
+  { id: 'espresso', name: 'Espresso', icon: '☕', category: 'dark' },
+  { id: 'dracula', name: 'Dracula', icon: '🧛', category: 'dark' },
+  { id: 'monokai', name: 'Monokai', icon: '🪵', category: 'dark' },
+  { id: 'cyberpunk', name: 'Cyberpunk', icon: '🤖', category: 'dark' },
+  { id: 'ocean', name: 'Ocean', icon: '🌊', category: 'dark' },
+  { id: 'matcha', name: 'Matcha', icon: '🍵', category: 'dark' },
+  { id: 'rosegold', name: 'Rose Gold', icon: '🌹', category: 'dark' },
+  // Light themes
+  { id: 'lavender', name: 'Lavender', icon: '💜', category: 'light' },
+  { id: 'sakura', name: 'Sakura', icon: '🌸', category: 'light' },
+  { id: 'solarized', name: 'Solarized', icon: '☀️', category: 'light' },
+  { id: 'light', name: 'Light', icon: '🌤️', category: 'light' },
 ];
 
 export function useTheme() {

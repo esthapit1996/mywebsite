@@ -212,6 +212,61 @@ class ApiService {
   async getGroupActivities(groupId, limit = 50) {
     return this.request(`/groups/${groupId}/activities?limit=${limit}`);
   }
+
+  // Suggestions
+  async getSuggestions() {
+    return this.request('/suggestions');
+  }
+
+  async createSuggestion(content) {
+    return this.request('/suggestions', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteSuggestion(suggestionId) {
+    return this.request(`/suggestions/${suggestionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async voteSuggestion(suggestionId, voteType) {
+    return this.request(`/suggestions/${suggestionId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ vote_type: voteType }),
+    });
+  }
+
+  async removeVote(suggestionId) {
+    return this.request(`/suggestions/${suggestionId}/vote`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getSuggestionVoters(suggestionId) {
+    return this.request(`/suggestions/${suggestionId}/voters`);
+  }
+
+  async updateSuggestionStatus(suggestionId, status) {
+    return this.request(`/suggestions/${suggestionId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Currency
+  async getCurrencyRates(base = 'USD') {
+    return this.request(`/currency/rates?base=${base}`);
+  }
+
+  async convertCurrency(from, to, amount) {
+    return this.request(`/currency/convert?from=${from}&to=${to}&amount=${amount}`);
+  }
+
+  async getCurrencyHistory(from, to, days = 7) {
+    return this.request(`/currency/history?from=${from}&to=${to}&days=${days}`);
+  }
 }
 
 export const api = new ApiService();

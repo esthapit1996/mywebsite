@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function Dashboard() {
+  const { formatAmount } = useCurrency();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -181,9 +183,9 @@ export default function Dashboard() {
                   color: item.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)'
                 }}>
                   {item.amount > 0 ? (
-                    <>+€{item.amount.toFixed(2)}</>
+                    <>+{formatAmount(item.amount)}</>
                   ) : (
-                    <>-€{Math.abs(item.amount).toFixed(2)}</>
+                    <>-{formatAmount(Math.abs(item.amount))}</>
                   )}
                 </span>
               </li>
@@ -302,9 +304,13 @@ export default function Dashboard() {
                     type="text"
                     className="form-input"
                     value={newGroupDesc}
-                    onChange={(e) => setNewGroupDesc(e.target.value)}
+                    onChange={(e) => setNewGroupDesc(e.target.value.slice(0, 128))}
                     placeholder="e.g., Shared apartment expenses"
+                    maxLength={128}
                   />
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
+                    {newGroupDesc.length}/128 characters
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Add Members (optional)</label>

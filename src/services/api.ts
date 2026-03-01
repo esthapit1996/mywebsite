@@ -277,6 +277,12 @@ class ApiService {
     return this.request<Settlement[]>(`/groups/${groupId}/settlements`);
   }
 
+  async deleteSettlement(groupId: number | string, settlementId: number | string): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}/settlements/${settlementId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Balances
   async getGroupBalances(groupId: number | string): Promise<ApiResponse<BalancesResponse>> {
     return this.request<BalancesResponse>(`/groups/${groupId}/balances`);

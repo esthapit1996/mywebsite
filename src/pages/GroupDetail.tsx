@@ -10,7 +10,8 @@ import type {
   Balance, 
   ExpensePayment,
   PaymentStatus,
-  CurrencyInfo
+  CurrencyInfo,
+  Settlement
 } from '../types';
 
 // Local type for activities since it has nested user objects
@@ -73,6 +74,7 @@ export default function GroupDetail(): JSX.Element {
   const [error, setError] = useState<string>('');
   const [expensePaymentStatus, setExpensePaymentStatus] = useState<Record<number, PaymentStatus>>({});
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   // Modal states
   const [showExpenseModal, setShowExpenseModal] = useState<boolean>(false);
@@ -153,13 +155,14 @@ export default function GroupDetail(): JSX.Element {
 
   const loadData = async () => {
     try {
-      const [groupRes, expensesRes, balancesRes, myBalanceRes, paymentStatusRes, activitiesRes] = await Promise.all([
+      const [groupRes, expensesRes, balancesRes, myBalanceRes, paymentStatusRes, activitiesRes, settlementsRes] = await Promise.all([
         api.getGroup(id!),
         api.getExpenses(id!),
         api.getGroupBalances(id!).catch(() => ({ data: { balances: [] } })),
         api.getMyBalance(id!).catch(() => ({ data: { balance: 0 } })),
         api.getGroupExpensePaymentStatuses(id!).catch(() => ({ data: {} })),
         api.getGroupActivities(id!).catch(() => ({ data: [] })),
+        api.getSettlements(id!).catch(() => ({ data: [] })),
       ]);
       
       setGroup(groupRes.data || null);
@@ -175,6 +178,7 @@ export default function GroupDetail(): JSX.Element {
       setExpensePaymentStatus(statusMap);
       
       setActivities(activitiesRes.data || []);
+      setSettlements(settlementsRes.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -278,6 +282,16 @@ export default function GroupDetail(): JSX.Element {
     if (!confirm('Delete this expense?')) return;
     try {
       await api.deleteExpense(id!, expenseId);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteSettlement = async (settlementId: number) => {
+    if (!confirm('Delete this free-form payment?')) return;
+    try {
+      await api.deleteSettlement(id!, settlementId);
       await loadData();
     } catch (err: any) {
       setError(err.message);
@@ -558,67 +572,97 @@ export default function GroupDetail(): JSX.Element {
       <div className="card">
         {activeTab === 'expenses' && (
           <>
-            {activities.some(a => a.action_type === 'settlement') && (
-              <div style={{ 
-                padding: '12px 16px', 
-                background: 'var(--card-bg)', 
-                borderBottom: '1px solid var(--border-color)',
-                color: 'var(--text-secondary)',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <span>⚠️</span>
-                <span>Attention! Free-form Payment was used. Please check history for details.</span>
-              </div>
-            )}
-            {expenses.length === 0 ? (
+            {expenses.length === 0 && settlements.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">💸</div>
                 <h3>No expenses yet</h3>
                 <p>Add your first expense to get started.</p>
               </div>
             ) : (
-              expenses.map((expense) => (
-                <div 
-                  key={expense.id} 
-                  className="expense-item" 
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => openExpenseDetail(expense)}
-                >
-                  <div className="expense-info">
-                    <div className="expense-description" style={{ 
-                      wordBreak: 'break-word', 
-                      hyphens: 'auto', 
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>{expense.description}</div>
-                    <div className="expense-meta">
-                      Paid by {expense.paid_by_user?.name || 'Unknown'} • {expense.split_type}
+              <>
+                {expenses.map((expense) => (
+                  <div 
+                    key={expense.id} 
+                    className="expense-item" 
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => openExpenseDetail(expense)}
+                  >
+                    <div className="expense-info">
+                      <div className="expense-description" style={{ 
+                        wordBreak: 'break-word', 
+                        hyphens: 'auto', 
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>{expense.description}</div>
+                      <div className="expense-meta">
+                        Paid by {expense.paid_by_user?.name || 'Unknown'} • {expense.split_type}
+                      </div>
+                      {expensePaymentStatus[expense.id] && 
+                        expensePaymentStatus[expense.id].totalOwed > 0 && 
+                        expensePaymentStatus[expense.id].totalPaid >= expensePaymentStatus[expense.id].totalOwed - 0.01 && (
+                          <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>✅ Settlements were made</div>
+                      )}
                     </div>
-                    {expensePaymentStatus[expense.id] && 
-                      expensePaymentStatus[expense.id].totalOwed > 0 && 
-                      expensePaymentStatus[expense.id].totalPaid >= expensePaymentStatus[expense.id].totalOwed - 0.01 && (
-                        <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>✅ Settlements were made</div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="expense-amount">{formatCurrency(expense.amount)}</span>
+                      <button 
+                        className="btn btn-outline btn-sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteExpense(expense.id);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span className="expense-amount">{formatCurrency(expense.amount)}</span>
-                    <button 
-                      className="btn btn-outline btn-sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteExpense(expense.id);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))}
+                {/* Free-form Payments (Settlements) */}
+                {settlements.length > 0 && (
+                  <>
+                    <div style={{ 
+                      padding: '10px 16px', 
+                      background: 'var(--bg-secondary)', 
+                      borderTop: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
+                      fontSize: '0.85rem', 
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      🤝 Free-form Payments
+                    </div>
+                    {settlements.map((settlement) => {
+                      const payer = group?.members?.find(m => m.id === settlement.paid_by);
+                      const payee = group?.members?.find(m => m.id === settlement.paid_to);
+                      return (
+                        <div key={`s-${settlement.id}`} className="expense-item">
+                          <div className="expense-info">
+                            <div className="expense-description">
+                              {payer?.name || 'Unknown'} → {payee?.name || 'Unknown'}
+                            </div>
+                            <div className="expense-meta">
+                              Free-form payment • {new Date(settlement.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span className="expense-amount" style={{ color: '#10b981' }}>{formatCurrency(settlement.amount)}</span>
+                            <button 
+                              className="btn btn-outline btn-sm" 
+                              onClick={() => handleDeleteSettlement(settlement.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </>
             )}
           </>
         )}

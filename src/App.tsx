@@ -12,6 +12,7 @@ import GroupDetail from './pages/GroupDetail';
 import PaymentHistory from './pages/PaymentHistory';
 import Suggestions from './pages/Suggestions';
 import CurrencyConverter from './pages/CurrencyConverter';
+import CurrencyPicker from './pages/CurrencyPicker';
 import Members from './pages/Members';
 
 interface RouteProps {
@@ -156,12 +157,10 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }): JSX.Element 
 function Header(): JSX.Element | null {
   const { user, logout } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
-  const { displayCurrency, setDisplayCurrency, currentCurrency, currencies, ratesLoading } = useCurrency();
+  const { currentCurrency, ratesLoading } = useCurrency();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const currencyMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Close dropdown when clicking outside
@@ -169,9 +168,6 @@ function Header(): JSX.Element | null {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
-      }
-      if (currencyMenuRef.current && !currencyMenuRef.current.contains(event.target as Node)) {
-        setShowCurrencyMenu(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -198,41 +194,14 @@ function Header(): JSX.Element | null {
           GopherDebt
         </Link>
         <nav className="nav">
-          {/* Currency Display Selector - Grid Dropdown */}
-          <div className="currency-grid-dropdown" ref={currencyMenuRef}>
-            <button 
-              className="currency-trigger"
-              onClick={() => setShowCurrencyMenu(!showCurrencyMenu)}
-              title="Display amounts in"
-            >
-              <span>{ratesLoading ? '⏳' : currentCurrency.symbol}</span>
-              <span style={{ fontSize: '0.7rem', marginLeft: '2px' }}>{showCurrencyMenu ? '▲' : '▼'}</span>
-            </button>
-            
-            {showCurrencyMenu && (
-              <div className="currency-grid-menu">
-                <div style={{ padding: '8px 12px 4px', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Default display currency
-                </div>
-                <div className="currency-grid">
-                  {currencies.map(c => (
-                    <button
-                      key={c.code}
-                      className={`currency-grid-item ${displayCurrency === c.code ? 'active' : ''}`}
-                      onClick={() => {
-                        setDisplayCurrency(c.code);
-                        setShowCurrencyMenu(false);
-                      }}
-                      title={c.name}
-                    >
-                      <span className="currency-symbol">{c.symbol}</span>
-                      <span className="currency-code">{c.code}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Currency Display Selector */}
+          <button
+            className="currency-trigger"
+            onClick={() => navigate('/currency-picker')}
+            title="Change display currency"
+          >
+            <span>{ratesLoading ? '⏳' : currentCurrency.symbol}</span>
+          </button>
 
           <div className="theme-dropdown">
             <select 
@@ -377,6 +346,14 @@ function AppRoutes(): JSX.Element {
           element={
             <ProtectedRoute>
               <CurrencyConverter />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/currency-picker"
+          element={
+            <ProtectedRoute>
+              <CurrencyPicker />
             </ProtectedRoute>
           }
         />

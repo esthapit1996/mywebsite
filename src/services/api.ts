@@ -205,16 +205,21 @@ class ApiService {
     amount: number | string,
     description: string,
     splitType: string,
-    splitWith: SplitWith[] = []
+    splitWith: SplitWith[] = [],
+    paidBy?: number
   ): Promise<ApiResponse<Expense>> {
+    const body: Record<string, unknown> = {
+      amount: parseFloat(String(amount)),
+      description,
+      split_type: splitType,
+      split_with: splitWith,
+    };
+    if (paidBy) {
+      body.paid_by = paidBy;
+    }
     return this.request<Expense>(`/groups/${groupId}/expenses`, {
       method: 'POST',
-      body: JSON.stringify({
-        amount: parseFloat(String(amount)),
-        description,
-        split_type: splitType,
-        split_with: splitWith,
-      }),
+      body: JSON.stringify(body),
     });
   }
 

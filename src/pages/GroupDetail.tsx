@@ -97,6 +97,7 @@ export default function GroupDetail(): JSX.Element {
   const [conversionRate, setConversionRate] = useState<number | null>(null);
   const [converting, setConverting] = useState<boolean>(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState<boolean>(false);
+  const [expensePaidBy, setExpensePaidBy] = useState<number>(0);
   const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // Settlement form
@@ -199,6 +200,7 @@ export default function GroupDetail(): JSX.Element {
     setExpenseCurrency('EUR');
     setConvertedAmount(null);
     setConversionRate(null);
+    setExpensePaidBy(0);
   };
 
   const handleAddExpense = async (e: FormEvent) => {
@@ -229,7 +231,7 @@ export default function GroupDetail(): JSX.Element {
           amount: parseFloat(percent) || 0
         }));
       }
-      await api.createExpense(id!, finalAmount, finalDesc, splitType, splitWith);
+      await api.createExpense(id!, finalAmount, finalDesc, splitType, splitWith, expensePaidBy || undefined);
       closeExpenseModal();
       await loadData();
     } catch (err: any) {
@@ -731,6 +733,19 @@ export default function GroupDetail(): JSX.Element {
                   </div>
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Paid by</label>
+                  <select
+                    className="form-select"
+                    value={expensePaidBy}
+                    onChange={(e) => setExpensePaidBy(parseInt(e.target.value))}
+                  >
+                    <option value={0}>You ({user?.name})</option>
+                    {group?.members?.filter(m => m.id !== user?.id).map(member => (
+                      <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
                   <label className="form-label">Amount</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
@@ -837,20 +852,21 @@ export default function GroupDetail(): JSX.Element {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => {
-                          const others = group.members!.filter(m => m.id !== user?.id);
+                          const payerId = expensePaidBy || user?.id;
+                          const others = group.members!.filter(m => m.id !== payerId);
                           const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
                           const splits: Record<number, string> = {};
                           group.members!.forEach(m => {
-                            splits[m.id] = m.id === user?.id ? '0' : share;
+                            splits[m.id] = m.id === payerId ? '0' : share;
                           });
                           setMemberSplits(splits);
                         }}
                       >
-                        Others owe me 100%
+                        Others owe {expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : 'me'} 100%
                       </button>
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                      <strong>You are paying {expenseAmount ? (
+                      <strong>{expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : 'You'} {expensePaidBy ? 'is' : 'are'} paying {expenseAmount ? (
                         expenseCurrency === 'EUR' 
                           ? `€${expenseAmount}` 
                           : `${CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || ''}${expenseAmount} ${expenseCurrency}${convertedAmount ? ` (€${convertedAmount.toFixed(2)})` : ''}`

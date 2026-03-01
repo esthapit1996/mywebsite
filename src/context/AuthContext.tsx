@@ -18,6 +18,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuth();
   }, []);
 
+  // Listen for token expiry events from the API service
+  useEffect(() => {
+    const handleExpired = () => {
+      setUser(null);
+    };
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, []);
+
   const checkAuth = async (): Promise<void> => {
     const token = localStorage.getItem('token');
     if (token) {

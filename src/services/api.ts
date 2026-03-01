@@ -65,19 +65,42 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      cache: 'no-store',
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+        cache: 'no-store',
+      });
+    } catch (err) {
+      // Network error — server unreachable, DNS failure, CORS blocked, etc.
+      throw new Error('Unable to reach the server. Please check your connection and try again.');
+    }
 
-    const data = await response.json();
+    // Handle 401 — token expired or invalid
+    if (response.status === 401) {
+      this.clearToken();
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new Error('Session expired. Please log in again.');
+    }
+
+    // Try to parse the response as JSON
+    let data: ApiResponse<T>;
+    try {
+      data = await response.json();
+    } catch {
+      // Non-JSON response — Render 502/504 HTML pages, etc.
+      if (response.status >= 500) {
+        throw new Error('Server is temporarily unavailable. Please try again in a moment.');
+      }
+      throw new Error(`Unexpected response (${response.status}). Please try again.`);
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Something went wrong');
     }
 
-    return data as ApiResponse<T>;
+    return data;
   }
 
   // Auth

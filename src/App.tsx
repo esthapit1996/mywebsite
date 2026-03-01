@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
-import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider, useCurrency } from './context/CurrencyContext';
@@ -162,6 +162,7 @@ function Header(): JSX.Element | null {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -186,10 +187,23 @@ function Header(): JSX.Element | null {
     logout();
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      // Clear cached rates
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('gopherdebt-rates-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      window.location.reload();
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo">
+        <Link to="/" className="logo" onClick={handleLogoClick} title={location.pathname === '/' ? 'Refresh app' : 'Go to dashboard'}>
           <img src={logo} alt="GopherDebt" className="header-logo" />
           GopherDebt
         </Link>

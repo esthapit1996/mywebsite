@@ -211,6 +211,9 @@ function Header(): JSX.Element | null {
             
             {showCurrencyMenu && (
               <div className="currency-grid-menu">
+                <div style={{ padding: '8px 12px 4px', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Default display currency
+                </div>
                 <div className="currency-grid">
                   {currencies.map(c => (
                     <button

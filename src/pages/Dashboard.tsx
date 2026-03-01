@@ -309,7 +309,7 @@ export default function Dashboard() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Add Members (optional)</label>
-                  <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '8px' }}>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', background: 'var(--card-bg)' }}>
                     {allUsers.filter(u => u.id !== currentUser?.id).length === 0 ? (
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '8px' }}>
                         No other users available yet
@@ -325,7 +325,8 @@ export default function Dashboard() {
                             padding: '8px', 
                             cursor: 'pointer',
                             borderRadius: '4px',
-                            background: selectedMembers.includes(user.id) ? '#e8f4fd' : 'transparent'
+                            background: selectedMembers.includes(user.id) ? 'var(--primary-color)' : 'transparent',
+                            color: selectedMembers.includes(user.id) ? 'white' : 'var(--text-color)'
                           }}
                         >
                           <input

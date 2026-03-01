@@ -54,20 +54,26 @@ export default function CurrencyConverter() {
     return () => clearTimeout(timeoutId);
   }, [amount, fromCurrency, toCurrency]);
 
+  const [historyError, setHistoryError] = useState<string>('');
+
   // Fetch history when currencies or period change
   useEffect(() => {
     const fetchHistory = async () => {
       if (fromCurrency === toCurrency) {
         setHistoryData([]);
+        setHistoryError('');
         return;
       }
       setHistoryLoading(true);
+      setHistoryError('');
       try {
         const data = await api.getCurrencyHistory(fromCurrency, toCurrency, historyPeriod);
         setHistoryData(data.history || []);
+        setHistoryError((data as any).error || '');
       } catch (err) {
         console.error('Failed to fetch history:', err);
         setHistoryData([]);
+        setHistoryError('');
       } finally {
         setHistoryLoading(false);
       }
@@ -293,20 +299,22 @@ export default function CurrencyConverter() {
               </ResponsiveContainer>
             </div>
           ) : (
-            (() => {
-              const ecbCurrencies = ['AUD','BGN','BRL','CAD','CHF','CNY','CZK','DKK','EUR','GBP','HKD','HUF','IDR','ILS','INR','ISK','JPY','KRW','MXN','MYR','NOK','NZD','PHP','PLN','RON','SEK','SGD','THB','TRY','USD','ZAR'];
-              const unsupported = [fromCurrency, toCurrency].filter(c => !ecbCurrencies.includes(c));
-              return (
-                <div className="text-center" style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
-                  <div>No historical data available</div>
-                  {unsupported.length > 0 && (
-                    <div style={{ fontSize: '0.85rem', marginTop: '6px', color: 'var(--warning)' }}>
-                      {unsupported.join(', ')} {unsupported.length === 1 ? 'is' : 'are'} not supported by the ECB for trend data
-                    </div>
-                  )}
+            <div className="text-center" style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
+              <div>No historical data available</div>
+              {historyError ? (
+                <div style={{ fontSize: '0.85rem', marginTop: '6px', color: 'var(--warning)' }}>
+                  {historyError}
                 </div>
-              );
-            })()
+              ) : (() => {
+                const ecbCurrencies = ['AUD','BRL','CAD','CHF','CNY','CZK','DKK','EUR','GBP','HKD','HUF','IDR','ILS','INR','ISK','JPY','KRW','MXN','MYR','NOK','NZD','PHP','PLN','RON','SEK','SGD','THB','TRY','USD','ZAR'];
+                const unsupported = [fromCurrency, toCurrency].filter(c => !ecbCurrencies.includes(c));
+                return unsupported.length > 0 ? (
+                  <div style={{ fontSize: '0.85rem', marginTop: '6px', color: 'var(--warning)' }}>
+                    {unsupported.join(', ')} {unsupported.length === 1 ? 'is' : 'are'} not supported by the ECB for trend data
+                  </div>
+                ) : null;
+              })()}
+            </div>
           )}
           <div style={{ textAlign: 'right', marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
             Data by <a href="https://www.frankfurter.app" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Frankfurter</a> · <a href="https://www.ecb.europa.eu" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>European Central Bank</a>

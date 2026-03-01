@@ -589,11 +589,11 @@ body {
 }
 
 .balance-positive {
-  color: var(--primary);
+  color: #10b981;
 }
 
 .balance-negative {
-  color: var(--danger);
+  color: #ef4444;
 }
 
 .balance-zero {

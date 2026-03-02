@@ -896,8 +896,11 @@ export default function GroupDetail(): JSX.Element {
                   } else if (result.items.length > 0) {
                     setExpenseDesc(result.items.map(i => i.name).join(', ').slice(0, 420));
                   }
-                  // Fill total amount
-                  if (result.total) {
+                  // Fill total amount from sum of items (not receipt total which may include tax etc.)
+                  if (result.items.length > 0) {
+                    const itemSum = Math.round(result.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
+                    setExpenseAmount(itemSum.toFixed(2));
+                  } else if (result.total) {
                     setExpenseAmount(result.total.toFixed(2));
                   }
                   // Store items and enter interactive mode

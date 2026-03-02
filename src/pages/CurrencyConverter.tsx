@@ -261,8 +261,8 @@ export default function CurrencyConverter() {
                 <LineChart data={historyData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fontSize: 11, fill: '#ffffff' }}
-                    stroke="#ffffff"
+                    tick={{ fontSize: 11, fill: 'var(--text)' }}
+                    stroke="var(--text)"
                     tickFormatter={(value: string) => {
                       const date = new Date(value);
                       if (historyPeriod >= 365) {
@@ -274,8 +274,8 @@ export default function CurrencyConverter() {
                   />
                   <YAxis 
                     domain={['auto', 'auto']}
-                    tick={{ fontSize: 11, fill: '#ffffff' }}
-                    stroke="#ffffff"
+                    tick={{ fontSize: 11, fill: 'var(--text)' }}
+                    stroke="var(--text)"
                     tickFormatter={(value: number) => value.toFixed(4)}
                     width={60}
                   />

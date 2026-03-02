@@ -64,20 +64,29 @@ interface AvatarProps {
 export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) {
   if (avatar && AVATAR_MAP[avatar]) {
     return (
-      <img
-        src={AVATAR_MAP[avatar]}
-        alt={name}
+      <div
         style={{
           width: size,
           height: size,
+          minWidth: size,
+          minHeight: size,
           borderRadius: '50%',
-          objectFit: 'cover',
+          overflow: 'hidden',
           flexShrink: 0,
-          display: 'block',
-          verticalAlign: 'middle',
           ...style,
         }}
-      />
+      >
+        <img
+          src={AVATAR_MAP[avatar]}
+          alt={name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      </div>
     );
   }
 

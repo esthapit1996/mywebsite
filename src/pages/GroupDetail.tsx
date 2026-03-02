@@ -636,20 +636,20 @@ export default function GroupDetail(): JSX.Element {
           {group.members?.map((member) => (
             <span key={member.id} className="member-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Avatar name={member.name} avatar={member.avatar} size={24} />
-              <span style={{ lineHeight: '24px' }}>{member.name}</span>
+              <span>{member.name}</span>
               {member.id !== user?.id && (
                 <button
-                  onClick={() => handleRemoveMember(member.id, member.name)}
+                  onClick={(e) => { e.stopPropagation(); handleRemoveMember(member.id, member.name); }}
                   style={{ 
                     background: 'none', 
                     border: 'none', 
                     cursor: 'pointer', 
-                    padding: '2px 4px',
+                    padding: '4px',
                     color: 'var(--text-muted)',
-                    fontSize: '14px',
-                    lineHeight: '1',
-                    position: 'relative',
-                    zIndex: 1,
+                    fontSize: '16px',
+                    lineHeight: 1,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   title="Remove member"
                 >

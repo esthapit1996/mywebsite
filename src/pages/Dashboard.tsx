@@ -342,7 +342,6 @@ export default function Dashboard() {
                             <Avatar name={user.name} avatar={user.avatar} size={24} />
                             {user.name}
                           </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({user.email})</span>
                         </label>
                       ))
                     )}

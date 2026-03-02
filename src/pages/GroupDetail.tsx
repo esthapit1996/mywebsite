@@ -940,7 +940,10 @@ export default function GroupDetail(): JSX.Element {
                           type="button"
                           className="btn btn-primary btn-sm"
                           style={{ flex: 1 }}
-                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0}
+                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0 || (() => {
+                            const sub = receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0);
+                            return (sub + (parseFloat(receiptDiscount) || 0)) <= 0;
+                          })()}
                           onClick={async () => {
                             setAddingReceipt(true);
                             try {
@@ -960,7 +963,7 @@ export default function GroupDetail(): JSX.Element {
                                 const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
                                 // Distribute discount proportionally to this group's share
                                 const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
-                                const totalAmount = Math.max(0.01, Math.round((groupItemTotal + groupDiscount) * 100) / 100);
+                                const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
                                 const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
                                 // Use split config from first item in group (they share paidBy)
                                 const cfg = group.config;
@@ -1241,7 +1244,14 @@ export default function GroupDetail(): JSX.Element {
                           </div>
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                          Use negative for discounts (e.g. -2.50)
+                          {(() => {
+                            const sub = Math.round(receiptItems.reduce((s, it, i) => receiptItemConfigs[i]?.included ? s + it.price : s, 0) * 100) / 100;
+                            const disc = parseFloat(receiptDiscount) || 0;
+                            if (sub + disc <= 0 && disc < 0) {
+                              return <span style={{ color: 'var(--danger)' }}>⚠ Discount exceeds subtotal — nothing to add</span>;
+                            }
+                            return 'Use negative for discounts (e.g. -2.50)';
+                          })()}
                         </div>
 
                         <div style={{
@@ -1253,11 +1263,16 @@ export default function GroupDetail(): JSX.Element {
                           paddingTop: '6px',
                         }}>
                           <span>Total</span>
-                          <span>€{(Math.round((
-                            receiptItems.reduce((sum, item, i) => 
-                              receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
-                            ) + (parseFloat(receiptDiscount) || 0)
-                          ) * 100) / 100).toFixed(2)}</span>
+                          {(() => {
+                            const total = Math.round((
+                              receiptItems.reduce((sum, item, i) => 
+                                receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
+                              ) + (parseFloat(receiptDiscount) || 0)
+                            ) * 100) / 100;
+                            return <span style={{ color: total <= 0 ? 'var(--danger)' : undefined }}>
+                              €{Math.max(0, total).toFixed(2)}
+                            </span>;
+                          })()}
                         </div>
                       </div>
 

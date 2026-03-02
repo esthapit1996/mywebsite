@@ -177,6 +177,7 @@ export interface Suggestion {
   likes: number;
   dislikes: number;
   user_vote?: 'like' | 'dislike' | null;
+  comment_count: number;
   created_at: string;
 }
 

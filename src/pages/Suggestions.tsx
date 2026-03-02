@@ -327,7 +327,7 @@ export default function Suggestions() {
                 }}
                 title="View/add comments"
               >
-                💬 Comments
+                💬 Comments{suggestion.comment_count > 0 ? ` (${suggestion.comment_count})` : ''}
               </button>
             )}
           </div>
@@ -397,7 +397,7 @@ export default function Suggestions() {
                             : 'var(--success-color, #22c55e)',
                           fontSize: '0.8rem'
                         }}>
-                          {comment.user_name} {comment.user_id === suggestion.user_id ? '(Owner)' : '(Evan)'}
+                          {comment.user_name}{comment.user_id === suggestion.user_id ? ' (Owner)' : ''}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>

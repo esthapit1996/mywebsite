@@ -326,10 +326,10 @@ class ApiService {
     return this.request<SuggestionsResponse>('/suggestions');
   }
 
-  async createSuggestion(content: string): Promise<ApiResponse<Suggestion>> {
+  async createSuggestion(content: string, type: string = 'other'): Promise<ApiResponse<Suggestion>> {
     return this.request<Suggestion>('/suggestions', {
       method: 'POST',
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, type }),
     });
   }
 

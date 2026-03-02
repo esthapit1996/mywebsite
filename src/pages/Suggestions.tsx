@@ -17,10 +17,12 @@ export default function Suggestions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newSuggestion, setNewSuggestion] = useState('');
+  const [newType, setNewType] = useState('feature');
   const [submitting, setSubmitting] = useState(false);
   const [voters, setVoters] = useState<Voter[] | null>(null);
   const [showVotersFor, setShowVotersFor] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'open' | 'wip' | 'done'>('open');
+  const [filterType, setFilterType] = useState<string>('all');
   const [comments, setComments] = useState<Record<number, SuggestionComment[]>>({});
   const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null);
   const [newComment, setNewComment] = useState<Record<number, string>>({});
@@ -52,8 +54,9 @@ export default function Suggestions() {
     setSubmitting(true);
     setError('');
     try {
-      await api.createSuggestion(newSuggestion.trim());
+      await api.createSuggestion(newSuggestion.trim(), newType);
       setNewSuggestion('');
+      setNewType('feature');
       loadSuggestions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit suggestion');
@@ -177,10 +180,23 @@ export default function Suggestions() {
     });
   };
 
-  // Group suggestions by status
-  const openSuggestions = suggestions.filter(s => !s.status || s.status === 'open');
-  const wipSuggestions = suggestions.filter(s => s.status === 'wip');
-  const doneSuggestions = suggestions.filter(s => s.status === 'done');
+  // Type config
+  const typeConfig: Record<string, { label: string; emoji: string; color: string }> = {
+    feature: { label: 'New Feature', emoji: '🚀', color: '#8b5cf6' },
+    bug: { label: 'Bug Report', emoji: '🐛', color: '#ef4444' },
+    theme: { label: 'New Theme', emoji: '🎨', color: '#ec4899' },
+    ux: { label: 'UI/UX', emoji: '✨', color: '#06b6d4' },
+    change: { label: 'Change Feature', emoji: '🔄', color: '#f97316' },
+    complaint: { label: 'Complaint', emoji: '😤', color: '#dc2626' },
+    praise: { label: 'Praise', emoji: '🙌', color: '#22c55e' },
+    other: { label: 'Other', emoji: '📝', color: '#6b7280' },
+  };
+
+  // Filter by type first, then group by status
+  const typeFiltered = filterType === 'all' ? suggestions : suggestions.filter(s => s.type === filterType);
+  const openSuggestions = typeFiltered.filter(s => !s.status || s.status === 'open');
+  const wipSuggestions = typeFiltered.filter(s => s.status === 'wip');
+  const doneSuggestions = typeFiltered.filter(s => s.status === 'done');
 
   const renderSuggestionCard = (suggestion: Suggestion) => (
     <li key={suggestion.id} className="list-item" style={{ 
@@ -202,7 +218,7 @@ export default function Suggestions() {
             flexWrap: 'wrap'
           }}>
             <span style={{ 
-              background: 'var(--primary-color)', 
+              background: 'var(--primary)', 
               color: 'var(--btn-text, white)',
               padding: '2px 8px',
               borderRadius: '12px',
@@ -210,6 +226,16 @@ export default function Suggestions() {
               fontWeight: '600'
             }}>
               {suggestion.user_name}
+            </span>
+            <span style={{
+              background: (typeConfig[suggestion.type] || typeConfig.other).color,
+              color: 'white',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontSize: '0.7rem',
+              fontWeight: '600'
+            }}>
+              {(typeConfig[suggestion.type] || typeConfig.other).emoji} {(typeConfig[suggestion.type] || typeConfig.other).label}
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               {formatDate(suggestion.created_at)}
@@ -542,6 +568,32 @@ export default function Suggestions() {
         <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Type</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '2px solid var(--border)',
+                  background: 'var(--card-bg)',
+                  color: 'var(--text)',
+                  fontSize: '0.9rem',
+                  marginBottom: '8px'
+                }}
+              >
+                <option value="feature">🚀 New Feature</option>
+                <option value="bug">🐛 Bug Report</option>
+                <option value="theme">🎨 New Theme</option>
+                <option value="ux">✨ UI/UX Improvement</option>
+                <option value="change">🔄 Change Existing Feature</option>
+                <option value="complaint">😤 Complaint</option>
+                <option value="praise">🙌 Praise</option>
+                <option value="other">📝 Other</option>
+              </select>
+            </div>
+            <div style={{ marginBottom: '12px' }}>
               <textarea
                 value={newSuggestion}
                 onChange={(e) => setNewSuggestion(e.target.value.slice(0, MAX_CHARS))}
@@ -589,6 +641,40 @@ export default function Suggestions() {
 
         {/* Suggestions by status */}
         <div style={{ padding: '16px' }}>
+          {/* Type filter */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '12px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Filter by type:</span>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '2px solid var(--border)',
+                background: 'var(--card-bg)',
+                color: 'var(--text)',
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">All Types</option>
+              <option value="feature">🚀 New Feature</option>
+              <option value="bug">🐛 Bug Report</option>
+              <option value="theme">🎨 New Theme</option>
+              <option value="ux">✨ UI/UX Improvement</option>
+              <option value="change">🔄 Change Existing Feature</option>
+              <option value="complaint">😤 Complaint</option>
+              <option value="praise">🙌 Praise</option>
+              <option value="other">📝 Other</option>
+            </select>
+          </div>
+
           {/* Tabs */}
           <div style={{ 
             display: 'flex', 
@@ -615,7 +701,7 @@ export default function Suggestions() {
                     fontSize: '0.95rem',
                     fontWeight: '600',
                     background: activeTab === tab ? config.color : 'var(--bg-secondary, #374151)',
-                    color: activeTab === tab ? 'white' : 'var(--text-color)',
+                    color: activeTab === tab ? 'white' : 'var(--text)',
                     transition: 'all 0.2s',
                     boxShadow: activeTab === tab ? `0 2px 8px ${config.color}66` : 'none'
                   }}

@@ -173,6 +173,7 @@ export interface Suggestion {
   user_id: number;
   user_name: string;
   content: string;
+  type: string;
   status?: 'open' | 'wip' | 'done';
   likes: number;
   dislikes: number;

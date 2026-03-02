@@ -338,6 +338,16 @@ export default function GroupDetail(): JSX.Element {
     }
   };
 
+  const handleClearAllExpenses = async () => {
+    if (!confirm('Clear ALL expenses in this group? This cannot be undone.')) return;
+    try {
+      await api.clearAllExpenses(id!);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const openExpenseDetail = async (expense: ExpenseWithUser) => {
     setPaymentAmount('');
     setPaymentNote('');
@@ -653,13 +663,22 @@ export default function GroupDetail(): JSX.Element {
         <p className="text-muted" style={{ marginTop: '8px' }}>
           {myBalance > 0 ? 'You are owed money' : myBalance < 0 ? 'You owe money' : 'All balanced!'}
         </p>
-        <button
-          className="btn btn-outline btn-sm"
-          style={{ marginTop: '12px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-          onClick={handleDeleteGroup}
-        >
-          Delete Group
-        </button>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+            onClick={handleClearAllExpenses}
+          >
+            Clear All Expenses
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+            onClick={handleDeleteGroup}
+          >
+            Delete Group
+          </button>
+        </div>
       </div>
 
       {/* Action Buttons */}

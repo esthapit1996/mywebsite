@@ -255,6 +255,12 @@ class ApiService {
     });
   }
 
+  async clearAllExpenses(groupId: number | string): Promise<ApiResponse> {
+    return this.request(`/groups/${groupId}/expenses`, {
+      method: 'DELETE',
+    });
+  }
+
   // Expense Payments (partial repayments)
   async getExpensePayments(expenseId: number | string): Promise<ApiResponse<ExpensePayment[]>> {
     return this.request<ExpensePayment[]>(`/expenses/${expenseId}/payments`);

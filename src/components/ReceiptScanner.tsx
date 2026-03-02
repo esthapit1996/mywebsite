@@ -58,26 +58,27 @@ async function scanWithGemini(file: File): Promise<ReceiptResult> {
               },
             },
             {
-              text: `Analyze this receipt image. Extract ALL items with their prices and the total.
-The receipt may be in any language (German, Dutch, English, French, etc.).
+              text: `You are a receipt parsing expert. Analyze this receipt image and extract structured data.
+The receipt can be in ANY language (German, Dutch, English, French, etc.) — you must understand it regardless.
 
 Return ONLY valid JSON in this exact format, nothing else:
 {
   "store_name": "Store Name or null",
   "items": [
-    {"name": "Item name (translated to English if not already)", "price": 3.50}
+    {"name": "Item name in English", "price": 3.50}
   ],
   "total": 15.99
 }
 
 Rules:
-- Include ALL line items with their final prices
-- Use the price as a number (e.g., 3.50 not "3,50")
-- For total, use the grand total / amount due / Gesamtbetrag / Summe
-- If no total line exists, set total to null
-- Do NOT include tax lines, payment method lines, or change/Wechselgeld
-- Translate item names to English for clarity
-- Return ONLY the JSON, no markdown, no explanation`
+- Extract ONLY purchased items/products with their prices
+- Translate all item names to English
+- Prices must be numbers (use . as decimal separator, e.g. 3.50 not "3,50")
+- "total" = the final total amount (e.g. Total, Summe, Gesamtbetrag, Totaal, etc.) — NOT an item
+- NEVER include these as items: totals, subtotals, tax (MwSt/BTW/VAT), discounts, payment method, change, tips, or any summary lines
+- If multiple totals exist, use the largest (grand total)
+- If no clear total line, set total to null
+- Return ONLY the JSON object, no markdown fences, no explanation`
             },
           ],
         }],
@@ -362,22 +363,22 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Try Gemini first, fall back to Tesseract
-    if (GEMINI_API_KEY) {
-      try {
-        setScanMethod('AI');
-        setProgress(30);
-        const result = await scanWithGemini(file);
-        setProgress(100);
-        onResult(result);
-        return;
-      } catch (geminiErr: any) {
-        console.warn('Gemini failed, falling back to Tesseract:', geminiErr.message);
-        // Fall through to Tesseract
-      }
-    }
-
     try {
+      // Try Gemini first, fall back to Tesseract
+      if (GEMINI_API_KEY) {
+        try {
+          setScanMethod('AI');
+          setProgress(30);
+          const result = await scanWithGemini(file);
+          setProgress(100);
+          onResult(result);
+          return;
+        } catch (geminiErr: any) {
+          console.warn('Gemini failed, falling back to Tesseract:', geminiErr.message);
+          // Fall through to Tesseract
+        }
+      }
+
       setScanMethod('OCR');
       // Preprocess for better OCR (especially phone photos)
       const processed = await preprocessImage(file);

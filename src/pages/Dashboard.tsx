@@ -299,13 +299,14 @@ export default function Dashboard() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Description (optional)</label>
-                  <input
-                    type="text"
+                  <textarea
                     className="form-input"
                     value={newGroupDesc}
                     onChange={(e) => setNewGroupDesc(e.target.value.slice(0, 128))}
                     placeholder="e.g., Shared apartment expenses"
                     maxLength={128}
+                    rows={3}
+                    style={{ resize: 'vertical' }}
                   />
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
                     {newGroupDesc.length}/128 characters

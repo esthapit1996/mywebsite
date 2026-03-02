@@ -636,7 +636,7 @@ export default function GroupDetail(): JSX.Element {
           {group.members?.map((member) => (
             <span key={member.id} className="member-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Avatar name={member.name} avatar={member.avatar} size={24} />
-              {member.name}
+              <span style={{ lineHeight: '24px' }}>{member.name}</span>
               {member.id !== user?.id && (
                 <button
                   onClick={() => handleRemoveMember(member.id, member.name)}
@@ -644,10 +644,12 @@ export default function GroupDetail(): JSX.Element {
                     background: 'none', 
                     border: 'none', 
                     cursor: 'pointer', 
-                    padding: '0 4px',
+                    padding: '2px 4px',
                     color: 'var(--text-muted)',
                     fontSize: '14px',
-                    lineHeight: 1
+                    lineHeight: '1',
+                    position: 'relative',
+                    zIndex: 1,
                   }}
                   title="Remove member"
                 >

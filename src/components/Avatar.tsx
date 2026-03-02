@@ -74,6 +74,7 @@ export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) 
           objectFit: 'cover',
           flexShrink: 0,
           display: 'block',
+          verticalAlign: 'middle',
           ...style,
         }}
       />

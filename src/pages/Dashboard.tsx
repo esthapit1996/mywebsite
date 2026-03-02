@@ -157,6 +157,18 @@ export default function Dashboard() {
 
   return (
     <div className="container">
+      {/* Update hint */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '8px 12px', marginBottom: '12px',
+        fontSize: '0.78rem', color: 'var(--text-muted)',
+        background: 'var(--card-bg)', borderRadius: '8px',
+        border: '1px solid var(--border)',
+      }}>
+        <span>💡</span>
+        <span>Tap the <strong style={{ color: 'var(--primary)' }}>GopherDebt</strong> logo to hard-refresh and get the latest app version.</span>
+      </div>
+
       {/* Debt Overview Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">

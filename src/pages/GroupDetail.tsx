@@ -978,12 +978,17 @@ export default function GroupDetail(): JSX.Element {
                           onClick={async () => {
                             setAddingReceipt(true);
                             try {
-                              // Group included items by paidBy
-                              const groups: Record<number, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
+                              // Group included items by paidBy + splitType + memberSplits
+                              // so items with different split configs become separate expenses
+                              const groups: Record<string, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
                               for (let i = 0; i < receiptItems.length; i++) {
                                 const config = receiptItemConfigs[i];
                                 if (!config?.included) continue;
-                                const key = config.paidBy;
+                                // Build a unique key from paidBy + splitType + sorted memberSplits
+                                const splitsKey = config.splitType === 'percentage'
+                                  ? Object.entries(config.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                                  : 'equal';
+                                const key = `${config.paidBy}-${config.splitType}-${splitsKey}`;
                                 if (!groups[key]) groups[key] = { items: [], config };
                                 groups[key].items.push({ ...receiptItems[i], idx: i });
                               }
@@ -996,7 +1001,6 @@ export default function GroupDetail(): JSX.Element {
                                 const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
                                 const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
                                 const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
-                                // Use split config from first item in group (they share paidBy)
                                 const cfg = group.config;
                                 let splitWith: Array<{ user_id: number; amount: number }> = [];
                                 if (cfg.splitType === 'percentage') {
@@ -1031,8 +1035,14 @@ export default function GroupDetail(): JSX.Element {
                         >
                           {addingReceipt ? 'Adding...' : (() => {
                             const included = receiptItemConfigs.filter(c => c.included);
-                            const uniquePayers = new Set(included.map(c => c.paidBy));
-                            return `Add as ${uniquePayers.size} expense${uniquePayers.size !== 1 ? 's' : ''} (grouped by payer)`;
+                            // Count unique groups (by paidBy + splitType + memberSplits)
+                            const groupKeys = new Set(included.map(c => {
+                              const splitsKey = c.splitType === 'percentage'
+                                ? Object.entries(c.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                                : 'equal';
+                              return `${c.paidBy}-${c.splitType}-${splitsKey}`;
+                            }));
+                            return `Add as ${groupKeys.size} expense${groupKeys.size !== 1 ? 's' : ''}`;
                           })()}
                         </button>
                         <button

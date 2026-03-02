@@ -950,7 +950,7 @@ export default function GroupDetail(): JSX.Element {
                               }
                               // Create one expense per group
                               for (const [, group] of Object.entries(groups)) {
-                                const totalAmount = group.items.reduce((s, it) => s + it.price, 0);
+                                const totalAmount = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
                                 const desc = group.items.map(it => `${it.name} (€${it.price.toFixed(2)})`).join(', ').slice(0, 420);
                                 // Use split config from first item in group (they share paidBy)
                                 const cfg = group.config;
@@ -997,7 +997,7 @@ export default function GroupDetail(): JSX.Element {
                           style={{ flex: 1 }}
                           onClick={() => {
                             const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
-                            const total = included.reduce((sum, item) => sum + item.price, 0);
+                            const total = Math.round(included.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
                             setExpenseAmount(total.toFixed(2));
                             setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
                             setReceiptMode('none');
@@ -1204,9 +1204,9 @@ export default function GroupDetail(): JSX.Element {
                         fontSize: '0.95rem',
                       }}>
                         <span>Total selected</span>
-                        <span>€{receiptItems.reduce((sum, item, i) => 
+                        <span>€{(Math.round(receiptItems.reduce((sum, item, i) => 
                           receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
-                        ).toFixed(2)}</span>
+                        ) * 100) / 100).toFixed(2)}</span>
                       </div>
 
 

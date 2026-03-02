@@ -960,8 +960,8 @@ export default function GroupDetail(): JSX.Element {
                                 const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
                                 // Distribute discount proportionally to this group's share
                                 const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
-                                const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
-                                const desc = group.items.map(it => `${it.name} (€${it.price.toFixed(2)})`).join(', ').slice(0, 420);
+                                const totalAmount = Math.max(0.01, Math.round((groupItemTotal + groupDiscount) * 100) / 100);
+                                const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
                                 // Use split config from first item in group (they share paidBy)
                                 const cfg = group.config;
                                 let splitWith: Array<{ user_id: number; amount: number }> = [];

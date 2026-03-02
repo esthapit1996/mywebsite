@@ -1084,7 +1084,7 @@ export default function GroupDetail(): JSX.Element {
                                 <input
                                   type="number"
                                   className="form-input"
-                                  value={item.price}
+                                  value={item.price || ''}
                                   onChange={(e) => {
                                     const updated = [...receiptItems];
                                     updated[i] = { ...updated[i], price: parseFloat(e.target.value) || 0 };

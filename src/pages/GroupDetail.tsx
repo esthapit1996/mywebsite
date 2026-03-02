@@ -1030,8 +1030,8 @@ export default function GroupDetail(): JSX.Element {
                             opacity: config.included ? 1 : 0.5,
                             transition: 'all 0.2s',
                           }}>
-                            {/* Item header: checkbox + name + price */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: config.included ? '8px' : '0' }}>
+                            {/* Item header: checkbox + editable name + editable price + delete */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: config.included ? '8px' : '0' }}>
                               <input
                                 type="checkbox"
                                 checked={config.included}
@@ -1042,12 +1042,48 @@ export default function GroupDetail(): JSX.Element {
                                 }}
                                 style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                               />
-                              <span style={{ flex: 1, fontWeight: 500, fontSize: '0.9rem', wordBreak: 'break-word' }}>
-                                {item.name}
-                              </span>
-                              <span style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-                                €{item.price.toFixed(2)}
-                              </span>
+                              <input
+                                type="text"
+                                className="form-input"
+                                value={item.name}
+                                onChange={(e) => {
+                                  const updated = [...receiptItems];
+                                  updated[i] = { ...updated[i], name: e.target.value };
+                                  setReceiptItems(updated);
+                                }}
+                                style={{ flex: 1, padding: '4px 6px', fontSize: '0.85rem', minWidth: '0' }}
+                              />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                                <span style={{ fontSize: '0.85rem' }}>€</span>
+                                <input
+                                  type="number"
+                                  className="form-input"
+                                  value={item.price}
+                                  onChange={(e) => {
+                                    const updated = [...receiptItems];
+                                    updated[i] = { ...updated[i], price: parseFloat(e.target.value) || 0 };
+                                    setReceiptItems(updated);
+                                  }}
+                                  style={{ width: '70px', padding: '4px 6px', fontSize: '0.85rem', textAlign: 'right' }}
+                                  step="0.01"
+                                  min="0"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReceiptItems(receiptItems.filter((_, idx) => idx !== i));
+                                  setReceiptItemConfigs(receiptItemConfigs.filter((_, idx) => idx !== i));
+                                }}
+                                style={{
+                                  background: 'none', border: 'none', cursor: 'pointer',
+                                  color: 'var(--danger)', fontSize: '1.1rem', padding: '2px 4px', flexShrink: 0,
+                                  lineHeight: 1,
+                                }}
+                                title="Remove item"
+                              >
+                                ✕
+                              </button>
                             </div>
 
                             {/* Per-item options (only when included) */}
@@ -1135,6 +1171,28 @@ export default function GroupDetail(): JSX.Element {
                         );
                       })}
 
+                      {/* Add item manually */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReceiptItems([...receiptItems, { name: '', price: 0 }]);
+                          setReceiptItemConfigs([...receiptItemConfigs, {
+                            included: true,
+                            paidBy: 0,
+                            splitType: 'equal' as const,
+                            memberSplits: {},
+                          }]);
+                        }}
+                        style={{
+                          width: '100%', padding: '8px', marginBottom: '8px',
+                          background: 'none', border: '1px dashed var(--border)',
+                          borderRadius: '8px', cursor: 'pointer',
+                          color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 500,
+                        }}
+                      >
+                        + Add item manually
+                      </button>
+
                       {/* Total summary */}
                       <div style={{
                         display: 'flex',
@@ -1193,6 +1251,20 @@ export default function GroupDetail(): JSX.Element {
                   </div>
                 )}
 
+                {/* Divider between receipt and manual form */}
+                {receiptItems.length > 0 && receiptMode !== 'interactive' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    margin: '8px 0 16px',
+                  }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>or add manually</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                  </div>
+                )}
+
+                {/* Hide manual form when in interactive mode — receipt buttons handle it */}
+                {receiptMode !== 'interactive' && (<>
                 <div className="form-group">
                   <label className="form-label">Description</label>
                   <textarea
@@ -1395,13 +1467,16 @@ export default function GroupDetail(): JSX.Element {
                     </div>
                   </div>
                 )}
+                </>)}
               </div>
+              {receiptMode !== 'interactive' && (
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={closeExpenseModal}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">Add Expense</button>
               </div>
+              )}
             </form>
           </div>
         </div>

@@ -663,7 +663,7 @@ export default function GroupDetail(): JSX.Element {
         <p className="text-muted" style={{ marginTop: '8px' }}>
           {myBalance > 0 ? 'You are owed money' : myBalance < 0 ? 'You owe money' : 'All balanced!'}
         </p>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'center' }}>
           <button
             className="btn btn-outline btn-sm"
             style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}

@@ -107,6 +107,14 @@ export default function GroupDetail(): JSX.Element {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState<boolean>(false);
   const [expensePaidBy, setExpensePaidBy] = useState<number>(0);
   const [receiptItems, setReceiptItems] = useState<Array<{name: string; price: number}>>([]);
+  const [receiptMode, setReceiptMode] = useState<'none' | 'interactive'>('none');
+  const [receiptItemConfigs, setReceiptItemConfigs] = useState<Array<{
+    included: boolean;
+    paidBy: number;
+    splitType: 'equal' | 'percentage';
+    memberSplits: Record<number, string>;
+  }>>([]);
+  const [addingReceipt, setAddingReceipt] = useState(false);
   const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // Settlement form
@@ -213,6 +221,9 @@ export default function GroupDetail(): JSX.Element {
     setConversionRate(null);
     setExpensePaidBy(0);
     setReceiptItems([]);
+    setReceiptMode('none');
+    setReceiptItemConfigs([]);
+    setAddingReceipt(false);
   };
 
   const handleAddExpense = async (e: FormEvent) => {
@@ -881,19 +892,257 @@ export default function GroupDetail(): JSX.Element {
                 <ReceiptScanner onResult={(result) => {
                   // Fill description with store name or item summary
                   if (result.storeName) {
-                    setExpenseDesc(result.storeName.slice(0, 69));
+                    setExpenseDesc(result.storeName.slice(0, 420));
                   } else if (result.items.length > 0) {
-                    setExpenseDesc(result.items.map(i => i.name).join(', ').slice(0, 69));
+                    setExpenseDesc(result.items.map(i => i.name).join(', ').slice(0, 420));
                   }
                   // Fill total amount
                   if (result.total) {
                     setExpenseAmount(result.total.toFixed(2));
                   }
-                  // Store items for display
+                  // Store items and enter interactive mode
                   setReceiptItems(result.items);
+                  if (result.items.length > 0) {
+                    setReceiptMode('interactive');
+                    setReceiptItemConfigs(result.items.map(() => ({
+                      included: true,
+                      paidBy: 0,
+                      splitType: 'equal' as const,
+                      memberSplits: {},
+                    })));
+                  }
                 }} />
 
-                {receiptItems.length > 0 && (
+                {/* Interactive Receipt Mode */}
+                {receiptMode === 'interactive' && receiptItems.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{
+                      background: 'var(--bg)',
+                      borderRadius: '10px',
+                      padding: '12px',
+                      border: '1px solid var(--border)',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>🧾 Receipt Items</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {receiptItemConfigs.filter(c => c.included).length}/{receiptItems.length} selected
+                        </span>
+                      </div>
+
+                      {receiptItems.map((item, i) => {
+                        const config = receiptItemConfigs[i];
+                        if (!config) return null;
+                        return (
+                          <div key={i} style={{
+                            padding: '10px',
+                            marginBottom: '8px',
+                            background: config.included ? 'var(--card-bg)' : 'transparent',
+                            borderRadius: '8px',
+                            border: config.included ? '1px solid var(--primary)' : '1px solid var(--border)',
+                            opacity: config.included ? 1 : 0.5,
+                            transition: 'all 0.2s',
+                          }}>
+                            {/* Item header: checkbox + name + price */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: config.included ? '8px' : '0' }}>
+                              <input
+                                type="checkbox"
+                                checked={config.included}
+                                onChange={() => {
+                                  const updated = [...receiptItemConfigs];
+                                  updated[i] = { ...updated[i], included: !updated[i].included };
+                                  setReceiptItemConfigs(updated);
+                                }}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                              <span style={{ flex: 1, fontWeight: 500, fontSize: '0.9rem', wordBreak: 'break-word' }}>
+                                {item.name}
+                              </span>
+                              <span style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                                €{item.price.toFixed(2)}
+                              </span>
+                            </div>
+
+                            {/* Per-item options (only when included) */}
+                            {config.included && (
+                              <div style={{ paddingLeft: '26px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  <select
+                                    className="form-select"
+                                    value={config.paidBy}
+                                    onChange={(e) => {
+                                      const updated = [...receiptItemConfigs];
+                                      updated[i] = { ...updated[i], paidBy: parseInt(e.target.value) };
+                                      setReceiptItemConfigs(updated);
+                                    }}
+                                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
+                                  >
+                                    <option value={0}>Paid by you</option>
+                                    {group?.members?.filter(m => m.id !== user?.id).map(member => (
+                                      <option key={member.id} value={member.id}>Paid by {member.name}</option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    className="form-select"
+                                    value={config.splitType}
+                                    onChange={(e) => {
+                                      const updated = [...receiptItemConfigs];
+                                      const newSplitType = e.target.value as 'equal' | 'percentage';
+                                      updated[i] = { ...updated[i], splitType: newSplitType };
+                                      if (newSplitType === 'percentage' && group?.members) {
+                                        const share = (100 / group.members.length).toFixed(1);
+                                        const splits: Record<number, string> = {};
+                                        group.members.forEach(m => { splits[m.id] = share; });
+                                        updated[i].memberSplits = splits;
+                                      }
+                                      setReceiptItemConfigs(updated);
+                                    }}
+                                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
+                                  >
+                                    <option value="equal">Split equally</option>
+                                    <option value="percentage">Custom %</option>
+                                  </select>
+                                </div>
+
+                                {/* Percentage splits for this item */}
+                                {config.splitType === 'percentage' && group?.members && (
+                                  <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                                    {group.members.map(member => (
+                                      <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ minWidth: '80px', fontSize: '0.8rem' }}>
+                                          {member.name}{member.id === user?.id ? ' (you)' : ''}
+                                        </span>
+                                        <input
+                                          type="number"
+                                          className="form-input"
+                                          style={{ width: '70px', padding: '4px 6px', fontSize: '0.8rem' }}
+                                          value={config.memberSplits[member.id] || ''}
+                                          onChange={(e) => {
+                                            const updated = [...receiptItemConfigs];
+                                            updated[i] = {
+                                              ...updated[i],
+                                              memberSplits: { ...updated[i].memberSplits, [member.id]: e.target.value }
+                                            };
+                                            setReceiptItemConfigs(updated);
+                                          }}
+                                          placeholder="0"
+                                          min="0"
+                                          max="100"
+                                        />
+                                        <span>%</span>
+                                      </div>
+                                    ))}
+                                    <div style={{
+                                      fontSize: '0.75rem',
+                                      color: Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0) === 100
+                                        ? 'var(--primary)' : 'var(--danger)'
+                                    }}>
+                                      Total: {Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0).toFixed(1)}%
+                                      {Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0) === 100 ? ' ✓' : ''}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Total summary */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderTop: '1px solid var(--border)',
+                        marginTop: '4px',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                      }}>
+                        <span>Total selected</span>
+                        <span>€{receiptItems.reduce((sum, item, i) => 
+                          receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
+                        ).toFixed(2)}</span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 1 }}
+                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0}
+                          onClick={async () => {
+                            setAddingReceipt(true);
+                            try {
+                              for (let i = 0; i < receiptItems.length; i++) {
+                                const config = receiptItemConfigs[i];
+                                if (!config?.included) continue;
+                                const item = receiptItems[i];
+                                let splitWith: Array<{ user_id: number; amount: number }> = [];
+                                if (config.splitType === 'percentage') {
+                                  const total = Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                                  if (Math.abs(total - 100) > 0.01) {
+                                    setError(`"${item.name}" percentages must total 100%`);
+                                    setAddingReceipt(false);
+                                    return;
+                                  }
+                                  splitWith = Object.entries(config.memberSplits).map(([uid, pct]) => ({
+                                    user_id: parseInt(uid),
+                                    amount: parseFloat(pct) || 0,
+                                  }));
+                                }
+                                await api.createExpense(
+                                  id!,
+                                  item.price.toFixed(2),
+                                  item.name.slice(0, 420),
+                                  config.splitType,
+                                  splitWith,
+                                  config.paidBy || undefined,
+                                );
+                              }
+                              closeExpenseModal();
+                              await loadData();
+                            } catch (err: any) {
+                              setError(err.message);
+                            } finally {
+                              setAddingReceipt(false);
+                            }
+                          }}
+                        >
+                          {addingReceipt ? 'Adding...' : `Add as ${receiptItemConfigs.filter(c => c.included).length} separate expenses`}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            // Combine into single expense — fill form and exit interactive mode
+                            const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
+                            const total = included.reduce((sum, item) => sum + item.price, 0);
+                            setExpenseAmount(total.toFixed(2));
+                            setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
+                            setReceiptMode('none');
+                          }}
+                        >
+                          Combine into one expense
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        style={{ 
+                          background: 'none', border: 'none', color: 'var(--text-muted)', 
+                          fontSize: '0.8rem', cursor: 'pointer', marginTop: '8px', width: '100%', textAlign: 'center'
+                        }}
+                        onClick={() => { setReceiptMode('none'); }}
+                      >
+                        Skip — fill form manually
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard items display (non-interactive) */}
+                {receiptMode === 'none' && receiptItems.length > 0 && (
                   <div style={{
                     background: 'var(--bg)',
                     borderRadius: '8px',
@@ -910,6 +1159,22 @@ export default function GroupDetail(): JSX.Element {
                         <span style={{ fontWeight: 500 }}>€{item.price.toFixed(2)}</span>
                       </div>
                     ))}
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{ width: '100%', marginTop: '8px' }}
+                      onClick={() => {
+                        setReceiptMode('interactive');
+                        setReceiptItemConfigs(receiptItems.map(() => ({
+                          included: true,
+                          paidBy: 0,
+                          splitType: 'equal' as const,
+                          memberSplits: {},
+                        })));
+                      }}
+                    >
+                      ↩ Back to item-by-item mode
+                    </button>
                   </div>
                 )}
 
@@ -918,9 +1183,9 @@ export default function GroupDetail(): JSX.Element {
                   <textarea
                     className="form-input"
                     value={expenseDesc}
-                    onChange={(e) => setExpenseDesc(e.target.value.slice(0, 69))}
+                    onChange={(e) => setExpenseDesc(e.target.value.slice(0, 420))}
                     placeholder="e.g., Dinner"
-                    maxLength={69}
+                    maxLength={420}
                     required
                     style={{ 
                       minHeight: '60px', 
@@ -931,10 +1196,10 @@ export default function GroupDetail(): JSX.Element {
                   <div style={{ 
                     textAlign: 'right', 
                     fontSize: '0.85rem', 
-                    color: expenseDesc.length >= 69 ? 'var(--error-color, #ef4444)' : 'var(--text-muted)',
+                    color: expenseDesc.length >= 420 ? 'var(--error-color, #ef4444)' : 'var(--text-muted)',
                     marginTop: '4px'
                   }}>
-                    {expenseDesc.length}/69
+                    {expenseDesc.length}/420
                   </div>
                 </div>
                 <div className="form-group">

@@ -57,6 +57,7 @@ interface ExpenseDebt {
   expense: ExpenseWithUser;
   splitAmount: number;
   payerName: string;
+  paid: boolean;
 }
 
 const CURRENCIES: CurrencyInfo[] = DISPLAY_CURRENCIES;
@@ -392,7 +393,9 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const getMyExpenseDebts = (): ExpenseDebt[] => {
-    return unpaidExpenses.filter(expense => {
+    const unpaidIds = new Set(unpaidExpenses.map(e => e.id));
+    return expenses.filter(expense => {
+      if (expense.paid_by == user?.id) return false;
       if (!expense.splits || expense.splits.length === 0) return false;
       const userSplit = expense.splits.find(s => s.user_id == user?.id);
       if (!userSplit) return false;
@@ -403,7 +406,8 @@ export default function GroupDetail(): JSX.Element {
       return {
         expense,
         splitAmount: userSplit?.amount || 0,
-        payerName: payer?.name || 'Unknown'
+        payerName: payer?.name || 'Unknown',
+        paid: !unpaidIds.has(expense.id)
       };
     });
   };
@@ -1646,9 +1650,9 @@ export default function GroupDetail(): JSX.Element {
               <div className="modal-body">
                 {getMyExpenseDebts().length > 0 ? (
                   <>
-                    <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Expenses you owe on:</p>
+                    <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Your expenses:</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
-                      {getMyExpenseDebts().map(({ expense, splitAmount, payerName }) => (
+                      {getMyExpenseDebts().map(({ expense, splitAmount, payerName, paid }) => (
                         <div 
                           key={expense.id} 
                           style={{ 
@@ -1658,27 +1662,31 @@ export default function GroupDetail(): JSX.Element {
                             padding: '12px',
                             background: 'var(--card-bg)',
                             borderRadius: '8px',
-                            border: '1px solid var(--border)'
+                            border: paid ? '1px solid var(--success, #22c55e)' : '1px solid var(--border)',
+                            opacity: paid ? 0.7 : 1
                           }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {paid && <span style={{ color: 'var(--success, #22c55e)', marginRight: '6px' }}>✅</span>}
                               {expense.description}
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                               Paid by {payerName}
                             </div>
-                            <div style={{ color: 'var(--danger)', fontSize: '14px' }}>
-                              Your share: {formatCurrency(splitAmount)}
+                            <div style={{ color: paid ? 'var(--success, #22c55e)' : 'var(--danger)', fontSize: '14px' }}>
+                              {paid ? 'Paid' : `Your share: ${formatCurrency(splitAmount)}`}
                             </div>
                           </div>
-                          <button 
-                            className="btn btn-primary btn-sm"
-                            style={{ marginLeft: '12px' }}
-                            onClick={() => { setShowSettleModal(false); openExpenseDetail(expense); }}
-                          >
-                            Pay
-                          </button>
+                          {!paid && (
+                            <button 
+                              className="btn btn-primary btn-sm"
+                              style={{ marginLeft: '12px' }}
+                              onClick={() => { setShowSettleModal(false); openExpenseDetail(expense); }}
+                            >
+                              Pay
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

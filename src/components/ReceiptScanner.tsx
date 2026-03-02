@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import Tesseract from 'tesseract.js';
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
 interface ReceiptItem {
   name: string;
   price: number;
@@ -15,6 +17,112 @@ interface ReceiptResult {
 
 interface ReceiptScannerProps {
   onResult: (result: ReceiptResult) => void;
+}
+
+/**
+ * Convert a File to a base64 string (without the data URL prefix).
+ */
+function fileToBase64(file: File | Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip "data:image/...;base64," prefix
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Use Gemini 2.0 Flash to extract receipt items from an image.
+ * Works with any language (German, Dutch, English, etc.).
+ */
+async function scanWithGemini(file: File): Promise<ReceiptResult> {
+  const base64 = await fileToBase64(file);
+  const mimeType = file.type || 'image/jpeg';
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              inlineData: {
+                mimeType,
+                data: base64,
+              },
+            },
+            {
+              text: `Analyze this receipt image. Extract ALL items with their prices and the total.
+The receipt may be in any language (German, Dutch, English, French, etc.).
+
+Return ONLY valid JSON in this exact format, nothing else:
+{
+  "store_name": "Store Name or null",
+  "items": [
+    {"name": "Item name (translated to English if not already)", "price": 3.50}
+  ],
+  "total": 15.99
+}
+
+Rules:
+- Include ALL line items with their final prices
+- Use the price as a number (e.g., 3.50 not "3,50")
+- For total, use the grand total / amount due / Gesamtbetrag / Summe
+- If no total line exists, set total to null
+- Do NOT include tax lines, payment method lines, or change/Wechselgeld
+- Translate item names to English for clarity
+- Return ONLY the JSON, no markdown, no explanation`
+            },
+          ],
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2048,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${errText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  // Extract JSON from response (may be wrapped in ```json ... ```)
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('Gemini returned no valid JSON');
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+
+  const items: ReceiptItem[] = (parsed.items || [])
+    .filter((item: any) => item.name && typeof item.price === 'number' && item.price > 0)
+    .map((item: any) => ({ name: String(item.name), price: Number(item.price) }));
+
+  let total: number | null = parsed.total != null ? Number(parsed.total) : null;
+  if (total !== null && (isNaN(total) || total <= 0)) total = null;
+
+  // If no total, sum items
+  if (total === null && items.length > 0) {
+    total = Math.round(items.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
+  }
+
+  return {
+    items,
+    total,
+    rawText: text,
+    storeName: parsed.store_name || null,
+  };
 }
 
 function parseReceiptText(text: string): ReceiptResult {
@@ -238,6 +346,7 @@ function preprocessImage(file: File): Promise<Blob> {
 export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.Element {
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [scanMethod, setScanMethod] = useState<string>('');
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,13 +355,30 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     setError(null);
     setScanning(true);
     setProgress(0);
+    setScanMethod('');
 
     // Show preview
     const reader = new FileReader();
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
+    // Try Gemini first, fall back to Tesseract
+    if (GEMINI_API_KEY) {
+      try {
+        setScanMethod('AI');
+        setProgress(30);
+        const result = await scanWithGemini(file);
+        setProgress(100);
+        onResult(result);
+        return;
+      } catch (geminiErr: any) {
+        console.warn('Gemini failed, falling back to Tesseract:', geminiErr.message);
+        // Fall through to Tesseract
+      }
+    }
+
     try {
+      setScanMethod('OCR');
       // Preprocess for better OCR (especially phone photos)
       const processed = await preprocessImage(file);
 
@@ -271,6 +397,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     } finally {
       setScanning(false);
       setProgress(0);
+      setScanMethod('');
     }
   };
 
@@ -368,7 +495,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 }} />
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                🔍 Scanning receipt... {progress}%
+                {scanMethod === 'AI' ? '🤖' : '🔍'} Scanning receipt{scanMethod ? ` (${scanMethod})` : ''}... {progress}%
               </div>
             </div>
           ) : error ? (

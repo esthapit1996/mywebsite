@@ -1769,8 +1769,11 @@ export default function GroupDetail(): JSX.Element {
                   <li key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
                     <Avatar name={member.name} avatar={member.avatar} size={36} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {member.name}{member.id === user?.id ? ' (you)' : ''}
+                        {member.id === group.created_by && (
+                          <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '8px', background: 'var(--primary)', color: 'var(--btn-text, white)', fontWeight: 500 }}>creator</span>
+                        )}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
                     </div>

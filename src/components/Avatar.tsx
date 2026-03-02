@@ -73,6 +73,7 @@ export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) 
           borderRadius: '50%',
           objectFit: 'cover',
           flexShrink: 0,
+          display: 'block',
           ...style,
         }}
       />

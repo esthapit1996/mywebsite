@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
+import ReceiptScanner from '../components/ReceiptScanner';
 import type { 
   Group, 
   GroupMember, 
@@ -105,6 +106,7 @@ export default function GroupDetail(): JSX.Element {
   const [converting, setConverting] = useState<boolean>(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState<boolean>(false);
   const [expensePaidBy, setExpensePaidBy] = useState<number>(0);
+  const [receiptItems, setReceiptItems] = useState<Array<{name: string; price: number}>>([]);
   const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // Settlement form
@@ -210,6 +212,7 @@ export default function GroupDetail(): JSX.Element {
     setConvertedAmount(null);
     setConversionRate(null);
     setExpensePaidBy(0);
+    setReceiptItems([]);
   };
 
   const handleAddExpense = async (e: FormEvent) => {
@@ -875,6 +878,41 @@ export default function GroupDetail(): JSX.Element {
             </div>
             <form onSubmit={handleAddExpense}>
               <div className="modal-body">
+                <ReceiptScanner onResult={(result) => {
+                  // Fill description with store name or item summary
+                  if (result.storeName) {
+                    setExpenseDesc(result.storeName.slice(0, 69));
+                  } else if (result.items.length > 0) {
+                    setExpenseDesc(result.items.map(i => i.name).join(', ').slice(0, 69));
+                  }
+                  // Fill total amount
+                  if (result.total) {
+                    setExpenseAmount(result.total.toFixed(2));
+                  }
+                  // Store items for display
+                  setReceiptItems(result.items);
+                }} />
+
+                {receiptItems.length > 0 && (
+                  <div style={{
+                    background: 'var(--bg)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    marginBottom: '16px',
+                    fontSize: '0.85rem',
+                  }}>
+                    <div style={{ fontWeight: 600, marginBottom: '6px', color: 'var(--text-muted)' }}>
+                      🧾 Items found:
+                    </div>
+                    {receiptItems.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                        <span>{item.name}</span>
+                        <span style={{ fontWeight: 500 }}>€{item.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label className="form-label">Description</label>
                   <textarea

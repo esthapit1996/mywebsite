@@ -292,7 +292,7 @@ function Header(): JSX.Element | null {
                   className="user-menu-item"
                   onClick={() => { setShowUserMenu(false); setShowAvatarPicker(true); }}
                 >
-                  🎨 Change Avatar
+                  🖼️ Change Avatar
                 </button>
                 <button 
                   className="user-menu-item"

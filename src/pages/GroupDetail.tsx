@@ -942,7 +942,14 @@ export default function GroupDetail(): JSX.Element {
                           style={{ flex: 1 }}
                           disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0 || (() => {
                             const sub = receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0);
-                            return (sub + (parseFloat(receiptDiscount) || 0)) <= 0;
+                            if ((sub + (parseFloat(receiptDiscount) || 0)) <= 0) return true;
+                            // Check all included items have a name and price > 0
+                            for (let idx = 0; idx < receiptItems.length; idx++) {
+                              if (!receiptItemConfigs[idx]?.included) continue;
+                              if (!receiptItems[idx].name.trim()) return true;
+                              if (receiptItems[idx].price <= 0) return true;
+                            }
+                            return false;
                           })()}
                           onClick={async () => {
                             setAddingReceipt(true);
@@ -1066,7 +1073,11 @@ export default function GroupDetail(): JSX.Element {
                                   updated[i] = { ...updated[i], name: e.target.value };
                                   setReceiptItems(updated);
                                 }}
-                                style={{ flex: 1, padding: '4px 6px', fontSize: '0.85rem', minWidth: '0' }}
+                                placeholder="Item name"
+                                style={{
+                                  flex: 1, padding: '4px 6px', fontSize: '0.85rem', minWidth: '0',
+                                  ...(config.included && !item.name.trim() ? { borderColor: 'var(--danger)' } : {}),
+                                }}
                               />
                               <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
                                 <span style={{ fontSize: '0.85rem' }}>€</span>
@@ -1079,7 +1090,10 @@ export default function GroupDetail(): JSX.Element {
                                     updated[i] = { ...updated[i], price: parseFloat(e.target.value) || 0 };
                                     setReceiptItems(updated);
                                   }}
-                                  style={{ width: '70px', padding: '4px 6px', fontSize: '0.85rem', textAlign: 'right' }}
+                                  style={{
+                                    width: '70px', padding: '4px 6px', fontSize: '0.85rem', textAlign: 'right' as const,
+                                    ...(config.included && item.price <= 0 ? { borderColor: 'var(--danger)' } : {}),
+                                  }}
                                   step="0.01"
                                   min="0"
                                 />

@@ -329,8 +329,8 @@ export default function Dashboard() {
                             padding: '8px', 
                             cursor: 'pointer',
                             borderRadius: '4px',
-                            background: selectedMembers.includes(user.id) ? 'var(--primary-color)' : 'transparent',
-                            color: selectedMembers.includes(user.id) ? 'white' : 'var(--text-color)'
+                            background: selectedMembers.includes(user.id) ? 'var(--primary)' : 'transparent',
+                            color: selectedMembers.includes(user.id) ? 'var(--btn-text, white)' : 'var(--text)'
                           }}
                         >
                           <input

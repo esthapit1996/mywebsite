@@ -230,7 +230,30 @@
   --btn-text: #4a1942;
 }
 
-/* 11. Solarized Light - Warm cream */
+/* 11. Cotton Candy - Pastel pink & blue */
+[data-theme="cottoncandy"] {
+  --primary: #f472b6;
+  --primary-dark: #ec4899;
+  --secondary: #7dd3fc;
+  --danger: #fb7185;
+  --warning: #fbbf24;
+  --bg: #fdf2f8;
+  --bg-secondary: #fce7f3;
+  --card-bg: #ffffff;
+  --text: #4c1d5e;
+  --text-muted: #a855c8;
+  --border: #f0d4e8;
+  --shadow: 0 1px 4px rgba(244,114,182,0.12);
+  --shadow-lg: 0 10px 15px -3px rgba(125,211,252,0.15);
+  --input-bg: #fff5fa;
+  --alert-error-bg: #fff1f3;
+  --alert-error-border: #fda4af;
+  --alert-success-bg: #f0fdfa;
+  --alert-success-border: #99f6e4;
+  --btn-text: #4c1d5e;
+}
+
+/* 12. Solarized Light - Warm cream */
 [data-theme="solarized"] {
   --primary: #859900;
   --primary-dark: #6b7d00;
@@ -253,7 +276,7 @@
   --btn-text: #073642;
 }
 
-/* 12. Light - Clean white */
+/* 13. Light - Clean white */
 [data-theme="light"] {
   --primary: #10b981;
   --primary-dark: #059669;

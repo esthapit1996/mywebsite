@@ -18,6 +18,7 @@ export const THEMES: Theme[] = [
   // Light themes
   { id: 'lavender', name: 'Lavender', icon: '💜', category: 'light' },
   { id: 'sakura', name: 'Sakura', icon: '🌸', category: 'light' },
+  { id: 'cottoncandy', name: 'Cotton Candy', icon: '🍬', category: 'light' },
   { id: 'solarized', name: 'Solarized', icon: '☀️', category: 'light' },
   { id: 'light', name: 'Light', icon: '🌤️', category: 'light' },
 ];

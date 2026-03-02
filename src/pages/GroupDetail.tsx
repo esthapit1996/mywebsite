@@ -1887,15 +1887,30 @@ export default function GroupDetail(): JSX.Element {
               {selectedExpense.splits && selectedExpense.splits.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
                   <h4 style={{ marginBottom: '8px', fontSize: '0.95rem' }}>Who owes what:</h4>
-                  {selectedExpense.splits.map((split) => (
-                    <div key={split.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Avatar name={split.user?.name || `User ${split.user_id}`} avatar={split.user?.avatar} size={20} />
-                        {split.user?.name || `User ${split.user_id}`}
-                      </span>
-                      <span>{formatCurrency(split.amount)}</span>
-                    </div>
-                  ))}
+                  {selectedExpense.splits.map((split) => {
+                    const paidBack = expensePayments
+                      .filter(p => p.paid_by === split.user_id)
+                      .reduce((sum, p) => sum + p.amount, 0);
+                    const remaining = split.amount - paidBack;
+                    return (
+                      <div key={split.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Avatar name={split.user?.name || `User ${split.user_id}`} avatar={split.user?.avatar} size={20} />
+                          {split.user?.name || `User ${split.user_id}`}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {paidBack > 0 && (
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                              {formatCurrency(split.amount)}
+                            </span>
+                          )}
+                          <span style={{ color: remaining <= 0.01 ? 'var(--success)' : undefined, fontWeight: remaining <= 0.01 ? 600 : undefined }}>
+                            {remaining <= 0.01 ? '✅ Paid' : formatCurrency(remaining)}
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

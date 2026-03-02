@@ -992,10 +992,26 @@ export default function GroupDetail(): JSX.Element {
                                 if (!groups[key]) groups[key] = { items: [], config };
                                 groups[key].items.push({ ...receiptItems[i], idx: i });
                               }
+                              // Debug: log all item configs
+                              console.log('[Receipt] All item configs:', receiptItemConfigs.map((c, idx) => ({
+                                idx,
+                                item: receiptItems[idx]?.name,
+                                included: c.included,
+                                splitType: c.splitType,
+                                memberSplits: c.memberSplits,
+                                paidBy: c.paidBy,
+                              })));
+                              console.log('[Receipt] Groups:', Object.entries(groups).map(([key, g]) => ({
+                                key,
+                                items: g.items.map(it => it.name),
+                                splitType: g.config.splitType,
+                                memberSplits: g.config.memberSplits,
+                              })));
+
                               // Create one expense per group — distribute discount proportionally
                               const allIncludedTotal = Math.round(receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0) * 100) / 100;
                               const discount = parseFloat(receiptDiscount) || 0;
-                              for (const [, group] of Object.entries(groups)) {
+                              for (const [gKey, group] of Object.entries(groups)) {
                                 const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
                                 // Distribute discount proportionally to this group's share
                                 const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
@@ -1015,6 +1031,7 @@ export default function GroupDetail(): JSX.Element {
                                     amount: parseFloat(pct) || 0,
                                   }));
                                 }
+                                console.log(`[Receipt] Creating expense [${gKey}]:`, { desc, amount: totalAmount, splitType: cfg.splitType, splitWith, paidBy: cfg.paidBy });
                                 await api.createExpense(
                                   id!,
                                   totalAmount.toFixed(2),
@@ -1073,6 +1090,51 @@ export default function GroupDetail(): JSX.Element {
                         Skip — fill form manually
                       </button>
 
+                      {/* Group summary preview */}
+                      {(() => {
+                        const included = receiptItemConfigs.map((c, idx) => ({ ...c, idx })).filter(c => c.included);
+                        if (included.length === 0) return null;
+                        // Build groups for preview
+                        const previewGroups: Record<string, { items: string[], splitLabel: string }> = {};
+                        for (const c of included) {
+                          const splitsKey = c.splitType === 'percentage'
+                            ? Object.entries(c.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                            : 'equal';
+                          const key = `${c.paidBy}-${c.splitType}-${splitsKey}`;
+                          if (!previewGroups[key]) {
+                            let splitLabel = 'Split equally';
+                            if (c.splitType === 'percentage') {
+                              const entries = Object.entries(c.memberSplits);
+                              const nonZero = entries.filter(([, pct]) => parseFloat(pct) > 0);
+                              if (nonZero.length > 0) {
+                                splitLabel = nonZero.map(([uid, pct]) => {
+                                  const m = group?.members?.find(mm => mm.id === parseInt(uid));
+                                  const name = m ? (m.id === user?.id ? 'You' : m.name.split(' ')[0]) : `#${uid}`;
+                                  return `${name} ${pct}%`;
+                                }).join(', ');
+                              } else {
+                                splitLabel = 'Custom %';
+                              }
+                            }
+                            previewGroups[key] = { items: [], splitLabel };
+                          }
+                          const itemName = receiptItems[c.idx]?.name || 'Item';
+                          previewGroups[key].items.push(itemName);
+                        }
+                        const groups = Object.values(previewGroups);
+                        if (groups.length <= 1 && groups[0]?.splitLabel === 'Split equally') return null;
+                        return (
+                          <div style={{ marginBottom: '10px', padding: '8px 10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px' }}>Will create {groups.length} expense{groups.length !== 1 ? 's' : ''}:</div>
+                            {groups.map((g, idx) => (
+                              <div key={idx} style={{ padding: '2px 0' }}>
+                                <span style={{ fontWeight: 500 }}>{idx + 1}.</span> {g.items.join(', ')} — <em>{g.splitLabel}</em>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       {receiptItems.map((item, i) => {
                         const config = receiptItemConfigs[i];
                         if (!config) return null;
@@ -1092,9 +1154,11 @@ export default function GroupDetail(): JSX.Element {
                                 type="checkbox"
                                 checked={config.included}
                                 onChange={() => {
-                                  const updated = [...receiptItemConfigs];
-                                  updated[i] = { ...updated[i], included: !updated[i].included };
-                                  setReceiptItemConfigs(updated);
+                                  setReceiptItemConfigs(prev => {
+                                    const updated = [...prev];
+                                    updated[i] = { ...updated[i], included: !updated[i].included };
+                                    return updated;
+                                  });
                                 }}
                                 style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                               />
@@ -1103,9 +1167,12 @@ export default function GroupDetail(): JSX.Element {
                                 className="form-input"
                                 value={item.name}
                                 onChange={(e) => {
-                                  const updated = [...receiptItems];
-                                  updated[i] = { ...updated[i], name: e.target.value };
-                                  setReceiptItems(updated);
+                                  const val = e.target.value;
+                                  setReceiptItems(prev => {
+                                    const updated = [...prev];
+                                    updated[i] = { ...updated[i], name: val };
+                                    return updated;
+                                  });
                                 }}
                                 placeholder="Item name"
                                 style={{
@@ -1120,9 +1187,12 @@ export default function GroupDetail(): JSX.Element {
                                   className="form-input"
                                   value={item.price || ''}
                                   onChange={(e) => {
-                                    const updated = [...receiptItems];
-                                    updated[i] = { ...updated[i], price: parseFloat(e.target.value) || 0 };
-                                    setReceiptItems(updated);
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setReceiptItems(prev => {
+                                      const updated = [...prev];
+                                      updated[i] = { ...updated[i], price: val };
+                                      return updated;
+                                    });
                                   }}
                                   style={{
                                     width: '70px', padding: '4px 6px', fontSize: '0.85rem', textAlign: 'right' as const,
@@ -1135,8 +1205,8 @@ export default function GroupDetail(): JSX.Element {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setReceiptItems(receiptItems.filter((_, idx) => idx !== i));
-                                  setReceiptItemConfigs(receiptItemConfigs.filter((_, idx) => idx !== i));
+                                  setReceiptItems(prev => prev.filter((_, idx) => idx !== i));
+                                  setReceiptItemConfigs(prev => prev.filter((_, idx) => idx !== i));
                                 }}
                                 style={{
                                   background: 'none', border: 'none', cursor: 'pointer',
@@ -1157,9 +1227,12 @@ export default function GroupDetail(): JSX.Element {
                                     className="form-select"
                                     value={config.paidBy}
                                     onChange={(e) => {
-                                      const updated = [...receiptItemConfigs];
-                                      updated[i] = { ...updated[i], paidBy: parseInt(e.target.value) };
-                                      setReceiptItemConfigs(updated);
+                                      const val = parseInt(e.target.value);
+                                      setReceiptItemConfigs(prev => {
+                                        const updated = [...prev];
+                                        updated[i] = { ...updated[i], paidBy: val };
+                                        return updated;
+                                      });
                                     }}
                                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
                                   >
@@ -1172,16 +1245,18 @@ export default function GroupDetail(): JSX.Element {
                                     className="form-select"
                                     value={config.splitType}
                                     onChange={(e) => {
-                                      const updated = [...receiptItemConfigs];
                                       const newSplitType = e.target.value as 'equal' | 'percentage';
-                                      updated[i] = { ...updated[i], splitType: newSplitType };
-                                      if (newSplitType === 'percentage' && group?.members) {
-                                        const share = (100 / group.members.length).toFixed(1);
-                                        const splits: Record<number, string> = {};
-                                        group.members.forEach(m => { splits[m.id] = share; });
-                                        updated[i].memberSplits = splits;
-                                      }
-                                      setReceiptItemConfigs(updated);
+                                      setReceiptItemConfigs(prev => {
+                                        const updated = [...prev];
+                                        updated[i] = { ...updated[i], splitType: newSplitType };
+                                        if (newSplitType === 'percentage' && group?.members) {
+                                          const share = (100 / group.members.length).toFixed(1);
+                                          const splits: Record<number, string> = {};
+                                          group.members.forEach(m => { splits[m.id] = share; });
+                                          updated[i] = { ...updated[i], splitType: newSplitType, memberSplits: splits };
+                                        }
+                                        return updated;
+                                      });
                                     }}
                                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
                                   >
@@ -1200,12 +1275,14 @@ export default function GroupDetail(): JSX.Element {
                                         className="btn btn-outline btn-sm"
                                         style={{ fontSize: '0.7rem', padding: '2px 6px' }}
                                         onClick={() => {
-                                          const updated = [...receiptItemConfigs];
                                           const share = (100 / group.members!.length).toFixed(1);
                                           const splits: Record<number, string> = {};
                                           group.members!.forEach(m => { splits[m.id] = share; });
-                                          updated[i] = { ...updated[i], memberSplits: splits };
-                                          setReceiptItemConfigs(updated);
+                                          setReceiptItemConfigs(prev => {
+                                            const updated = [...prev];
+                                            updated[i] = { ...updated[i], memberSplits: splits };
+                                            return updated;
+                                          });
                                         }}
                                       >
                                         Split equally
@@ -1215,14 +1292,16 @@ export default function GroupDetail(): JSX.Element {
                                         className="btn btn-outline btn-sm"
                                         style={{ fontSize: '0.7rem', padding: '2px 6px' }}
                                         onClick={() => {
-                                          const updated = [...receiptItemConfigs];
                                           const payerId = config.paidBy || user?.id;
                                           const splits: Record<number, string> = {};
                                           const others = group.members!.filter(m => m.id !== payerId);
                                           const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
                                           group.members!.forEach(m => { splits[m.id] = m.id === payerId ? '0' : share; });
-                                          updated[i] = { ...updated[i], memberSplits: splits };
-                                          setReceiptItemConfigs(updated);
+                                          setReceiptItemConfigs(prev => {
+                                            const updated = [...prev];
+                                            updated[i] = { ...updated[i], memberSplits: splits };
+                                            return updated;
+                                          });
                                         }}
                                       >
                                         Others owe payer
@@ -1234,11 +1313,13 @@ export default function GroupDetail(): JSX.Element {
                                           className="btn btn-outline btn-sm"
                                           style={{ fontSize: '0.7rem', padding: '2px 6px' }}
                                           onClick={() => {
-                                            const updated = [...receiptItemConfigs];
                                             const splits: Record<number, string> = {};
                                             group.members!.forEach(m => { splits[m.id] = m.id === member.id ? '100' : '0'; });
-                                            updated[i] = { ...updated[i], memberSplits: splits };
-                                            setReceiptItemConfigs(updated);
+                                            setReceiptItemConfigs(prev => {
+                                              const updated = [...prev];
+                                              updated[i] = { ...updated[i], memberSplits: splits };
+                                              return updated;
+                                            });
                                           }}
                                         >
                                           {member.id === user?.id ? 'I owe' : `${member.name.split(' ')[0]} owes`} 100%
@@ -1263,12 +1344,15 @@ export default function GroupDetail(): JSX.Element {
                                           style={{ width: '70px', padding: '4px 6px', fontSize: '0.8rem' }}
                                           value={config.memberSplits[member.id] || ''}
                                           onChange={(e) => {
-                                            const updated = [...receiptItemConfigs];
-                                            updated[i] = {
-                                              ...updated[i],
-                                              memberSplits: { ...updated[i].memberSplits, [member.id]: e.target.value }
-                                            };
-                                            setReceiptItemConfigs(updated);
+                                            const val = e.target.value;
+                                            setReceiptItemConfigs(prev => {
+                                              const updated = [...prev];
+                                              updated[i] = {
+                                                ...updated[i],
+                                                memberSplits: { ...updated[i].memberSplits, [member.id]: val }
+                                              };
+                                              return updated;
+                                            });
                                           }}
                                           placeholder="0"
                                           min="0"
@@ -1297,8 +1381,8 @@ export default function GroupDetail(): JSX.Element {
                       <button
                         type="button"
                         onClick={() => {
-                          setReceiptItems([...receiptItems, { name: '', price: 0 }]);
-                          setReceiptItemConfigs([...receiptItemConfigs, {
+                          setReceiptItems(prev => [...prev, { name: '', price: 0 }]);
+                          setReceiptItemConfigs(prev => [...prev, {
                             included: true,
                             paidBy: 0,
                             splitType: 'equal' as const,

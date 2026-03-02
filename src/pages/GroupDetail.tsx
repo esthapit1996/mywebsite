@@ -713,8 +713,11 @@ export default function GroupDetail(): JSX.Element {
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden'
                       }}>{expense.description}</div>
-                      <div className="expense-meta">
-                        Paid by {expense.paid_by_user?.name || 'Unknown'} • {expense.split_type}
+                      <div className="expense-meta" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                        <span>Paid by</span>
+                        <Avatar name={expense.paid_by_user?.name || 'Unknown'} avatar={expense.paid_by_user?.avatar} size={16} />
+                        <span style={{ whiteSpace: 'nowrap' }}>{expense.paid_by_user?.name || 'Unknown'}</span>
+                        <span>• {expense.split_type}</span>
                       </div>
                       {expensePaymentStatus[expense.id] && 
                         expensePaymentStatus[expense.id].totalOwed > 0 && 
@@ -758,8 +761,12 @@ export default function GroupDetail(): JSX.Element {
                       return (
                         <div key={`s-${settlement.id}`} className="expense-item">
                           <div className="expense-info">
-                            <div className="expense-description" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-                              {payer?.name || 'Unknown'} → {payee?.name || 'Unknown'}
+                            <div className="expense-description" style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'nowrap' }}>
+                              <Avatar name={payer?.name || 'Unknown'} avatar={payer?.avatar} size={20} />
+                              <span style={{ whiteSpace: 'nowrap' }}>{payer?.name || 'Unknown'}</span>
+                              <span>→</span>
+                              <Avatar name={payee?.name || 'Unknown'} avatar={payee?.avatar} size={20} />
+                              <span style={{ whiteSpace: 'nowrap' }}>{payee?.name || 'Unknown'}</span>
                             </div>
                             <div className="expense-meta">
                               Free-form payment • {new Date(settlement.created_at).toLocaleDateString()}
@@ -796,8 +803,12 @@ export default function GroupDetail(): JSX.Element {
               balances.map((balance, idx) => (
                 <div key={idx} className="expense-item">
                   <div className="expense-info">
-                    <div className="expense-description" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
-                      {balance.from_user?.name} owes {balance.to_user?.name}
+                    <div className="expense-description" style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'nowrap' }}>
+                      <Avatar name={balance.from_user?.name || '?'} avatar={balance.from_user?.avatar} size={20} />
+                      <span style={{ whiteSpace: 'nowrap' }}>{balance.from_user?.name}</span>
+                      <span style={{ whiteSpace: 'nowrap' }}>owes</span>
+                      <Avatar name={balance.to_user?.name || '?'} avatar={balance.to_user?.avatar} size={20} />
+                      <span style={{ whiteSpace: 'nowrap' }}>{balance.to_user?.name}</span>
                     </div>
                   </div>
                   <span className="expense-amount negative">{formatCurrency(balance.amount)}</span>
@@ -1853,8 +1864,10 @@ export default function GroupDetail(): JSX.Element {
                     {expensePayments.map((payment) => (
                       <div key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--card-bg)', borderRadius: '6px', marginBottom: '6px', border: '1px solid var(--success)' }}>
                         <div>
-                          <div style={{ fontWeight: '500' }}>
-                            {payment.paid_by_user?.name} paid {formatCurrency(payment.amount)}
+                          <div style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                            <Avatar name={payment.paid_by_user?.name || '?'} avatar={payment.paid_by_user?.avatar} size={18} />
+                            <span>{payment.paid_by_user?.name}</span>
+                            <span>paid {formatCurrency(payment.amount)}</span>
                           </div>
                           {payment.note && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{payment.note}</div>}
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>

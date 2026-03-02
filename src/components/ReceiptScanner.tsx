@@ -44,7 +44,7 @@ async function scanWithGemini(file: File): Promise<ReceiptResult> {
   const mimeType = file.type || 'image/jpeg';
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -348,6 +348,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scanMethod, setScanMethod] = useState<string>('');
+  const [selectedMethod, setSelectedMethod] = useState<'ocr' | 'ai'>('ocr');
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -364,35 +365,27 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     reader.readAsDataURL(file);
 
     try {
-      // Try Gemini first, fall back to Tesseract
-      if (GEMINI_API_KEY) {
-        try {
-          setScanMethod('AI');
-          setProgress(30);
-          const result = await scanWithGemini(file);
-          setProgress(100);
-          onResult(result);
-          return;
-        } catch (geminiErr: any) {
-          console.warn('Gemini failed, falling back to Tesseract:', geminiErr.message);
-          // Fall through to Tesseract
-        }
+      if (selectedMethod === 'ai' && GEMINI_API_KEY) {
+        setScanMethod('AI');
+        setProgress(30);
+        const result = await scanWithGemini(file);
+        setProgress(100);
+        onResult(result);
+      } else {
+        setScanMethod('OCR');
+        const processed = await preprocessImage(file);
+
+        const result = await Tesseract.recognize(processed, 'eng+nld+deu+fra', {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              setProgress(Math.round(m.progress * 100));
+            }
+          },
+        });
+
+        const parsed = parseReceiptText(result.data.text);
+        onResult(parsed);
       }
-
-      setScanMethod('OCR');
-      // Preprocess for better OCR (especially phone photos)
-      const processed = await preprocessImage(file);
-
-      const result = await Tesseract.recognize(processed, 'eng+nld+deu+fra', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            setProgress(Math.round(m.progress * 100));
-          }
-        },
-      });
-
-      const parsed = parseReceiptText(result.data.text);
-      onResult(parsed);
     } catch (err: any) {
       setError(err.message || 'Failed to scan receipt');
     } finally {
@@ -436,10 +429,58 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
       />
 
       {!preview && !scanning ? (
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
+        <div>
+          {/* Method toggle */}
+          <div style={{
+            display: 'flex',
+            gap: '0',
+            marginBottom: '10px',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '2px solid var(--border)',
+          }}>
+            <button
+              type="button"
+              onClick={() => setSelectedMethod('ocr')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                background: selectedMethod === 'ocr' ? 'var(--primary)' : 'var(--bg)',
+                color: selectedMethod === 'ocr' ? 'white' : 'var(--text-muted)',
+                transition: 'all 0.2s',
+              }}
+            >
+              🔍 OCR (Tesseract)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMethod('ai')}
+              disabled={!GEMINI_API_KEY}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: 'none',
+                borderLeft: '2px solid var(--border)',
+                cursor: GEMINI_API_KEY ? 'pointer' : 'not-allowed',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                background: selectedMethod === 'ai' ? 'var(--primary)' : 'var(--bg)',
+                color: selectedMethod === 'ai' ? 'white' : 'var(--text-muted)',
+                opacity: GEMINI_API_KEY ? 1 : 0.5,
+                transition: 'all 0.2s',
+              }}
+            >
+              🤖 AI (Gemini)
+            </button>
+          </div>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
           style={{
             border: '2px dashed var(--border)',
             borderRadius: '10px',
@@ -455,6 +496,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             Take a photo or drag & drop an image
           </div>
+        </div>
         </div>
       ) : (
         <div style={{

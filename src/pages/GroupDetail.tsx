@@ -636,7 +636,7 @@ export default function GroupDetail(): JSX.Element {
                 <h2 className="card-title" style={{ margin: 0, wordBreak: 'break-word' }}>{group.name}</h2>
                 {group.description && <p className="text-muted" style={{ margin: 0, wordBreak: 'break-word' }}>{group.description}</p>}
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
-                  Created by {group.members?.find(m => m.id === group.created_by)?.name || 'Unknown'}
+                  Created by {group.members?.find(m => m.id === group.created_by)?.name || 'Unknown'} on {group.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
                 </p>
               </div>
             )}

@@ -115,6 +115,7 @@ export default function GroupDetail(): JSX.Element {
     memberSplits: Record<number, string>;
   }>>([]);
   const [addingReceipt, setAddingReceipt] = useState(false);
+  const [receiptDiscount, setReceiptDiscount] = useState<string>('');
   const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // Settlement form
@@ -224,6 +225,7 @@ export default function GroupDetail(): JSX.Element {
     setReceiptMode('none');
     setReceiptItemConfigs([]);
     setAddingReceipt(false);
+    setReceiptDiscount('');
   };
 
   const handleAddExpense = async (e: FormEvent) => {
@@ -951,9 +953,14 @@ export default function GroupDetail(): JSX.Element {
                                 if (!groups[key]) groups[key] = { items: [], config };
                                 groups[key].items.push({ ...receiptItems[i], idx: i });
                               }
-                              // Create one expense per group
+                              // Create one expense per group — distribute discount proportionally
+                              const allIncludedTotal = Math.round(receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0) * 100) / 100;
+                              const discount = parseFloat(receiptDiscount) || 0;
                               for (const [, group] of Object.entries(groups)) {
-                                const totalAmount = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
+                                const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
+                                // Distribute discount proportionally to this group's share
+                                const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
+                                const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
                                 const desc = group.items.map(it => `${it.name} (€${it.price.toFixed(2)})`).join(', ').slice(0, 420);
                                 // Use split config from first item in group (they share paidBy)
                                 const cfg = group.config;
@@ -1000,7 +1007,9 @@ export default function GroupDetail(): JSX.Element {
                           style={{ flex: 1 }}
                           onClick={() => {
                             const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
-                            const total = Math.round(included.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
+                            const itemSum = Math.round(included.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
+                            const discount = parseFloat(receiptDiscount) || 0;
+                            const total = Math.round((itemSum + discount) * 100) / 100;
                             setExpenseAmount(total.toFixed(2));
                             setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
                             setReceiptMode('none');
@@ -1198,18 +1207,58 @@ export default function GroupDetail(): JSX.Element {
 
                       {/* Total summary */}
                       <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '8px 10px',
                         borderTop: '1px solid var(--border)',
                         marginTop: '4px',
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
+                        padding: '8px 10px 0',
                       }}>
-                        <span>Total selected</span>
-                        <span>€{(Math.round(receiptItems.reduce((sum, item, i) => 
-                          receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
-                        ) * 100) / 100).toFixed(2)}</span>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontWeight: 500,
+                          fontSize: '0.9rem',
+                          color: 'var(--text-muted)',
+                        }}>
+                          <span>Items subtotal</span>
+                          <span>€{(Math.round(receiptItems.reduce((sum, item, i) => 
+                            receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
+                          ) * 100) / 100).toFixed(2)}</span>
+                        </div>
+
+                        {/* Discount / adjustment */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Discount / adjustment</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1, justifyContent: 'flex-end' }}>
+                            <span style={{ fontSize: '0.85rem' }}>€</span>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={receiptDiscount}
+                              onChange={(e) => setReceiptDiscount(e.target.value)}
+                              placeholder="0.00"
+                              step="0.01"
+                              style={{ width: '90px', padding: '4px 6px', fontSize: '0.85rem', textAlign: 'right' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                          Use negative for discounts (e.g. -2.50)
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          borderTop: '1px solid var(--border)',
+                          paddingTop: '6px',
+                        }}>
+                          <span>Total</span>
+                          <span>€{(Math.round((
+                            receiptItems.reduce((sum, item, i) => 
+                              receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
+                            ) + (parseFloat(receiptDiscount) || 0)
+                          ) * 100) / 100).toFixed(2)}</span>
+                        </div>
                       </div>
 
 

@@ -16,6 +16,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  avatar?: string;
   theme_preference?: string;
   created_at?: string;
 }
@@ -45,6 +46,7 @@ export interface GroupMember {
   group_id: number;
   name: string;
   email: string;
+  avatar?: string;
 }
 
 // ============================================
@@ -254,6 +256,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<ApiResponse<LoginResponse>>;
   register: (email: string, password: string, name: string) => Promise<ApiResponse>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 export interface ThemeContextType {

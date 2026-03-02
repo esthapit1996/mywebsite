@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useCurrency } from '../context/CurrencyContext';
+import Avatar from '../components/Avatar';
 import type { Group, User, DebtOverviewItem } from '../types';
 
 export default function Dashboard() {
@@ -182,7 +183,10 @@ export default function Dashboard() {
                 justifyContent: 'space-between', 
                 alignItems: 'center' 
               }}>
-                <span>{item.user.name}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Avatar name={item.user.name} avatar={item.user.avatar} size={30} />
+                  {item.user.name}
+                </span>
                 <span style={{ 
                   fontWeight: '600',
                   color: item.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)'
@@ -334,7 +338,10 @@ export default function Dashboard() {
                             checked={selectedMembers.includes(user.id)}
                             onChange={() => toggleMember(user.id)}
                           />
-                          <span>{user.name}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Avatar name={user.name} avatar={user.avatar} size={24} />
+                            {user.name}
+                          </span>
                           <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({user.email})</span>
                         </label>
                       ))

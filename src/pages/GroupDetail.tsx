@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
+import Avatar from '../components/Avatar';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { 
   Group, 
@@ -29,22 +30,22 @@ interface Activity {
 }
 
 interface ExpenseWithUser extends Expense {
-  paid_by_user?: { name: string };
+  paid_by_user?: { name: string; avatar?: string };
 }
 
 interface ExpenseSplitWithUser {
   user_id: number;
   amount: number;
-  user?: { name: string };
+  user?: { name: string; avatar?: string };
 }
 
 interface ExpenseDetail extends Expense {
-  paid_by_user?: { name: string };
+  paid_by_user?: { name: string; avatar?: string };
   splits?: ExpenseSplitWithUser[];
 }
 
 interface ExpensePaymentWithUsers extends ExpensePayment {
-  paid_by_user?: { name: string };
+  paid_by_user?: { name: string; avatar?: string };
 }
 
 interface User {
@@ -634,7 +635,7 @@ export default function GroupDetail(): JSX.Element {
         <div style={{ marginTop: '12px' }}>
           {group.members?.map((member) => (
             <span key={member.id} className="member-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <span className="member-avatar">{member.name.charAt(0)}</span>
+              <Avatar name={member.name} avatar={member.avatar} size={24} />
               {member.name}
               {member.id !== user?.id && (
                 <button
@@ -738,7 +739,10 @@ export default function GroupDetail(): JSX.Element {
                         overflow: 'hidden'
                       }}>{expense.description}</div>
                       <div className="expense-meta">
-                        Paid by {expense.paid_by_user?.name || 'Unknown'} • {expense.split_type}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Avatar name={expense.paid_by_user?.name || 'Unknown'} avatar={expense.paid_by_user?.avatar} size={18} />
+                          Paid by {expense.paid_by_user?.name || 'Unknown'}
+                        </span> • {expense.split_type}
                       </div>
                       {expensePaymentStatus[expense.id] && 
                         expensePaymentStatus[expense.id].totalOwed > 0 && 
@@ -783,7 +787,15 @@ export default function GroupDetail(): JSX.Element {
                         <div key={`s-${settlement.id}`} className="expense-item">
                           <div className="expense-info">
                             <div className="expense-description">
-                              {payer?.name || 'Unknown'} → {payee?.name || 'Unknown'}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Avatar name={payer?.name || 'Unknown'} avatar={payer?.avatar} size={20} />
+                                {payer?.name || 'Unknown'}
+                              </span>
+                              {' → '}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Avatar name={payee?.name || 'Unknown'} avatar={payee?.avatar} size={20} />
+                                {payee?.name || 'Unknown'}
+                              </span>
                             </div>
                             <div className="expense-meta">
                               Free-form payment • {new Date(settlement.created_at).toLocaleDateString()}
@@ -821,7 +833,15 @@ export default function GroupDetail(): JSX.Element {
                 <div key={idx} className="expense-item">
                   <div className="expense-info">
                     <div className="expense-description" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                      {balance.from_user?.name} owes {balance.to_user?.name}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Avatar name={balance.from_user?.name || '?'} avatar={balance.from_user?.avatar} size={20} />
+                        {balance.from_user?.name}
+                      </span>
+                      {' owes '}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Avatar name={balance.to_user?.name || '?'} avatar={balance.to_user?.avatar} size={20} />
+                        {balance.to_user?.name}
+                      </span>
                     </div>
                   </div>
                   <span className="expense-amount negative">{formatCurrency(balance.amount)}</span>
@@ -1221,7 +1241,8 @@ export default function GroupDetail(): JSX.Element {
                                     </div>
                                     {group.members.map(member => (
                                       <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ minWidth: '80px', fontSize: '0.8rem' }}>
+                                        <span style={{ minWidth: '80px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <Avatar name={member.name} avatar={member.avatar} size={16} />
                                           {member.name}{member.id === user?.id ? ' (you)' : ''}
                                         </span>
                                         <input
@@ -1591,7 +1612,8 @@ export default function GroupDetail(): JSX.Element {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {group.members.map((member) => (
                         <div key={member.id} className="split-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span className="split-name" style={{ minWidth: '120px', fontWeight: member.id === user?.id ? 'bold' : 'normal' }}>
+                          <span className="split-name" style={{ minWidth: '120px', fontWeight: member.id === user?.id ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Avatar name={member.name} avatar={member.avatar} size={20} />
                             {member.name} {member.id === user?.id ? '(you)' : ''}
                           </span>
                           <input
@@ -1812,7 +1834,10 @@ export default function GroupDetail(): JSX.Element {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span>Paid by:</span>
-                  <strong>{selectedExpense.paid_by_user?.name || 'Unknown'}</strong>
+                  <strong style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Avatar name={selectedExpense.paid_by_user?.name || 'Unknown'} avatar={selectedExpense.paid_by_user?.avatar} size={22} />
+                    {selectedExpense.paid_by_user?.name || 'Unknown'}
+                  </strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Split type:</span>
@@ -1826,7 +1851,10 @@ export default function GroupDetail(): JSX.Element {
                   <h4 style={{ marginBottom: '8px', fontSize: '0.95rem' }}>Who owes what:</h4>
                   {selectedExpense.splits.map((split) => (
                     <div key={split.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-                      <span>{split.user?.name || `User ${split.user_id}`}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Avatar name={split.user?.name || `User ${split.user_id}`} avatar={split.user?.avatar} size={20} />
+                        {split.user?.name || `User ${split.user_id}`}
+                      </span>
                       <span>{formatCurrency(split.amount)}</span>
                     </div>
                   ))}
@@ -1846,7 +1874,10 @@ export default function GroupDetail(): JSX.Element {
                       <div key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--card-bg)', borderRadius: '6px', marginBottom: '6px', border: '1px solid var(--success)' }}>
                         <div>
                           <div style={{ fontWeight: '500' }}>
-                            {payment.paid_by_user?.name} paid {formatCurrency(payment.amount)}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Avatar name={payment.paid_by_user?.name || '?'} avatar={payment.paid_by_user?.avatar} size={18} />
+                              {payment.paid_by_user?.name}
+                            </span> paid {formatCurrency(payment.amount)}
                           </div>
                           {payment.note && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{payment.note}</div>}
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>

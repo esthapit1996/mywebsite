@@ -137,6 +137,13 @@ class ApiService {
     });
   }
 
+  async updateAvatar(avatar: string): Promise<ApiResponse> {
+    return this.request('/profile/avatar', {
+      method: 'PUT',
+      body: JSON.stringify({ avatar }),
+    });
+  }
+
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<ApiResponse> {
     return this.request('/profile/password', {
       method: 'PUT',

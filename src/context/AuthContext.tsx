@@ -68,8 +68,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
   };
 
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const response = await api.getProfile();
+      if (response.data) {
+        setUser(response.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

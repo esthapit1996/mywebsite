@@ -5,6 +5,8 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider, useCurrency } from './context/CurrencyContext';
 import api from './services/api';
 import logo from './images/GopherDebt_Mascot.png';
+import Avatar from './components/Avatar';
+import AvatarPicker from './components/AvatarPicker';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -155,11 +157,12 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }): JSX.Element 
 }
 
 function Header(): JSX.Element | null {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
   const { currentCurrency, ratesLoading } = useCurrency();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -250,7 +253,10 @@ function Header(): JSX.Element | null {
               className="user-menu-trigger"
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
-              <span>👤 {user.name}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Avatar name={user.name} avatar={user.avatar} size={26} />
+                {user.name}
+              </span>
               <span className="dropdown-arrow">{showUserMenu ? '▲' : '▼'}</span>
             </button>
             
@@ -284,6 +290,12 @@ function Header(): JSX.Element | null {
                 </button>
                 <button 
                   className="user-menu-item"
+                  onClick={() => { setShowUserMenu(false); setShowAvatarPicker(true); }}
+                >
+                  🎨 Change Avatar
+                </button>
+                <button 
+                  className="user-menu-item"
                   onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); }}
                 >
                   🔒 Reset Password
@@ -301,6 +313,14 @@ function Header(): JSX.Element | null {
         </nav>
       </div>
       {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
+      {showAvatarPicker && (
+        <AvatarPicker
+          currentAvatar={user.avatar}
+          userName={user.name}
+          onClose={() => setShowAvatarPicker(false)}
+          onAvatarChange={() => refreshUser()}
+        />
+      )}
     </header>
   );
 }

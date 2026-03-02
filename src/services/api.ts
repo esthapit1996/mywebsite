@@ -234,6 +234,10 @@ class ApiService {
     return this.request<Expense[]>(`/groups/${groupId}/expenses`);
   }
 
+  async getUnpaidExpenses(groupId: number | string): Promise<ApiResponse<Expense[]>> {
+    return this.request<Expense[]>(`/groups/${groupId}/expenses/unpaid`);
+  }
+
   async getExpense(groupId: number | string, expenseId: number | string): Promise<ApiResponse<Expense>> {
     return this.request<Expense>(`/groups/${groupId}/expenses/${expenseId}`);
   }

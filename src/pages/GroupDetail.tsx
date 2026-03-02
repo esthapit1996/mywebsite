@@ -68,6 +68,7 @@ export default function GroupDetail(): JSX.Element {
   const { formatAmount } = useCurrency();
   const [group, setGroup] = useState<Group | null>(null);
   const [expenses, setExpenses] = useState<ExpenseWithUser[]>([]);
+  const [unpaidExpenses, setUnpaidExpenses] = useState<ExpenseWithUser[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [myBalance, setMyBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -171,7 +172,7 @@ export default function GroupDetail(): JSX.Element {
 
   const loadData = async () => {
     try {
-      const [groupRes, expensesRes, balancesRes, myBalanceRes, paymentStatusRes, activitiesRes, settlementsRes] = await Promise.all([
+      const [groupRes, expensesRes, balancesRes, myBalanceRes, paymentStatusRes, activitiesRes, settlementsRes, unpaidRes] = await Promise.all([
         api.getGroup(id!),
         api.getExpenses(id!),
         api.getGroupBalances(id!).catch(() => ({ data: { balances: [] } })),
@@ -179,6 +180,7 @@ export default function GroupDetail(): JSX.Element {
         api.getGroupExpensePaymentStatuses(id!).catch(() => ({ data: {} })),
         api.getGroupActivities(id!).catch(() => ({ data: [] })),
         api.getSettlements(id!).catch(() => ({ data: [] })),
+        api.getUnpaidExpenses(id!).catch(() => ({ data: [] })),
       ]);
       
       setGroup(groupRes.data || null);
@@ -195,6 +197,7 @@ export default function GroupDetail(): JSX.Element {
       
       setActivities(activitiesRes.data || []);
       setSettlements(settlementsRes.data || []);
+      setUnpaidExpenses(unpaidRes.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -389,15 +392,10 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const getMyExpenseDebts = (): ExpenseDebt[] => {
-    return expenses.filter(expense => {
-      if (expense.paid_by == user?.id) return false;
+    return unpaidExpenses.filter(expense => {
       if (!expense.splits || expense.splits.length === 0) return false;
       const userSplit = expense.splits.find(s => s.user_id == user?.id);
       if (!userSplit) return false;
-      
-      const status = expensePaymentStatus[expense.id];
-      if (status && status.totalPaid >= status.totalOwed - 0.01) return false;
-      
       return true;
     }).map(expense => {
       const userSplit = expense.splits!.find(s => s.user_id == user?.id);

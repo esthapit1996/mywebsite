@@ -1791,13 +1791,29 @@ export default function GroupDetail(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
                     </div>
-                    {member.id !== user?.id && (
+                    {member.id !== user?.id ? (
                       <button
                         className="btn btn-outline btn-sm"
                         style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
                         onClick={() => handleRemoveMember(member.id, member.name)}
                       >
                         Remove
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
+                        onClick={async () => {
+                          if (!confirm('Leave this group? You will no longer have access.')) return;
+                          try {
+                            await api.removeMember(id!, member.id);
+                            navigate('/');
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        Leave
                       </button>
                     )}
                   </li>

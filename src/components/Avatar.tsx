@@ -46,7 +46,7 @@ export function getInitials(name: string): string {
   if (parts.length >= 2) {
     const first = parts[0];
     const last = parts[parts.length - 1];
-    return (first[0] + last[last.length - 1]).toUpperCase();
+    return (first[0] + last[0]).toUpperCase();
   }
 
   // Single name

@@ -929,6 +929,94 @@ export default function GroupDetail(): JSX.Element {
                         </span>
                       </div>
 
+                      {/* Action buttons — at top */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 1 }}
+                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0}
+                          onClick={async () => {
+                            setAddingReceipt(true);
+                            try {
+                              // Group included items by paidBy
+                              const groups: Record<number, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
+                              for (let i = 0; i < receiptItems.length; i++) {
+                                const config = receiptItemConfigs[i];
+                                if (!config?.included) continue;
+                                const key = config.paidBy;
+                                if (!groups[key]) groups[key] = { items: [], config };
+                                groups[key].items.push({ ...receiptItems[i], idx: i });
+                              }
+                              // Create one expense per group
+                              for (const [, group] of Object.entries(groups)) {
+                                const totalAmount = group.items.reduce((s, it) => s + it.price, 0);
+                                const desc = group.items.map(it => `${it.name} (€${it.price.toFixed(2)})`).join(', ').slice(0, 420);
+                                // Use split config from first item in group (they share paidBy)
+                                const cfg = group.config;
+                                let splitWith: Array<{ user_id: number; amount: number }> = [];
+                                if (cfg.splitType === 'percentage') {
+                                  const pctTotal = Object.values(cfg.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                                  if (Math.abs(pctTotal - 100) > 0.01) {
+                                    setError('Percentages must total 100%');
+                                    setAddingReceipt(false);
+                                    return;
+                                  }
+                                  splitWith = Object.entries(cfg.memberSplits).map(([uid, pct]) => ({
+                                    user_id: parseInt(uid),
+                                    amount: parseFloat(pct) || 0,
+                                  }));
+                                }
+                                await api.createExpense(
+                                  id!,
+                                  totalAmount.toFixed(2),
+                                  desc,
+                                  cfg.splitType,
+                                  splitWith,
+                                  cfg.paidBy || undefined,
+                                );
+                              }
+                              closeExpenseModal();
+                              await loadData();
+                            } catch (err: any) {
+                              setError(err.message);
+                            } finally {
+                              setAddingReceipt(false);
+                            }
+                          }}
+                        >
+                          {addingReceipt ? 'Adding...' : (() => {
+                            const included = receiptItemConfigs.filter(c => c.included);
+                            const uniquePayers = new Set(included.map(c => c.paidBy));
+                            return `Add as ${uniquePayers.size} expense${uniquePayers.size !== 1 ? 's' : ''} (grouped by payer)`;
+                          })()}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
+                            const total = included.reduce((sum, item) => sum + item.price, 0);
+                            setExpenseAmount(total.toFixed(2));
+                            setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
+                            setReceiptMode('none');
+                          }}
+                        >
+                          Combine all into one expense
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        style={{ 
+                          background: 'none', border: 'none', color: 'var(--text-muted)', 
+                          fontSize: '0.8rem', cursor: 'pointer', marginBottom: '12px', width: '100%', textAlign: 'center'
+                        }}
+                        onClick={() => { setReceiptMode('none'); }}
+                      >
+                        Skip — fill form manually
+                      </button>
+
                       {receiptItems.map((item, i) => {
                         const config = receiptItemConfigs[i];
                         if (!config) return null;
@@ -1063,80 +1151,7 @@ export default function GroupDetail(): JSX.Element {
                         ).toFixed(2)}</span>
                       </div>
 
-                      {/* Action buttons */}
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          style={{ flex: 1 }}
-                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0}
-                          onClick={async () => {
-                            setAddingReceipt(true);
-                            try {
-                              for (let i = 0; i < receiptItems.length; i++) {
-                                const config = receiptItemConfigs[i];
-                                if (!config?.included) continue;
-                                const item = receiptItems[i];
-                                let splitWith: Array<{ user_id: number; amount: number }> = [];
-                                if (config.splitType === 'percentage') {
-                                  const total = Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
-                                  if (Math.abs(total - 100) > 0.01) {
-                                    setError(`"${item.name}" percentages must total 100%`);
-                                    setAddingReceipt(false);
-                                    return;
-                                  }
-                                  splitWith = Object.entries(config.memberSplits).map(([uid, pct]) => ({
-                                    user_id: parseInt(uid),
-                                    amount: parseFloat(pct) || 0,
-                                  }));
-                                }
-                                await api.createExpense(
-                                  id!,
-                                  item.price.toFixed(2),
-                                  item.name.slice(0, 420),
-                                  config.splitType,
-                                  splitWith,
-                                  config.paidBy || undefined,
-                                );
-                              }
-                              closeExpenseModal();
-                              await loadData();
-                            } catch (err: any) {
-                              setError(err.message);
-                            } finally {
-                              setAddingReceipt(false);
-                            }
-                          }}
-                        >
-                          {addingReceipt ? 'Adding...' : `Add as ${receiptItemConfigs.filter(c => c.included).length} separate expenses`}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-sm"
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            // Combine into single expense — fill form and exit interactive mode
-                            const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
-                            const total = included.reduce((sum, item) => sum + item.price, 0);
-                            setExpenseAmount(total.toFixed(2));
-                            setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
-                            setReceiptMode('none');
-                          }}
-                        >
-                          Combine into one expense
-                        </button>
-                      </div>
 
-                      <button
-                        type="button"
-                        style={{ 
-                          background: 'none', border: 'none', color: 'var(--text-muted)', 
-                          fontSize: '0.8rem', cursor: 'pointer', marginTop: '8px', width: '100%', textAlign: 'center'
-                        }}
-                        onClick={() => { setReceiptMode('none'); }}
-                      >
-                        Skip — fill form manually
-                      </button>
                     </div>
                   </div>
                 )}

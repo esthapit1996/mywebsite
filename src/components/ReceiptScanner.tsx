@@ -42,13 +42,18 @@ function parseReceiptText(text: string): ReceiptResult {
       continue;
     }
 
+    // Skip non-item lines (payment method, change, etc.)
+    if (/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal)\b/i.test(line)) {
+      continue;
+    }
+
     // Match item lines: "item name ... price" or "item name  1.99"
     // Patterns: text followed by a price at the end
     const itemMatch = line.match(/^(.+?)\s{2,}[€$£¥₹]?\s*([\d]+[.,]\d{2})\s*$/);
     if (itemMatch) {
       const name = itemMatch[1].trim();
       const price = parseFloat(itemMatch[2].replace(',', '.'));
-      if (!isNaN(price) && price > 0 && name.length > 1) {
+      if (!isNaN(price) && price > 0 && name.length > 1 && !/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal)\b/i.test(name)) {
         items.push({ name, price });
         continue;
       }
@@ -61,7 +66,7 @@ function parseReceiptText(text: string): ReceiptResult {
       const price = parseFloat(altMatch[2].replace(',', '.'));
       if (!isNaN(price) && price > 0 && name.length > 1) {
         // Skip if name looks like a date or time
-        if (!/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(name) && !/^\d{1,2}:\d{2}/.test(name)) {
+        if (!/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(name) && !/^\d{1,2}:\d{2}/.test(name) && !/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal)\b/i.test(name)) {
           items.push({ name, price });
         }
       }

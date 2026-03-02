@@ -1145,6 +1145,64 @@ export default function GroupDetail(): JSX.Element {
                                 {/* Percentage splits for this item */}
                                 {config.splitType === 'percentage' && group?.members && (
                                   <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                                    {/* Quick preset buttons */}
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline btn-sm"
+                                        style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                                        onClick={() => {
+                                          const updated = [...receiptItemConfigs];
+                                          const share = (100 / group.members!.length).toFixed(1);
+                                          const splits: Record<number, string> = {};
+                                          group.members!.forEach(m => { splits[m.id] = share; });
+                                          updated[i] = { ...updated[i], memberSplits: splits };
+                                          setReceiptItemConfigs(updated);
+                                        }}
+                                      >
+                                        Split equally
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline btn-sm"
+                                        style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                                        onClick={() => {
+                                          const updated = [...receiptItemConfigs];
+                                          const payerId = config.paidBy || user?.id;
+                                          const splits: Record<number, string> = {};
+                                          const others = group.members!.filter(m => m.id !== payerId);
+                                          const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
+                                          group.members!.forEach(m => { splits[m.id] = m.id === payerId ? '0' : share; });
+                                          updated[i] = { ...updated[i], memberSplits: splits };
+                                          setReceiptItemConfigs(updated);
+                                        }}
+                                      >
+                                        Others owe payer
+                                      </button>
+                                      {group.members!.map(member => (
+                                        <button
+                                          key={member.id}
+                                          type="button"
+                                          className="btn btn-outline btn-sm"
+                                          style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                                          onClick={() => {
+                                            const updated = [...receiptItemConfigs];
+                                            const splits: Record<number, string> = {};
+                                            group.members!.forEach(m => { splits[m.id] = m.id === member.id ? '100' : '0'; });
+                                            updated[i] = { ...updated[i], memberSplits: splits };
+                                            setReceiptItemConfigs(updated);
+                                          }}
+                                        >
+                                          {member.id === user?.id ? 'I owe' : `${member.name.split(' ')[0]} owes`} 100%
+                                        </button>
+                                      ))}
+                                    </div>
+                                    {/* Explanation */}
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--card-bg)', borderRadius: '6px', border: '1px solid var(--border)', marginBottom: '4px' }}>
+                                      Enter what % each person <em>owes</em>.<br/>
+                                      • 0% on payer = full reimbursement<br/>
+                                      • 100% on someone = they owe the full amount
+                                    </div>
                                     {group.members.map(member => (
                                       <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{ minWidth: '80px', fontSize: '0.8rem' }}>
@@ -1488,6 +1546,20 @@ export default function GroupDetail(): JSX.Element {
                       >
                         Others owe {expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : 'me'} 100%
                       </button>
+                      {group.members!.map(member => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            const splits: Record<number, string> = {};
+                            group.members!.forEach(m => { splits[m.id] = m.id === member.id ? '100' : '0'; });
+                            setMemberSplits(splits);
+                          }}
+                        >
+                          {member.id === user?.id ? 'I owe' : `${member.name.split(' ')[0]} owes`} 100%
+                        </button>
+                      ))}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
                       <strong>{expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : 'You'} {expensePaidBy ? 'is' : 'are'} paying {expenseAmount ? (

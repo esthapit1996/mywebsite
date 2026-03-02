@@ -89,6 +89,7 @@ export default function GroupDetail(): JSX.Element {
   const [showExpenseModal, setShowExpenseModal] = useState<boolean>(false);
   const [showSettleModal, setShowSettleModal] = useState<boolean>(false);
   const [showMemberModal, setShowMemberModal] = useState<boolean>(false);
+  const [memberError, setMemberError] = useState<string>('');
   const [showExpenseDetailModal, setShowExpenseDetailModal] = useState<boolean>(false);
 
   // Expense detail/payment states
@@ -297,10 +298,11 @@ export default function GroupDetail(): JSX.Element {
   const handleRemoveMember = async (memberId: number, memberName: string) => {
     if (!confirm(`Remove ${memberName} from the group?`)) return;
     try {
+      setMemberError('');
       await api.removeMember(id!, memberId);
       await loadData();
     } catch (err: any) {
-      setError(err.message);
+      setMemberError(err.message);
     }
   };
 
@@ -650,6 +652,7 @@ export default function GroupDetail(): JSX.Element {
           style={{ marginTop: '10px' }}
           onClick={() => {
             loadAllUsers();
+            setMemberError('');
             setShowMemberModal(true);
           }}
         >
@@ -1777,6 +1780,11 @@ export default function GroupDetail(): JSX.Element {
               <button className="modal-close" onClick={() => setShowMemberModal(false)}>×</button>
             </div>
             <div className="modal-body" style={{ padding: 0 }}>
+              {memberError && (
+                <div style={{ padding: '10px 16px', background: 'var(--danger)', color: 'white', fontSize: '0.85rem' }}>
+                  {memberError}
+                </div>
+              )}
               {/* Member list */}
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {group.members?.map((member) => (
@@ -1806,10 +1814,11 @@ export default function GroupDetail(): JSX.Element {
                         onClick={async () => {
                           if (!confirm('Leave this group? You will no longer have access.')) return;
                           try {
+                            setMemberError('');
                             await api.removeMember(id!, member.id);
                             navigate('/');
                           } catch (err: any) {
-                            setError(err.message);
+                            setMemberError(err.message);
                           }
                         }}
                       >

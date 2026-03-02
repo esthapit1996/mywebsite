@@ -631,44 +631,17 @@ export default function GroupDetail(): JSX.Element {
           </button>
         </div>
 
-        {/* Members */}
-        <div style={{ marginTop: '12px' }}>
-          {group.members?.map((member) => (
-            <span key={member.id} className="member-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <Avatar name={member.name} avatar={member.avatar} size={24} />
-              <span>{member.name}</span>
-              {member.id !== user?.id && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleRemoveMember(member.id, member.name); }}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: 'pointer', 
-                    padding: '4px',
-                    color: 'var(--text-muted)',
-                    fontSize: '16px',
-                    lineHeight: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  title="Remove member"
-                >
-                  ×
-                </button>
-              )}
-            </span>
-          ))}
-          <button
-            className="member-badge"
-            style={{ cursor: 'pointer', border: 'none', background: 'var(--primary)', color: 'var(--btn-text, white)' }}
-            onClick={() => {
-              loadAllUsers();
-              setShowMemberModal(true);
-            }}
-          >
-            + Add
-          </button>
-        </div>
+        {/* Members button */}
+        <button
+          className="btn btn-outline btn-sm"
+          style={{ marginTop: '10px' }}
+          onClick={() => {
+            loadAllUsers();
+            setShowMemberModal(true);
+          }}
+        >
+          👥 Members ({group.members?.length || 0})
+        </button>
       </div>
 
       {/* Balance Card */}
@@ -1781,20 +1754,46 @@ export default function GroupDetail(): JSX.Element {
         </div>
       )}
 
-      {/* Add Member Modal */}
+      {/* Members Modal */}
       {showMemberModal && (
         <div className="modal-overlay" onClick={() => setShowMemberModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Add Member</h3>
+              <h3 className="modal-title">👥 Members</h3>
               <button className="modal-close" onClick={() => setShowMemberModal(false)}>×</button>
             </div>
-            <form onSubmit={handleAddMember}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Select User</label>
+            <div className="modal-body" style={{ padding: 0 }}>
+              {/* Member list */}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {group.members?.map((member) => (
+                  <li key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                    <Avatar name={member.name} avatar={member.avatar} size={36} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {member.name}{member.id === user?.id ? ' (you)' : ''}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
+                    </div>
+                    {member.id !== user?.id && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
+                        onClick={() => handleRemoveMember(member.id, member.name)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              {/* Add member */}
+              <form onSubmit={handleAddMember} style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
+                <label className="form-label" style={{ marginBottom: '6px' }}>Add a member</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <select
                     className="form-select"
+                    style={{ flex: 1 }}
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
                     required
@@ -1806,15 +1805,10 @@ export default function GroupDetail(): JSX.Element {
                         <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                       ))}
                   </select>
+                  <button type="submit" className="btn btn-primary" disabled={!selectedUser}>Add</button>
                 </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowMemberModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">Add Member</button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}

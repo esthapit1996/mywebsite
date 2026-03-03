@@ -18,6 +18,7 @@ export interface User {
   name: string;
   avatar?: string;
   theme_preference?: string;
+  language?: string;
   created_at?: string;
 }
 

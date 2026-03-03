@@ -145,6 +145,13 @@ class ApiService {
     });
   }
 
+  async updateLanguage(language: string): Promise<ApiResponse> {
+    return this.request('/profile/language', {
+      method: 'PUT',
+      body: JSON.stringify({ language }),
+    });
+  }
+
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<ApiResponse> {
     return this.request('/profile/password', {
       method: 'PUT',

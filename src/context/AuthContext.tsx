@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import i18n from 'i18next';
 import api from '../services/api';
 import { useTheme } from './ThemeContext';
 import type { User, AuthContextType, ApiResponse, LoginResponse } from '../types';
@@ -38,6 +39,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (response.data.theme_preference) {
             loadUserTheme(response.data.theme_preference);
           }
+          // Load user's saved language preference
+          if (response.data.language) {
+            i18n.changeLanguage(response.data.language);
+          }
         }
       } catch {
         localStorage.removeItem('token');
@@ -53,6 +58,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Load user's saved theme preference
       if (response.data.user.theme_preference) {
         loadUserTheme(response.data.user.theme_preference);
+      }
+      // Load user's saved language preference
+      if (response.data.user.language) {
+        i18n.changeLanguage(response.data.user.language);
       }
     }
     return response;

@@ -5,6 +5,7 @@ import { LANGUAGES } from './i18n/i18n';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import api from './services/api';
 import logo from './images/GopherDebt_Mascot.png';
 import Avatar from './components/Avatar';
 import Login from './pages/Login';
@@ -115,6 +116,30 @@ function Header(): JSX.Element | null {
           </span>
         </Link>
         <nav className="nav">
+          {/* Language Picker — next to profile button */}
+          <select
+            value={i18n.language}
+            onChange={(e) => {
+              i18n.changeLanguage(e.target.value);
+              api.updateLanguage(e.target.value).catch(() => {});
+            }}
+            title={t('settings.language')}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              color: 'var(--text)',
+              padding: '4px 8px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              marginRight: '8px',
+            }}
+          >
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+            ))}
+          </select>
+
           {/* User Menu Dropdown — universal menu */}
           <div className="user-menu" ref={menuRef}>
             <button 
@@ -163,31 +188,6 @@ function Header(): JSX.Element | null {
                         </option>
                       ))}
                     </optgroup>
-                  </select>
-                </div>
-
-                {/* Language Picker */}
-                <div className="user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
-                  <select
-                    className="theme-select-inline"
-                    value={i18n.language}
-                    onChange={(e) => i18n.changeLanguage(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    title={t('settings.language')}
-                    style={{
-                      flex: 1,
-                      background: 'transparent',
-                      border: '1px solid var(--border)',
-                      borderRadius: '6px',
-                      color: 'var(--text)',
-                      padding: '4px 6px',
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {LANGUAGES.map((lang) => (
-                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
-                    ))}
                   </select>
                 </div>
 

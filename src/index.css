@@ -14,19 +14,19 @@
   --secondary: #6366f1;
   --danger: #ef4444;
   --warning: #f59e0b;
-  --bg: #0f172a;
-  --bg-secondary: #162032;
-  --card-bg: #1e293b;
+  --bg: #000000;
+  --bg-secondary: #0a0a0a;
+  --card-bg: #111111;
   --text: #f1f5f9;
   --text-muted: #94a3b8;
-  --border: #334155;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
-  --input-bg: #1e293b;
-  --alert-error-bg: #450a0a;
-  --alert-error-border: #7f1d1d;
-  --alert-success-bg: #052e16;
-  --alert-success-border: #166534;
+  --border: #1e1e1e;
+  --shadow: 0 1px 3px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.6);
+  --input-bg: #111111;
+  --alert-error-bg: #1a0000;
+  --alert-error-border: #450a0a;
+  --alert-success-bg: #001a0a;
+  --alert-success-border: #052e16;
 }
 
 /* 2. Espresso - Warm espresso brown */

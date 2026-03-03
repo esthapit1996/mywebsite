@@ -1645,6 +1645,24 @@ export default function GroupDetail(): JSX.Element {
                     <option value="percentage">Custom split</option>
                   </select>
                 </div>
+                {splitType === 'equal' && group?.members && expenseAmount && (() => {
+                  const amt = expenseCurrency === 'EUR' ? parseFloat(expenseAmount) : (convertedAmount || 0);
+                  const n = group.members!.length;
+                  if (!amt || n === 0) return null;
+                  const perPerson = Math.floor(amt / n * 100) / 100;
+                  const remainder = Math.round((amt - perPerson * n) * 100) / 100;
+                  const payerName = expensePaidBy
+                    ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] || 'Payer'
+                    : 'You';
+                  if (remainder > 0) {
+                    return (
+                      <div style={{ marginTop: '4px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        💡 €{amt.toFixed(2)} ÷ {n} = €{perPerson.toFixed(2)} each + €{remainder.toFixed(2)} remainder → {payerName === 'You' ? 'your' : `${payerName}'s`} share will be €{(perPerson + remainder).toFixed(2)}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {splitType === 'percentage' && group?.members && (
                   <div className="form-group">
                     <label className="form-label">Who owes what? (must total 100%)</label>

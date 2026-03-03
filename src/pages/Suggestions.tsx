@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import type { Suggestion, Voter, SuggestionComment } from '../types';
@@ -11,6 +12,7 @@ const FOUNDER_EMAIL = 'evansthapit20@gmail.com';
 
 export default function Suggestions() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [count, setCount] = useState(0);
   const [max, setMax] = useState(20);
@@ -46,7 +48,7 @@ export default function Suggestions() {
       setCount(response.data?.count || 0);
       setMax(response.data?.max || 20);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load suggestions');
+      setError(err instanceof Error ? err.message : t('suggestions.failedLoad'));
     } finally {
       setLoading(false);
     }
@@ -64,19 +66,19 @@ export default function Suggestions() {
       setNewType('feature');
       loadSuggestions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit suggestion');
+      setError(err instanceof Error ? err.message : t('suggestions.failedSubmit'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (suggestionId: number) => {
-    if (!confirm('Delete this suggestion?')) return;
+    if (!confirm(t('suggestions.deleteConfirm'))) return;
     try {
       await api.deleteSuggestion(suggestionId);
       loadSuggestions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete suggestion');
+      setError(err instanceof Error ? err.message : t('suggestions.failedDelete'));
     }
   };
 
@@ -90,7 +92,7 @@ export default function Suggestions() {
       }
       loadSuggestions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record vote');
+      setError(err instanceof Error ? err.message : t('suggestions.failedVote'));
     }
   };
 
@@ -99,7 +101,7 @@ export default function Suggestions() {
       await api.updateSuggestionStatus(suggestionId, newStatus);
       loadSuggestions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update status');
+      setError(err instanceof Error ? err.message : t('suggestions.failedStatus'));
     }
   };
 
@@ -114,7 +116,7 @@ export default function Suggestions() {
       setVoters(response.data || []);
       setShowVotersFor(suggestionId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load voters');
+      setError(err instanceof Error ? err.message : t('suggestions.failedVoters'));
     }
   };
 
@@ -128,7 +130,7 @@ export default function Suggestions() {
       setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
       setShowCommentsFor(suggestionId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load comments');
+      setError(err instanceof Error ? err.message : t('suggestions.failedComments'));
     }
   };
 
@@ -144,21 +146,21 @@ export default function Suggestions() {
       const response = await api.getSuggestionComments(suggestionId);
       setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add comment');
+      setError(err instanceof Error ? err.message : t('suggestions.failedAddComment'));
     } finally {
       setCommentSubmitting(null);
     }
   };
 
   const handleDeleteComment = async (suggestionId: number, commentId: number) => {
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm(t('suggestions.deleteCommentConfirm'))) return;
     try {
       await api.deleteSuggestionComment(suggestionId, commentId);
       // Reload comments
       const response = await api.getSuggestionComments(suggestionId);
       setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete comment');
+      setError(err instanceof Error ? err.message : t('suggestions.failedDeleteComment'));
     }
   };
 
@@ -175,7 +177,7 @@ export default function Suggestions() {
       setEditingSuggestion(null);
       loadSuggestions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to edit suggestion');
+      setError(err instanceof Error ? err.message : t('suggestions.failedEditSuggestion'));
     }
   };
 
@@ -192,7 +194,7 @@ export default function Suggestions() {
       const response = await api.getSuggestionComments(suggestionId);
       setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to edit comment');
+      setError(err instanceof Error ? err.message : t('suggestions.failedEditComment'));
     }
   };
 
@@ -220,15 +222,15 @@ export default function Suggestions() {
   };
 
   // Type config
-  const typeConfig: Record<string, { label: string; emoji: string; color: string }> = {
-    feature: { label: 'New Feature', emoji: '🚀', color: '#8b5cf6' },
-    bug: { label: 'Bug Report', emoji: '🐛', color: '#ef4444' },
-    theme: { label: 'New Theme', emoji: '🎨', color: '#ec4899' },
-    ux: { label: 'UI/UX', emoji: '✨', color: '#06b6d4' },
-    change: { label: 'Change Feature', emoji: '🔄', color: '#f97316' },
-    complaint: { label: 'Complaint', emoji: '😤', color: '#dc2626' },
-    praise: { label: 'Praise', emoji: '🙌', color: '#22c55e' },
-    other: { label: 'Other', emoji: '📝', color: '#6b7280' },
+  const typeConfig: Record<string, { key: string; emoji: string; color: string }> = {
+    feature: { key: 'suggestions.feature', emoji: '🚀', color: '#8b5cf6' },
+    bug: { key: 'suggestions.bug', emoji: '🐛', color: '#ef4444' },
+    theme: { key: 'suggestions.theme', emoji: '🎨', color: '#ec4899' },
+    ux: { key: 'suggestions.uiux', emoji: '✨', color: '#06b6d4' },
+    change: { key: 'suggestions.change', emoji: '🔄', color: '#f97316' },
+    complaint: { key: 'suggestions.complaint', emoji: '😤', color: '#dc2626' },
+    praise: { key: 'suggestions.praise', emoji: '🙌', color: '#22c55e' },
+    other: { key: 'suggestions.other', emoji: '📝', color: '#6b7280' },
   };
 
   // Filter by type first, then group by status
@@ -278,7 +280,7 @@ export default function Suggestions() {
               fontSize: '0.7rem',
               fontWeight: '600'
             }}>
-              {(typeConfig[suggestion.type] || typeConfig.other).emoji} {(typeConfig[suggestion.type] || typeConfig.other).label}
+              {(typeConfig[suggestion.type] || typeConfig.other).emoji} {t((typeConfig[suggestion.type] || typeConfig.other).key)}
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               {formatDate(suggestion.created_at)}
@@ -315,7 +317,7 @@ export default function Suggestions() {
                   }}
                 >
                   {Object.entries(typeConfig).map(([key, cfg]) => (
-                    <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
+                    <option key={key} value={key}>{cfg.emoji} {t(cfg.key)}</option>
                   ))}
                 </select>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -334,7 +336,7 @@ export default function Suggestions() {
                       fontSize: '0.8rem'
                     }}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={() => handleSaveEditSuggestion(suggestion.id)}
@@ -350,7 +352,7 @@ export default function Suggestions() {
                       opacity: editSuggestionContent.trim() ? 1 : 0.5
                     }}
                   >
-                    Save
+                    {t('common.save')}
                   </button>
                 </div>
               </div>
@@ -390,7 +392,7 @@ export default function Suggestions() {
                 color: suggestion.user_vote === 'like' ? 'white' : 'var(--text-color)',
                 transition: 'all 0.2s'
               }}
-              title="Like this suggestion"
+              title={t('suggestions.likeTitle')}
             >
               👍 {suggestion.likes || 0}
             </button>
@@ -411,7 +413,7 @@ export default function Suggestions() {
                 color: suggestion.user_vote === 'dislike' ? 'white' : 'var(--text-color)',
                 transition: 'all 0.2s'
               }}
-              title="Dislike this suggestion"
+              title={t('suggestions.dislikeTitle')}
             >
               👎 {suggestion.dislikes || 0}
             </button>
@@ -432,10 +434,10 @@ export default function Suggestions() {
                     fontSize: '0.8rem'
                   }}
                 >
-                  <option value="open">📋 Open</option>
-                  <option value="wip">🔨 WIP</option>
-                  <option value="done">✅ Done</option>
-                  <option value="denied">🚫 Denied</option>
+                  <option value="open">{t('suggestions.statusOpen')}</option>
+                  <option value="wip">{t('suggestions.statusWip')}</option>
+                  <option value="done">{t('suggestions.statusDone')}</option>
+                  <option value="denied">{t('suggestions.statusDenied')}</option>
                 </select>
                 <button
                   onClick={() => handleShowVoters(suggestion.id)}
@@ -448,9 +450,9 @@ export default function Suggestions() {
                     cursor: 'pointer',
                     fontSize: '0.8rem'
                   }}
-                  title="View who voted"
+                  title={t('suggestions.viewAddComments')}
                 >
-                  👁️ {showVotersFor === suggestion.id ? 'Hide' : 'View'} voters
+                  👁️ {showVotersFor === suggestion.id ? t('suggestions.hideVoters') : t('suggestions.viewVoters')} {t('suggestions.voters')}
                 </button>
               </>
             )}
@@ -468,9 +470,9 @@ export default function Suggestions() {
                   cursor: 'pointer',
                   fontSize: '0.8rem'
                 }}
-                title="View/add comments"
+                title={t('suggestions.viewAddComments')}
               >
-                💬 Comments{suggestion.comment_count > 0 ? ` (${suggestion.comment_count})` : ''}
+                {t('suggestions.comments')}{suggestion.comment_count > 0 ? ` (${suggestion.comment_count})` : ''}
               </button>
             )}
           </div>
@@ -485,9 +487,9 @@ export default function Suggestions() {
               fontSize: '0.85rem',
               color: 'var(--text)'
             }}>
-              <strong>Voters:</strong>
+              <strong>{t('suggestions.votersLabel')}</strong>
               {voters.length === 0 ? (
-                <p style={{ margin: '8px 0 0', color: 'var(--text-muted)' }}>No votes yet</p>
+                <p style={{ margin: '8px 0 0', color: 'var(--text-muted)' }}>{t('suggestions.noVotes')}</p>
               ) : (
                 <ul style={{ margin: '8px 0 0', paddingLeft: '20px', color: 'var(--text)' }}>
                   {voters.map(v => (
@@ -510,11 +512,11 @@ export default function Suggestions() {
               fontSize: '0.85rem',
               color: 'var(--text)'
             }}>
-              <strong>💬 Comments:</strong>
+              <strong>💬 {t('suggestions.comments')}:</strong>
               
               {/* Existing comments */}
               {(comments[suggestion.id] || []).length === 0 ? (
-                <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>No comments yet</p>
+                <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>{t('suggestions.noComments')}</p>
               ) : (
                 <div style={{ marginTop: '8px', marginBottom: '12px' }}>
                   {(comments[suggestion.id] || []).map(comment => (
@@ -540,7 +542,7 @@ export default function Suggestions() {
                             : 'var(--success-color, #22c55e)',
                           fontSize: '0.8rem'
                         }}>
-                          {comment.user_name}{comment.user_id === suggestion.user_id ? ' (Owner)' : ''}
+                          {comment.user_name}{comment.user_id === suggestion.user_id ? ` ${t('suggestions.owner')}` : ''}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
@@ -557,7 +559,7 @@ export default function Suggestions() {
                                 padding: '2px',
                                 fontSize: '0.8rem'
                               }}
-                              title="Edit comment"
+                              title={t('suggestions.editComment')}
                             >
                               ✏️
                             </button>
@@ -573,7 +575,7 @@ export default function Suggestions() {
                                 padding: '2px',
                                 fontSize: '0.8rem'
                               }}
-                              title="Delete comment"
+                              title={t('suggestions.deleteComment')}
                             >
                               🗑️
                             </button>
@@ -610,7 +612,7 @@ export default function Suggestions() {
                                 fontSize: '0.75rem'
                               }}
                             >
-                              Cancel
+                              {t('common.cancel')}
                             </button>
                             <button
                               onClick={() => handleSaveEditComment(suggestion.id, comment.id)}
@@ -626,7 +628,7 @@ export default function Suggestions() {
                                 opacity: editCommentContent.trim() ? 1 : 0.5
                               }}
                             >
-                              Save
+                              {t('common.save')}
                             </button>
                           </div>
                         </div>
@@ -649,7 +651,7 @@ export default function Suggestions() {
                       ...prev, 
                       [suggestion.id]: e.target.value.slice(0, MAX_COMMENT_CHARS)
                     }))}
-                    placeholder="Add a comment..."
+                    placeholder={t('suggestions.commentPlaceholder')}
                     style={{
                       width: '100%',
                       minHeight: '60px',
@@ -669,7 +671,7 @@ export default function Suggestions() {
                     marginTop: '6px'
                   }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {(newComment[suggestion.id] || '').length}/{MAX_COMMENT_CHARS} chars • {getUserCommentCount(suggestion.id)}/{MAX_COMMENTS_PER_USER} comments used
+                      {(newComment[suggestion.id] || '').length}/{MAX_COMMENT_CHARS} {t('suggestions.charsLabel')} • {getUserCommentCount(suggestion.id)}/{MAX_COMMENTS_PER_USER} {t('suggestions.commentsUsed')}
                     </span>
                     <button
                       onClick={() => handleAddComment(suggestion.id)}
@@ -685,13 +687,13 @@ export default function Suggestions() {
                         opacity: !(newComment[suggestion.id]?.trim()) ? 0.5 : 1
                       }}
                     >
-                      {commentSubmitting === suggestion.id ? 'Posting...' : 'Post Comment'}
+                      {commentSubmitting === suggestion.id ? t('suggestions.postingComment') : t('suggestions.postComment')}
                     </button>
                   </div>
                 </div>
               ) : (
                 <p style={{ margin: '8px 0 0', color: 'var(--warning-color, #f59e0b)', fontSize: '0.8rem' }}>
-                  You've reached the maximum of {MAX_COMMENTS_PER_USER} comments on this suggestion.
+                  {t('suggestions.maxComments', { max: MAX_COMMENTS_PER_USER })}
                 </p>
               )}
             </div>
@@ -705,7 +707,7 @@ export default function Suggestions() {
               style={{ 
                 color: 'var(--text-muted)',
               }}
-              title="Edit suggestion"
+              title={t('suggestions.editSuggestion')}
             >
               ✏️
             </button>
@@ -717,7 +719,7 @@ export default function Suggestions() {
               style={{ 
                 color: 'var(--error-color, #ef4444)',
               }}
-              title="Delete suggestion"
+              title={t('suggestions.deleteSuggestion')}
             >
               🗑️
             </button>
@@ -740,7 +742,7 @@ export default function Suggestions() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>Loading suggestions...</p>
+          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('suggestions.loadingSuggestions')}</p>
         </div>
         <style>{`
           @keyframes spin {
@@ -754,10 +756,14 @@ export default function Suggestions() {
 
   return (
     <div className="container">
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+          {t('common.backToDashboard')}
+        </Link>
+      </div>
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">💡 Suggestion Box</h2>
-          <Link to="/" className="btn btn-outline btn-sm">← Back</Link>
+          <h2 className="card-title">{t('suggestions.title')}</h2>
         </div>
 
         {error && <div className="alert alert-error" style={{ margin: '16px' }}>{error}</div>}
@@ -766,7 +772,7 @@ export default function Suggestions() {
         <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Type</label>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('suggestions.type')}</label>
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
@@ -781,21 +787,21 @@ export default function Suggestions() {
                   marginBottom: '8px'
                 }}
               >
-                <option value="feature">🚀 New Feature</option>
-                <option value="bug">🐛 Bug Report</option>
-                <option value="theme">🎨 New Theme</option>
-                <option value="ux">✨ UI/UX Improvement</option>
-                <option value="change">🔄 Change Existing Feature</option>
-                <option value="complaint">😤 Complaint</option>
-                <option value="praise">🙌 Praise</option>
-                <option value="other">📝 Other</option>
+                <option value="feature">{t('suggestions.feature')}</option>
+                <option value="bug">{t('suggestions.bug')}</option>
+                <option value="theme">{t('suggestions.theme')}</option>
+                <option value="ux">{t('suggestions.uiux')}</option>
+                <option value="change">{t('suggestions.change')}</option>
+                <option value="complaint">{t('suggestions.complaint')}</option>
+                <option value="praise">{t('suggestions.praise')}</option>
+                <option value="other">{t('suggestions.other')}</option>
               </select>
             </div>
             <div style={{ marginBottom: '12px' }}>
               <textarea
                 value={newSuggestion}
                 onChange={(e) => setNewSuggestion(e.target.value.slice(0, MAX_CHARS))}
-                placeholder="Share your idea or feature request..."
+                placeholder={t('suggestions.placeholder')}
                 disabled={count >= max || submitting}
                 style={{
                   width: '100%',
@@ -818,8 +824,8 @@ export default function Suggestions() {
                 fontSize: '0.85rem',
                 color: 'var(--text-muted)'
               }}>
-                <span>{newSuggestion.length}/{MAX_CHARS} characters</span>
-                <span>{openSuggestions.length}/{max} open suggestions</span>
+                <span>{newSuggestion.length}/{MAX_CHARS} {t('suggestions.charsLabel')}</span>
+                <span>{openSuggestions.length}/{max} {t('suggestions.openLabel')}</span>
               </div>
             </div>
             <button 
@@ -827,12 +833,12 @@ export default function Suggestions() {
               className="btn btn-primary"
               disabled={!newSuggestion.trim() || openSuggestions.length >= max || submitting}
             >
-              {submitting ? 'Posting...' : '📝 Post Suggestion'}
+              {submitting ? t('suggestions.posting') : t('suggestions.postSuggestion')}
             </button>
           </form>
           {openSuggestions.length >= max && (
             <div className="alert alert-error" style={{ marginTop: '12px' }}>
-              Maximum open suggestions reached. Please wait for existing suggestions to be addressed.
+              {t('suggestions.maxReached')}
             </div>
           )}
         </div>
@@ -847,7 +853,7 @@ export default function Suggestions() {
             marginBottom: '12px',
             flexWrap: 'wrap'
           }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Filter by type:</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('suggestions.filterByType')}:</span>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -861,15 +867,15 @@ export default function Suggestions() {
                 cursor: 'pointer'
               }}
             >
-              <option value="all">All Types</option>
-              <option value="feature">🚀 New Feature</option>
-              <option value="bug">🐛 Bug Report</option>
-              <option value="theme">🎨 New Theme</option>
-              <option value="ux">✨ UI/UX Improvement</option>
-              <option value="change">🔄 Change Existing Feature</option>
-              <option value="complaint">😤 Complaint</option>
-              <option value="praise">🙌 Praise</option>
-              <option value="other">📝 Other</option>
+              <option value="all">{t('suggestions.allTypes')}</option>
+              <option value="feature">{t('suggestions.feature')}</option>
+              <option value="bug">{t('suggestions.bug')}</option>
+              <option value="theme">{t('suggestions.theme')}</option>
+              <option value="ux">{t('suggestions.uiux')}</option>
+              <option value="change">{t('suggestions.change')}</option>
+              <option value="complaint">{t('suggestions.complaint')}</option>
+              <option value="praise">{t('suggestions.praise')}</option>
+              <option value="other">{t('suggestions.other')}</option>
             </select>
           </div>
 
@@ -882,10 +888,10 @@ export default function Suggestions() {
           }}>
             {(['open', 'wip', 'done', 'denied'] as const).map(tab => {
               const tabConfig = {
-                open: { label: '📋 Open', count: openSuggestions.length, color: '#3b82f6' },
-                wip: { label: '🔨 WIP', count: wipSuggestions.length, color: '#f59e0b' },
-                done: { label: '✅ Done', count: doneSuggestions.length, color: '#22c55e' },
-                denied: { label: '🚫 Denied', count: deniedSuggestions.length, color: '#ef4444' }
+                open: { label: t('suggestions.tabOpen'), count: openSuggestions.length, color: '#3b82f6' },
+                wip: { label: t('suggestions.tabWip'), count: wipSuggestions.length, color: '#f59e0b' },
+                done: { label: t('suggestions.tabDone'), count: doneSuggestions.length, color: '#22c55e' },
+                denied: { label: t('suggestions.tabDenied'), count: deniedSuggestions.length, color: '#ef4444' }
               };
               const config = tabConfig[tab];
               return (
@@ -915,8 +921,8 @@ export default function Suggestions() {
           {suggestions.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">💭</div>
-              <h3>No suggestions yet</h3>
-              <p>Be the first to share your ideas!</p>
+              <h3>{t('suggestions.noSuggestions')}</h3>
+              <p>{t('suggestions.beFirst')}</p>
             </div>
           ) : (
             <>
@@ -928,7 +934,7 @@ export default function Suggestions() {
                 }}>
                   {openSuggestions.length === 0 ? (
                     <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No open suggestions
+                      {t('suggestions.noOpen')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -945,7 +951,7 @@ export default function Suggestions() {
                 }}>
                   {wipSuggestions.length === 0 ? (
                     <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No suggestions in progress
+                      {t('suggestions.noWip')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -962,7 +968,7 @@ export default function Suggestions() {
                 }}>
                   {doneSuggestions.length === 0 ? (
                     <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No completed suggestions yet
+                      {t('suggestions.noDone')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -979,7 +985,7 @@ export default function Suggestions() {
                 }}>
                   {deniedSuggestions.length === 0 ? (
                     <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No denied suggestions — Evan approves everything! 🎉
+                      {t('suggestions.noDenied')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -999,7 +1005,7 @@ export default function Suggestions() {
           color: 'var(--text-muted)',
           textAlign: 'center'
         }}>
-          💡 Created by Evan Sthapit • Max {max} suggestions • {MAX_CHARS} chars each
+                    {t('suggestions.footerInfo', { max: max, chars: MAX_CHARS })}
         </div>
       </div>
     </div>

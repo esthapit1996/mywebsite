@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import Avatar, { AVATAR_MAP, AVATAR_KEYS } from './Avatar';
 
@@ -10,6 +11,7 @@ interface AvatarPickerProps {
 }
 
 export default function AvatarPicker({ currentAvatar, userName, onClose, onAvatarChange }: AvatarPickerProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState(currentAvatar || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function AvatarPicker({ currentAvatar, userName, onClose, onAvata
         onClose();
       }
     } catch {
-      setError('Failed to update avatar');
+      setError(t('avatar.failedUpdate'));
     } finally {
       setSaving(false);
     }
@@ -36,7 +38,7 @@ export default function AvatarPicker({ currentAvatar, userName, onClose, onAvata
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
         <div className="modal-header">
-          <h2>🎨 Choose Avatar</h2>
+          <h2>{t('avatar.chooseAvatar')}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -65,7 +67,7 @@ export default function AvatarPicker({ currentAvatar, userName, onClose, onAvata
             }}
           >
             <Avatar name={userName} size={32} />
-            <span>Use initials</span>
+            <span>{t('avatar.useInitials')}</span>
           </button>
         </div>
 
@@ -106,14 +108,14 @@ export default function AvatarPicker({ currentAvatar, userName, onClose, onAvata
         </div>
 
         <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
           <button
             type="button"
             className="btn btn-primary"
             disabled={saving || selected === (currentAvatar || '')}
             onClick={handleSave}
           >
-            {saving ? 'Saving...' : 'Save Avatar'}
+            {saving ? t('avatar.saving') : t('avatar.saveAvatar')}
           </button>
         </div>
       </div>

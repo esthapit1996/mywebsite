@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Tesseract from 'tesseract.js';
 
 const API_BASE = import.meta.env.PROD
@@ -297,6 +298,7 @@ function preprocessImage(file: File): Promise<Blob> {
 }
 
 export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.Element {
+  const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scanMethod, setScanMethod] = useState<string>('');
@@ -339,7 +341,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
         onResult(parsed);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to scan receipt');
+      setError(err.message || t('receipt.failedScan'));
     } finally {
       setScanning(false);
       setProgress(0);
@@ -406,7 +408,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 transition: 'all 0.2s',
               }}
             >
-              🔍 OCR (Tesseract)
+              {t('receipt.ocrButton')}
             </button>
             <button
               type="button"
@@ -424,7 +426,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 transition: 'all 0.2s',
               }}
             >
-              🤖 AI (Gemini)
+              {t('receipt.aiButton')}
             </button>
           </div>
           <div
@@ -442,9 +444,9 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
           }}
         >
           <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📸</div>
-          <div style={{ fontWeight: 500, marginBottom: '4px' }}>Scan or upload a receipt</div>
+          <div style={{ fontWeight: 500, marginBottom: '4px' }}>{t('receipt.scanOrUpload')}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Take a photo or drag & drop an image
+            {t('receipt.takePhoto')}
           </div>
         </div>
         </div>
@@ -488,7 +490,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 }} />
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {scanMethod === 'AI' ? '🤖' : '🔍'} Scanning receipt{scanMethod ? ` (${scanMethod})` : ''}... {progress}%
+                {scanMethod === 'AI' ? '🤖' : '🔍'} {scanMethod ? t('receipt.scanning', { method: scanMethod, progress }) : t('receipt.scanningSimple')}
               </div>
             </div>
           ) : error ? (
@@ -497,17 +499,17 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 ⚠️ {error}
               </div>
               <button type="button" className="btn btn-outline btn-sm" onClick={reset}>
-                Try again
+                {t('receipt.tryAgain')}
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
               <button type="button" className="btn btn-outline btn-sm" onClick={reset}>
-                ✕ Clear
+                {t('receipt.clear')}
               </button>
               <button type="button" className="btn btn-sm" onClick={() => fileInputRef.current?.click()}
                 style={{ background: 'var(--secondary)' }}>
-                📸 Rescan
+                {t('receipt.rescan')}
               </button>
             </div>
           )}

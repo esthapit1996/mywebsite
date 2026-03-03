@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { LANGUAGES } from '../i18n/i18n';
 import api from '../services/api';
 import Avatar from '../components/Avatar';
 import AvatarPicker from '../components/AvatarPicker';
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,27 +23,27 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     setSuccess('');
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
+      setError(t('changePassword.mismatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+      setError(t('changePassword.tooShort'));
       return;
     }
 
     if (oldPassword === newPassword) {
-      setError('New password must be different from old password');
+      setError(t('changePassword.samePassword'));
       return;
     }
 
     setLoading(true);
     try {
       await api.changePassword(oldPassword, newPassword, confirmPassword);
-      setSuccess('Password changed successfully!');
+      setSuccess(t('changePassword.success'));
       setTimeout(() => onClose(), 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change password');
+      setError(err instanceof Error ? err.message : t('changePassword.failed'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +53,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>🔒 Change Password</h2>
+          <h2>{t('changePassword.title')}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -59,44 +62,44 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Current Password</label>
+            <label className="form-label">{t('changePassword.currentPassword')}</label>
             <input
               type="password"
               className="form-input"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              placeholder="Enter current password"
+              placeholder={t('changePassword.currentPlaceholder')}
               required
             />
           </div>
           <div className="form-group">
-            <label className="form-label">New Password</label>
+            <label className="form-label">{t('changePassword.newPassword')}</label>
             <input
               type="password"
               className="form-input"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password (min 6 chars)"
+              placeholder={t('changePassword.newPlaceholder')}
               required
               minLength={6}
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Confirm New Password</label>
+            <label className="form-label">{t('changePassword.confirmPassword')}</label>
             <input
               type="password"
               className="form-input"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-type new password"
+              placeholder={t('changePassword.confirmPlaceholder')}
               required
               minLength={6}
             />
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Changing...' : 'Change Password'}
+              {loading ? t('changePassword.changing') : t('changePassword.changeBtn')}
             </button>
           </div>
         </form>
@@ -108,6 +111,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 export default function Settings() {
   const { user, refreshUser } = useAuth();
   const { currentCurrency, ratesLoading } = useCurrency();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -118,13 +122,13 @@ export default function Settings() {
     <div className="container">
       <div style={{ marginBottom: '16px' }}>
         <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
-          ← Back to Dashboard
+          {t('common.backToDashboard')}
         </Link>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">⚙️ Settings</h2>
+          <h2 className="card-title">{t('settings.title')}</h2>
         </div>
 
         <ul className="list">
@@ -140,8 +144,8 @@ export default function Settings() {
             >
               <Avatar name={user.name} avatar={user.avatar} size={36} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500 }}>Change Avatar</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Update your profile picture</div>
+                <div style={{ fontWeight: 500 }}>{t('settings.changeAvatar')}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('settings.updateProfile')}</div>
               </div>
               <span style={{ color: 'var(--text-muted)' }}>›</span>
             </button>
@@ -161,13 +165,39 @@ export default function Settings() {
                 {ratesLoading ? '⏳' : currentCurrency.symbol}
               </span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500 }}>Display Currency</div>
+                <div style={{ fontWeight: 500 }}>{t('settings.displayCurrency')}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Currently: {currentCurrency.code} ({currentCurrency.symbol})
+                  {t('settings.currently')} <span className="notranslate">{currentCurrency.code} ({currentCurrency.symbol})</span>
                 </div>
               </div>
               <span style={{ color: 'var(--text-muted)' }}>›</span>
             </button>
+          </li>
+
+          {/* Language */}
+          <li className="list-item">
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                padding: '4px 0', fontSize: '1rem',
+              }}
+            >
+              <span style={{ fontSize: '1.4rem', width: '36px', textAlign: 'center' }}>🌐</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>{t('settings.language')}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('settings.changeLanguage')}</div>
+              </div>
+              <select
+                className="form-select"
+                value={i18n.language}
+                onChange={(e) => i18n.changeLanguage(e.target.value)}
+                style={{ width: 'auto', minWidth: '120px', fontSize: '0.9rem' }}
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+                ))}
+              </select>
+            </div>
           </li>
 
           {/* Reset Password */}
@@ -182,8 +212,8 @@ export default function Settings() {
             >
               <span style={{ fontSize: '1.4rem', width: '36px', textAlign: 'center' }}>🔒</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500 }}>Reset Password</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Change your account password</div>
+                <div style={{ fontWeight: 500 }}>{t('settings.resetPassword')}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('settings.changePassword')}</div>
               </div>
               <span style={{ color: 'var(--text-muted)' }}>›</span>
             </button>
@@ -202,8 +232,8 @@ export default function Settings() {
               >
                 <span style={{ fontSize: '1.4rem', width: '36px', textAlign: 'center' }}>👥</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500 }}>Members</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Manage user accounts</div>
+                  <div style={{ fontWeight: 500 }}>{t('settings.membersLabel')}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('settings.manageUsers')}</div>
                 </div>
                 <span style={{ color: 'var(--text-muted)' }}>›</span>
               </button>

@@ -1,20 +1,14 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../images/GopherDebt_Mascot.png';
 
-const funGreetings = [
-  "The gopher remembers who owes what... 🐹",
-  "Back for more debt drama? Let's go!",
-  "Your debts missed you! 💸",
-  "Money never forgets. Neither do we. 🐹",
-  "Time to settle some scores!",
-  "Who owes you money today? 🤔",
-  "The gopher has been expecting you...",
-  "Ready to chase some IOUs? 🏃",
-  "Friendships are priceless. Dinners aren't.",
-  "Split bills, not friendships! 🤝",
+const greetingKeys = [
+  'login.greeting1', 'login.greeting2', 'login.greeting3', 'login.greeting4',
+  'login.greeting5', 'login.greeting6', 'login.greeting7', 'login.greeting8',
+  'login.greeting9', 'login.greeting10',
 ];
 
 export default function Login() {
@@ -22,9 +16,10 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [greeting] = useState(() => funGreetings[Math.floor(Math.random() * funGreetings.length)]);
+  const [greetingKey] = useState(() => greetingKeys[Math.floor(Math.random() * greetingKeys.length)]);
   const { login } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -36,7 +31,7 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('login.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -61,47 +56,47 @@ export default function Login() {
       <div className="auth-card card">
         <div className="auth-header">
           <img src={logo} alt="GopherDebt" className="auth-logo" />
-          <h1>GopherDebt</h1>
-          <p className="motto" style={{ fontSize: '0.85rem', fontStyle: 'italic', opacity: 0.7, marginBottom: '8px' }}>GopherDebt Good, GoForDebt Bad.</p>
-          <p>{greeting}</p>
+          <h1 className="notranslate">GopherDebt</h1>
+          <p className="motto notranslate" style={{ fontSize: '0.85rem', fontStyle: 'italic', opacity: 0.7, marginBottom: '8px' }}>GopherDebt Good, GoForDebt Bad.</p>
+          <p>{t(greetingKey)}</p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">{t('login.email')}</label>
             <input
               type="email"
               className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('login.emailPlaceholder')}
               required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="form-label">{t('login.password')}</label>
             <input
               type="password"
               className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t('login.passwordPlaceholder')}
               required
             />
           </div>
 
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('login.signingIn') : t('login.signIn')}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            Don't have an account?{' '}
-            <Link to="/register">Create one</Link>
+            {t('login.noAccount')}{' '}
+            <Link to="/register">{t('login.createOne')}</Link>
           </p>
         </div>
       </div>

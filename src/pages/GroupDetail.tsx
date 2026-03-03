@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
@@ -68,6 +69,7 @@ export default function GroupDetail(): JSX.Element {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
   const [group, setGroup] = useState<Group | null>(null);
   const [expenses, setExpenses] = useState<ExpenseWithUser[]>([]);
   const [unpaidExpenses, setUnpaidExpenses] = useState<ExpenseWithUser[]>([]);
@@ -239,7 +241,7 @@ export default function GroupDetail(): JSX.Element {
     try {
       const finalAmount = expenseCurrency === 'EUR' ? expenseAmount : convertedAmount;
       if (!finalAmount) {
-        setError('Please wait for currency conversion');
+        setError(t('group.waitConversion'));
         return;
       }
 
@@ -254,7 +256,7 @@ export default function GroupDetail(): JSX.Element {
       if (splitType === 'percentage') {
         const totalPercent = Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
         if (Math.abs(totalPercent - 100) > 0.01) {
-          setError('Percentages must add up to 100%');
+          setError(t('group.percentsMust100'));
           return;
         }
         splitWith = Object.entries(memberSplits).map(([userId, percent]) => ({
@@ -296,7 +298,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handleRemoveMember = async (memberId: number, memberName: string) => {
-    if (!confirm(`Remove ${memberName} from the group?`)) return;
+    if (!confirm(t('group.removeMemberConfirm', { name: memberName }))) return;
     try {
       setMemberError('');
       await api.removeMember(id!, memberId);
@@ -307,7 +309,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handleDeleteExpense = async (expenseId: number) => {
-    if (!confirm('Delete this expense?')) return;
+    if (!confirm(t('group.deleteExpense'))) return;
     try {
       await api.deleteExpense(id!, expenseId);
       await loadData();
@@ -317,7 +319,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handleDeleteSettlement = async (settlementId: number) => {
-    if (!confirm('Delete this free-form payment?')) return;
+    if (!confirm(t('group.deleteSettlement'))) return;
     try {
       await api.deleteSettlement(id!, settlementId);
       await loadData();
@@ -328,10 +330,10 @@ export default function GroupDetail(): JSX.Element {
 
   const handleDeleteGroup = async () => {
     if (balances.length > 0) {
-      alert('You naughty naughty, you teasing me. Balance has not been settled yet!');
+      alert(t('group.balanceNotSettled'));
       return;
     }
-    if (!confirm('Delete this group? This cannot be undone.')) return;
+    if (!confirm(t('group.deleteGroupConfirm'))) return;
     try {
       await api.deleteGroup(id!);
       navigate('/');
@@ -341,7 +343,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handleClearAllExpenses = async () => {
-    if (!confirm('Clear ALL expenses in this group? This cannot be undone.')) return;
+    if (!confirm(t('group.clearExpensesConfirm'))) return;
     try {
       await api.clearAllExpenses(id!);
       await loadData();
@@ -385,7 +387,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handleDeletePayment = async (paymentId: number) => {
-    if (!confirm('Delete this payment?')) return;
+    if (!confirm(t('group.deletePayment'))) return;
     try {
       await api.deleteExpensePayment(paymentId);
       await loadData();
@@ -451,21 +453,21 @@ export default function GroupDetail(): JSX.Element {
     
     switch (activity.action_type) {
       case 'expense_created':
-        return `${userName} added expense: "${activity.description}"`;
+        return t('activity.addedExpense', { name: userName, desc: activity.description });
       case 'expense_deleted':
-        return `${userName} deleted expense: "${activity.description}"`;
+        return t('activity.deletedExpense', { name: userName, desc: activity.description });
       case 'settlement':
-        return `${userName} made a free-form payment to ${relatedName}`;
+        return t('activity.settlement', { name: userName, related: relatedName });
       case 'payment':
-        return `${userName} paid ${relatedName} - ${activity.description}`;
+        return t('activity.payment', { name: userName, related: relatedName, desc: activity.description });
       case 'member_added':
-        return `${userName} added ${relatedName} to the group`;
+        return t('activity.memberAdded', { name: userName, related: relatedName });
       case 'member_removed':
-        return `${userName} removed ${relatedName} from the group`;
+        return t('activity.memberRemoved', { name: userName, related: relatedName });
       case 'group_created':
-        return `${userName} created the group`;
+        return t('activity.groupCreated', { name: userName });
       case 'group_updated':
-        return `${userName}: ${activity.description}`;
+        return t('activity.groupUpdated', { name: userName, desc: activity.description });
       default:
         return activity.description;
     }
@@ -484,7 +486,7 @@ export default function GroupDetail(): JSX.Element {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Fetching your data...</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>{t('common.fetchingData')}</p>
         </div>
         <style>{`
           @keyframes spin {
@@ -499,11 +501,13 @@ export default function GroupDetail(): JSX.Element {
   if (!group) {
     return (
       <div className="container">
+        <div style={{ marginBottom: '16px' }}>
+          <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+            {t('common.backToDashboard')}
+          </Link>
+        </div>
         <div className="card">
-          <div className="alert alert-error">Group not found</div>
-          <button className="btn btn-outline" onClick={() => navigate('/')}>
-            Back to Dashboard
-          </button>
+          <div className="alert alert-error">{t('group.groupNotFound')}</div>
         </div>
       </div>
     );
@@ -511,6 +515,11 @@ export default function GroupDetail(): JSX.Element {
 
   return (
     <div className="container">
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+            {t('common.backToDashboard')}
+        </Link>
+      </div>
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* Group Header */}
@@ -553,7 +562,7 @@ export default function GroupDetail(): JSX.Element {
                     margin: 0,
                     fontFamily: 'inherit'
                   }}
-                  placeholder="Group name"
+                  placeholder={t('group.groupNamePlaceholder')}
                   autoFocus
                 />
                 <div style={{ fontSize: '0.75rem', color: editName.length >= 60 ? 'var(--warning)' : 'var(--text-muted)', textAlign: 'right' }}>
@@ -593,7 +602,7 @@ export default function GroupDetail(): JSX.Element {
                     fontFamily: 'inherit',
                     resize: 'none'
                   }}
-                  placeholder="Description (optional)"
+                  placeholder={t('group.descPlaceholder')}
                 />
                 <div style={{ fontSize: '0.75rem', color: editDescription.length >= 120 ? 'var(--warning)' : 'var(--text-muted)', textAlign: 'right' }}>
                   {editDescription.length}/128
@@ -613,13 +622,13 @@ export default function GroupDetail(): JSX.Element {
                     }}
                     disabled={!editName.trim()}
                   >
-                    Save
+                    {t('common.save')}
                   </button>
                   <button
                     className="btn btn-outline btn-sm"
                     onClick={() => setEditingGroup(false)}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -631,19 +640,16 @@ export default function GroupDetail(): JSX.Element {
                   setEditDescription(group.description || '');
                   setEditingGroup(true);
                 }}
-                title="Click to edit"
+                title={t('group.clickToEdit')}
               >
                 <h2 className="card-title" style={{ margin: 0, wordBreak: 'break-word' }}>{group.name}</h2>
                 {group.description && <p className="text-muted" style={{ margin: 0, wordBreak: 'break-word' }}>{group.description}</p>}
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
-                  Created by {group.members?.find(m => m.id === group.created_by)?.name || 'Unknown'} on {group.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                  {t('group.createdBy')} {group.members?.find(m => m.id === group.created_by)?.name || t('common.unknown')} {t('group.on')} {group.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
                 </p>
               </div>
             )}
           </div>
-          <button className="btn btn-outline btn-sm" onClick={() => navigate('/')}>
-            ← Back
-          </button>
         </div>
 
         {/* Members button */}
@@ -656,18 +662,18 @@ export default function GroupDetail(): JSX.Element {
             setShowMemberModal(true);
           }}
         >
-          👥 Members ({group.members?.length || 0})
+          👥 {t('group.members')} ({group.members?.length || 0})
         </button>
       </div>
 
       {/* Balance Card */}
       <div className="card balance-card">
-        <div className="balance-label">Your balance</div>
+        <div className="balance-label">{t('group.yourBalance')}</div>
         <div className={`balance-amount ${myBalance > 0 ? 'balance-positive' : myBalance < 0 ? 'balance-negative' : 'balance-zero'}`}>
           {myBalance >= 0 ? '+' : ''}{formatCurrency(myBalance)}
         </div>
         <p className="text-muted" style={{ marginTop: '8px' }}>
-          {myBalance > 0 ? 'You are owed money' : myBalance < 0 ? 'You owe money' : 'All balanced!'}
+          {myBalance > 0 ? t('group.youAreOwed') : myBalance < 0 ? t('group.youOwe') : t('group.allBalanced')}
         </p>
         <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'center' }}>
           <button
@@ -675,14 +681,14 @@ export default function GroupDetail(): JSX.Element {
             style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
             onClick={handleClearAllExpenses}
           >
-            Clear All Expenses
+            {t('group.clearAllExpenses')}
           </button>
           <button
             className="btn btn-outline btn-sm"
             style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
             onClick={handleDeleteGroup}
           >
-            Delete Group
+            {t('group.deleteGroup')}
           </button>
         </div>
       </div>
@@ -690,23 +696,23 @@ export default function GroupDetail(): JSX.Element {
       {/* Action Buttons */}
       <div className="flex gap-2 mb-4">
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setShowExpenseModal(true)}>
-          + Add Expense
+          {t('group.addExpense')}
         </button>
         <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setGoPayMode('select'); setShowSettleModal(true); }}>
-          🐹 Go Pay!
+          {t('group.goPay')}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="tabs">
         <button className={`tab ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')}>
-          Expenses
+          {t('group.expenses')}
         </button>
         <button className={`tab ${activeTab === 'balances' ? 'active' : ''}`} onClick={() => setActiveTab('balances')}>
-          Balances
+          {t('group.balances')}
         </button>
         <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-          History
+          {t('group.history')}
         </button>
       </div>
 
@@ -717,8 +723,8 @@ export default function GroupDetail(): JSX.Element {
             {expenses.length === 0 && settlements.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">💸</div>
-                <h3>No expenses yet</h3>
-                <p>Add your first expense to get started.</p>
+                <h3>{t('group.noExpenses')}</h3>
+                <p>{t('group.noExpensesDesc')}</p>
               </div>
             ) : (
               <>
@@ -739,7 +745,7 @@ export default function GroupDetail(): JSX.Element {
                         overflow: 'hidden'
                       }}>{expense.description}</div>
                       <div className="expense-meta" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                        <span>Paid by</span>
+                        <span>{t('common.paidBy')}</span>
                         <Avatar name={expense.paid_by_user?.name || 'Unknown'} avatar={expense.paid_by_user?.avatar} size={16} />
                         <span>{expense.paid_by_user?.name || 'Unknown'}</span>
                         <span>• {expense.split_type}</span>
@@ -747,7 +753,7 @@ export default function GroupDetail(): JSX.Element {
                       {expensePaymentStatus[expense.id] && 
                         expensePaymentStatus[expense.id].totalOwed > 0 && 
                         expensePaymentStatus[expense.id].totalPaid >= expensePaymentStatus[expense.id].totalOwed - 0.01 && (
-                          <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>✅ Settlements were made</div>
+                          <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>{t('group.settlementsWereMade')}</div>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -778,7 +784,7 @@ export default function GroupDetail(): JSX.Element {
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px'
                     }}>
-                      🤝 Free-form Payments
+                      {t('group.freeFormPayments')}
                     </div>
                     {settlements.map((settlement) => {
                       const payer = group?.members?.find(m => m.id === settlement.paid_by);
@@ -798,7 +804,7 @@ export default function GroupDetail(): JSX.Element {
                               </span>
                             </div>
                             <div className="expense-meta">
-                              Free-form payment • {new Date(settlement.created_at).toLocaleDateString()}
+                              {t('group.freeFormPayment')} • {new Date(settlement.created_at).toLocaleDateString()}
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -825,8 +831,8 @@ export default function GroupDetail(): JSX.Element {
             {balances.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">✅</div>
-                <h3>All settled up!</h3>
-                <p>No one owes anyone money.</p>
+                <h3>{t('group.allSettled')}</h3>
+                <p>{t('group.noOneOwes')}</p>
               </div>
             ) : (
               balances.map((balance, idx) => (
@@ -837,7 +843,7 @@ export default function GroupDetail(): JSX.Element {
                         <Avatar name={balance.from_user?.name || '?'} avatar={balance.from_user?.avatar} size={22} />
                         <strong>{balance.from_user?.name}</strong>
                       </span>
-                      <span style={{ color: 'var(--text-muted)' }}>owes</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{t('group.owes')}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <Avatar name={balance.to_user?.name || '?'} avatar={balance.to_user?.avatar} size={22} />
                         <strong>{balance.to_user?.name}</strong>
@@ -858,8 +864,8 @@ export default function GroupDetail(): JSX.Element {
             {activities.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📜</div>
-                <h3>No activity yet</h3>
-                <p>Activity history will appear here.</p>
+                <h3>{t('group.noActivity')}</h3>
+                <p>{t('group.noActivityDesc')}</p>
               </div>
             ) : (
               <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -910,7 +916,7 @@ export default function GroupDetail(): JSX.Element {
         <div className="modal-overlay" onClick={closeExpenseModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Add Expense</h3>
+              <h3 className="modal-title">{t('group.addExpenseTitle')}</h3>
               <button className="modal-close" onClick={closeExpenseModal}>×</button>
             </div>
             <form onSubmit={handleAddExpense}>
@@ -952,9 +958,9 @@ export default function GroupDetail(): JSX.Element {
                       border: '1px solid var(--border)',
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>🧾 Receipt Items</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t('group.receipt.items')}</span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          {receiptItemConfigs.filter(c => c.included).length}/{receiptItems.length} selected
+                          {t('group.receipt.selected', { count: receiptItemConfigs.filter(c => c.included).length, total: receiptItems.length })}
                         </span>
                       </div>
 
@@ -966,7 +972,7 @@ export default function GroupDetail(): JSX.Element {
                         }}
                         onClick={() => { setReceiptMode('none'); }}
                       >
-                        Skip — fill form manually
+                        {t('group.receipt.skipManual')}
                       </button>
 
                       {/* Group summary preview */}
@@ -1004,7 +1010,7 @@ export default function GroupDetail(): JSX.Element {
                         if (groups.length <= 1 && groups[0]?.splitLabel === 'Split equally') return null;
                         return (
                           <div style={{ marginBottom: '10px', padding: '8px 10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            <div style={{ fontWeight: 600, marginBottom: '4px' }}>Will create {groups.length} expense{groups.length !== 1 ? 's' : ''}:</div>
+                            <div style={{ fontWeight: 600, marginBottom: '4px' }}>{t('group.receipt.willCreate', { count: groups.length })}:</div>
                             {groups.map((g, idx) => (
                               <div key={idx} style={{ padding: '2px 0' }}>
                                 <span style={{ fontWeight: 500 }}>{idx + 1}.</span> {g.items.join(', ')} — <em>{g.splitLabel}</em>
@@ -1053,7 +1059,7 @@ export default function GroupDetail(): JSX.Element {
                                     return updated;
                                   });
                                 }}
-                                placeholder="Item name"
+                                placeholder={t('group.receipt.itemName')}
                                 style={{
                                   flex: 1, padding: '4px 6px', fontSize: '0.85rem', minWidth: '0',
                                   ...(config.included && !item.name.trim() ? { borderColor: 'var(--danger)' } : {}),
@@ -1092,7 +1098,7 @@ export default function GroupDetail(): JSX.Element {
                                   color: 'var(--danger)', fontSize: '1.1rem', padding: '2px 4px', flexShrink: 0,
                                   lineHeight: 1,
                                 }}
-                                title="Remove item"
+                                title={t('group.receipt.removeItem')}
                               >
                                 ✕
                               </button>
@@ -1115,9 +1121,9 @@ export default function GroupDetail(): JSX.Element {
                                     }}
                                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
                                   >
-                                    <option value={0}>Paid by you</option>
+                                    <option value={0}>{t('group.paidByYou')}</option>
                                     {group?.members?.filter(m => m.id !== user?.id).map(member => (
-                                      <option key={member.id} value={member.id}>Paid by {member.name}</option>
+                                      <option key={member.id} value={member.id}>{t('group.paidByMember', { name: member.name })}</option>
                                     ))}
                                   </select>
                                   <select
@@ -1139,8 +1145,8 @@ export default function GroupDetail(): JSX.Element {
                                     }}
                                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', minWidth: '100px' }}
                                   >
-                                    <option value="equal">Split equally</option>
-                                    <option value="percentage">Custom %</option>
+                                    <option value="equal">{t('common.splitEqually')}</option>
+                                    <option value="percentage">{t('common.customPercent')}</option>
                                   </select>
                                 </div>
 
@@ -1164,7 +1170,7 @@ export default function GroupDetail(): JSX.Element {
                                           });
                                         }}
                                       >
-                                        Split equally
+                                        {t('common.splitEqually')}
                                       </button>
                                       <button
                                         type="button"
@@ -1183,7 +1189,7 @@ export default function GroupDetail(): JSX.Element {
                                           });
                                         }}
                                       >
-                                        Others owe payer
+                                        {t('group.receipt.othersOwePayer')}
                                       </button>
                                       {group.members!.filter(member => member.id !== (config.paidBy || user?.id)).map(member => (
                                         <button
@@ -1201,21 +1207,17 @@ export default function GroupDetail(): JSX.Element {
                                             });
                                           }}
                                         >
-                                          {member.id === user?.id ? 'I owe' : `${member.name.split(' ')[0]} owes`} 100%
+                                          {member.id === user?.id ? t('group.iOwe') : t('group.owes100', { name: member.name.split(' ')[0] })}
                                         </button>
                                       ))}
                                     </div>
                                     {/* Explanation */}
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--card-bg)', borderRadius: '6px', border: '1px solid var(--border)', marginBottom: '4px' }}>
-                                      Enter what % each person <em>owes</em>.<br/>
-                                      • 0% on payer = full reimbursement<br/>
-                                      • 100% on someone = they owe the full amount
-                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--card-bg)', borderRadius: '6px', border: '1px solid var(--border)', marginBottom: '4px' }} dangerouslySetInnerHTML={{ __html: t('group.receipt.enterOwes') + '<br/>' + t('group.receipt.zeroOnPayer') + '<br/>' + t('group.receipt.hundredOnSomeone') }} />
                                     {group.members.map(member => (
                                       <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{ minWidth: '80px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           <Avatar name={member.name} avatar={member.avatar} size={16} />
-                                          {member.name}{member.id === user?.id ? ' (you)' : ''}
+                                          {member.name}{member.id === user?.id ? ` (${t('common.you')})` : ''}
                                         </span>
                                         <input
                                           type="number"
@@ -1275,7 +1277,7 @@ export default function GroupDetail(): JSX.Element {
                           color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 500,
                         }}
                       >
-                        + Add item manually
+                        {t('group.receipt.addItemManually')}
                       </button>
 
                       {/* Total summary */}
@@ -1291,7 +1293,7 @@ export default function GroupDetail(): JSX.Element {
                           fontSize: '0.9rem',
                           color: 'var(--text-muted)',
                         }}>
-                          <span>Items subtotal</span>
+                          <span>{t('group.receipt.itemsSubtotal')}</span>
                           <span>€{(Math.round(receiptItems.reduce((sum, item, i) => 
                             receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
                           ) * 100) / 100).toFixed(2)}</span>
@@ -1299,7 +1301,7 @@ export default function GroupDetail(): JSX.Element {
 
                         {/* Discount / adjustment */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Discount / adjustment</span>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('group.receipt.discountAdjustment')}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1, justifyContent: 'flex-end' }}>
                             <span style={{ fontSize: '0.85rem' }}>€</span>
                             <input
@@ -1318,9 +1320,9 @@ export default function GroupDetail(): JSX.Element {
                             const sub = Math.round(receiptItems.reduce((s, it, i) => receiptItemConfigs[i]?.included ? s + it.price : s, 0) * 100) / 100;
                             const disc = parseFloat(receiptDiscount) || 0;
                             if (sub + disc <= 0 && disc < 0) {
-                              return <span style={{ color: 'var(--danger)' }}>⚠ Discount exceeds subtotal — nothing to add</span>;
+                              return <span style={{ color: 'var(--danger)' }}>{t('group.receipt.discountExceeds')}</span>;
                             }
-                            return 'Use negative for discounts (e.g. -2.50)';
+                            return t('group.receipt.discountHint');
                           })()}
                         </div>
 
@@ -1332,7 +1334,7 @@ export default function GroupDetail(): JSX.Element {
                           borderTop: '1px solid var(--border)',
                           paddingTop: '6px',
                         }}>
-                          <span>Total</span>
+                          <span>{t('common.total')}</span>
                           {(() => {
                             const total = Math.round((
                               receiptItems.reduce((sum, item, i) => 
@@ -1431,7 +1433,7 @@ export default function GroupDetail(): JSX.Element {
                             }
                           }}
                         >
-                          {addingReceipt ? 'Adding...' : (() => {
+                          {addingReceipt ? t('group.receipt.adding') : (() => {
                             const included = receiptItemConfigs.filter(c => c.included);
                             const groupKeys = new Set(included.map(c => {
                               const splitsKey = c.splitType === 'percentage'
@@ -1439,7 +1441,7 @@ export default function GroupDetail(): JSX.Element {
                                 : 'equal';
                               return `${c.paidBy}-${c.splitType}-${splitsKey}`;
                             }));
-                            return `Add as ${groupKeys.size} expense${groupKeys.size !== 1 ? 's' : ''}`;
+                            return t('group.receipt.addAsExpenses', { count: groupKeys.size });
                           })()}
                         </button>
                         <button
@@ -1456,7 +1458,7 @@ export default function GroupDetail(): JSX.Element {
                             setReceiptMode('none');
                           }}
                         >
-                          Combine all into one expense
+                          {t('group.receipt.combineAll')}
                         </button>
                       </div>
 
@@ -1474,7 +1476,7 @@ export default function GroupDetail(): JSX.Element {
                     fontSize: '0.85rem',
                   }}>
                     <div style={{ fontWeight: 600, marginBottom: '6px', color: 'var(--text-muted)' }}>
-                      🧾 Items found:
+                      {t('group.receipt.itemsFound')}
                     </div>
                     {receiptItems.map((item, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
@@ -1496,7 +1498,7 @@ export default function GroupDetail(): JSX.Element {
                         })));
                       }}
                     >
-                      ↩ Back to item-by-item mode
+                      {t('group.receipt.backToItemMode')}
                     </button>
                   </div>
                 )}
@@ -1508,7 +1510,7 @@ export default function GroupDetail(): JSX.Element {
                     margin: '8px 0 16px',
                   }}>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>or add manually</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('group.receipt.orAddManually')}</span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                   </div>
                 )}
@@ -1516,12 +1518,12 @@ export default function GroupDetail(): JSX.Element {
                 {/* Hide manual form when in interactive mode — receipt buttons handle it */}
                 {receiptMode !== 'interactive' && (<>
                 <div className="form-group">
-                  <label className="form-label">Description</label>
+                  <label className="form-label">{t('group.descLabel')}</label>
                   <textarea
                     className="form-input"
                     value={expenseDesc}
                     onChange={(e) => setExpenseDesc(e.target.value.slice(0, 420))}
-                    placeholder="e.g., Dinner"
+                    placeholder={t('group.descPlaceholder')}
                     maxLength={420}
                     required
                     style={{ 
@@ -1540,20 +1542,20 @@ export default function GroupDetail(): JSX.Element {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Paid by</label>
+                  <label className="form-label">{t('common.paidBy')}</label>
                   <select
                     className="form-select"
                     value={expensePaidBy}
                     onChange={(e) => setExpensePaidBy(parseInt(e.target.value))}
                   >
-                    <option value={0}>You ({user?.name})</option>
+                    <option value={0}>{t('group.paidByYou')} ({user?.name})</option>
                     {group?.members?.filter(m => m.id !== user?.id).map(member => (
                       <option key={member.id} value={member.id}>{member.name}</option>
                     ))}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Amount</label>
+                  <label className="form-label">{t('group.amount')}</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="number"
@@ -1602,7 +1604,7 @@ export default function GroupDetail(): JSX.Element {
                   {expenseCurrency !== 'EUR' && expenseAmount && (
                     <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.9rem' }}>
                       {converting ? (
-                        <span style={{ color: 'var(--text-secondary)' }}>Converting...</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('group.converting')}</span>
                       ) : convertedAmount ? (
                         <span>
                           <strong>€{convertedAmount.toFixed(2)}</strong>
@@ -1611,13 +1613,13 @@ export default function GroupDetail(): JSX.Element {
                           </span>
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--danger)' }}>Conversion failed</span>
+                        <span style={{ color: 'var(--danger)' }}>{t('group.conversionFailed')}</span>
                       )}
                     </div>
                   )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">How to split?</label>
+                  <label className="form-label">{t('group.howToSplit')}</label>
                   <select
                     className="form-select"
                     value={splitType}
@@ -1633,8 +1635,8 @@ export default function GroupDetail(): JSX.Element {
                       }
                     }}
                   >
-                    <option value="equal">Split equally</option>
-                    <option value="percentage">Custom split</option>
+                    <option value="equal">{t('common.splitEqually')}</option>
+                    <option value="percentage">{t('common.customSplit')}</option>
                   </select>
                 </div>
                 {splitType === 'equal' && group?.members && expenseAmount && (() => {
@@ -1645,11 +1647,11 @@ export default function GroupDetail(): JSX.Element {
                   const remainder = Math.round((amt - perPerson * n) * 100) / 100;
                   const payerName = expensePaidBy
                     ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] || 'Payer'
-                    : 'You';
+                    : t('common.you');
                   if (remainder > 0) {
                     return (
                       <div style={{ marginTop: '4px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        💡 €{amt.toFixed(2)} ÷ {n} = €{perPerson.toFixed(2)} each + €{remainder.toFixed(2)} remainder → {payerName === 'You' ? 'your' : `${payerName}'s`} share will be €{(perPerson + remainder).toFixed(2)}
+                        {t('group.equalSplitHint', { total: amt.toFixed(2), count: n, perPerson: perPerson.toFixed(2), remainder: remainder.toFixed(2), payerName: payerName === t('common.you') ? t('group.remainderYour') : t('group.remainderTheir', { name: payerName }), payerShare: (perPerson + remainder).toFixed(2) })}
                       </div>
                     );
                   }
@@ -1657,7 +1659,7 @@ export default function GroupDetail(): JSX.Element {
                 })()}
                 {splitType === 'percentage' && group?.members && (
                   <div className="form-group">
-                    <label className="form-label">Who owes what? (must total 100%)</label>
+                    <label className="form-label">{t('group.whoOwesWhat')}</label>
                     
                     {/* Quick preset buttons */}
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
@@ -1671,7 +1673,7 @@ export default function GroupDetail(): JSX.Element {
                           setMemberSplits(splits);
                         }}
                       >
-                        Split equally
+                        {t('common.splitEqually')}
                       </button>
                       <button
                         type="button"
@@ -1687,7 +1689,7 @@ export default function GroupDetail(): JSX.Element {
                           setMemberSplits(splits);
                         }}
                       >
-                        Others owe {expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : 'me'} 100%
+                        {t('group.othersOwe', { name: expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : t('common.you') })}
                       </button>
                       {group.members!.filter(member => member.id !== (expensePaidBy || user?.id)).map(member => (
                         <button
@@ -1700,27 +1702,19 @@ export default function GroupDetail(): JSX.Element {
                             setMemberSplits(splits);
                           }}
                         >
-                          {member.id === user?.id ? 'I owe' : `${member.name.split(' ')[0]} owes`} 100%
+                          {member.id === user?.id ? t('group.iOwe') : t('group.owes100', { name: member.name.split(' ')[0] })}
                         </button>
                       ))}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                      <strong>{expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : 'You'} {expensePaidBy ? 'is' : 'are'} paying {expenseAmount ? (
-                        expenseCurrency === 'EUR' 
-                          ? `€${expenseAmount}` 
-                          : `${CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || ''}${expenseAmount} ${expenseCurrency}${convertedAmount ? ` (€${convertedAmount.toFixed(2)})` : ''}`
-                      ) : 'this expense'}.</strong><br/>
-                      Enter what % each person <em>owes</em>.<br/>
-                      • Put <strong>0% on yourself</strong> if you want full reimbursement<br/>
-                      • Put <strong>50% each</strong> to split fairly<br/>
-                      • Put <strong>100% on yourself</strong> = no one owes you anything
-                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }} dangerouslySetInnerHTML={{ __html: 
+                      `<strong>${t('group.payerIsPaying', { name: expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : t('common.you'), verb: expensePaidBy ? 'is' : 'are', amount: expenseAmount ? (expenseCurrency === 'EUR' ? `€${expenseAmount}` : `${CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || ''}${expenseAmount} ${expenseCurrency}${convertedAmount ? ` (€${convertedAmount.toFixed(2)})` : ''}`) : 'this expense' })}</strong><br/>${t('group.enterPercent')}<br/>${t('group.zeroPercent')}<br/>${t('group.fiftyPercent')}<br/>${t('group.hundredPercent')}`
+                    }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {group.members.map((member) => (
                         <div key={member.id} className="split-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span className="split-name" style={{ minWidth: '120px', fontWeight: member.id === user?.id ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Avatar name={member.name} avatar={member.avatar} size={20} />
-                            {member.name} {member.id === user?.id ? '(you)' : ''}
+                            {member.name} {member.id === user?.id ? `(${t('common.you')})` : ''}
                           </span>
                           <input
                             type="number"
@@ -1746,7 +1740,7 @@ export default function GroupDetail(): JSX.Element {
                       ))}
                     </div>
                     <div style={{ marginTop: '8px', fontSize: '0.9rem', color: Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) === 100 ? 'var(--primary)' : 'var(--danger)' }}>
-                      Total: {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(1)}% {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) === 100 ? '✓' : '(must equal 100%)'}
+                      {t('common.total')}: {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(1)}% {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) === 100 ? '✓' : t('group.mustEqual100')}
                     </div>
                   </div>
                 )}
@@ -1755,9 +1749,9 @@ export default function GroupDetail(): JSX.Element {
               {receiptMode !== 'interactive' && (
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={closeExpenseModal}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary">Add Expense</button>
+                <button type="submit" className="btn btn-primary">{t('group.addExpenseBtn')}</button>
               </div>
               )}
             </form>
@@ -1770,7 +1764,7 @@ export default function GroupDetail(): JSX.Element {
         <div className="modal-overlay" onClick={() => setShowSettleModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">🐹 Go Pay!</h3>
+              <h3 className="modal-title">{t('group.goPayTitle')}</h3>
               <button className="modal-close" onClick={() => setShowSettleModal(false)}>×</button>
             </div>
             
@@ -1778,7 +1772,7 @@ export default function GroupDetail(): JSX.Element {
               <div className="modal-body">
                 {getMyExpenseDebts().length > 0 ? (
                   <>
-                    <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Your expenses:</p>
+                    <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>{t('group.yourExpenses')}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
                       {getMyExpenseDebts().map(({ expense, splitAmount, payerName, paid }) => (
                         <div 
@@ -1800,10 +1794,10 @@ export default function GroupDetail(): JSX.Element {
                               {expense.description}
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              Paid by {payerName}
+                              {t('common.paidBy')} {payerName}
                             </div>
                             <div style={{ color: paid ? 'var(--success, #22c55e)' : 'var(--danger)', fontSize: '14px' }}>
-                              {paid ? 'Paid' : `Your share: ${formatCurrency(splitAmount)}`}
+                              {paid ? t('group.paid') : t('group.yourShare', { amount: formatCurrency(splitAmount) })}
                             </div>
                           </div>
                           {!paid && (
@@ -1812,7 +1806,7 @@ export default function GroupDetail(): JSX.Element {
                               style={{ marginLeft: '12px' }}
                               onClick={() => { setShowSettleModal(false); openExpenseDetail(expense); }}
                             >
-                              Pay
+                              {t('common.pay')}
                             </button>
                           )}
                         </div>
@@ -1821,7 +1815,7 @@ export default function GroupDetail(): JSX.Element {
                   </>
                 ) : (
                   <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px 0' }}>
-                    🎉 You don't owe on any expenses!
+                    {t('group.noExpenseDebts')}
                   </p>
                 )}
                 <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
@@ -1830,7 +1824,7 @@ export default function GroupDetail(): JSX.Element {
                     style={{ width: '100%' }}
                     onClick={() => { setSettleUser(''); setSettleAmount(''); setGoPayMode('freeform'); }}
                   >
-                    Free-form Payment
+                    {t('group.freeFormPaymentBtn')}
                   </button>
                 </div>
               </div>
@@ -1843,24 +1837,24 @@ export default function GroupDetail(): JSX.Element {
                     style={{ marginBottom: '16px' }}
                     onClick={() => setGoPayMode('select')}
                   >
-                    ← Back to expenses
+                    {t('group.backToExpenses')}
                   </button>
                   <div className="form-group">
-                    <label className="form-label">Pay to</label>
+                    <label className="form-label">{t('group.payTo')}</label>
                     <select
                       className="form-select"
                       value={settleUser}
                       onChange={(e) => setSettleUser(e.target.value)}
                       required
                     >
-                      <option value="">Select member</option>
+                      <option value="">{t('group.selectMember')}</option>
                       {group.members?.filter(m => m.id !== user?.id).map((member) => (
                         <option key={member.id} value={member.id}>{member.name}</option>
                       ))}
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Amount</label>
+                    <label className="form-label">{t('group.amount')}</label>
                     <input
                       type="number"
                       className="form-input"
@@ -1875,9 +1869,9 @@ export default function GroupDetail(): JSX.Element {
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-outline" onClick={() => setShowSettleModal(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
-                  <button type="submit" className="btn btn-secondary">Record Payment</button>
+                  <button type="submit" className="btn btn-secondary">{t('group.recordPayment')}</button>
                 </div>
               </form>
             )}
@@ -1890,7 +1884,7 @@ export default function GroupDetail(): JSX.Element {
         <div className="modal-overlay" onClick={() => setShowMemberModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">👥 Members</h3>
+              <h3 className="modal-title">👥 {t('group.membersTitle')}</h3>
               <button className="modal-close" onClick={() => setShowMemberModal(false)}>×</button>
             </div>
             <div className="modal-body" style={{ padding: 0 }}>
@@ -1906,9 +1900,9 @@ export default function GroupDetail(): JSX.Element {
                     <Avatar name={member.name} avatar={member.avatar} size={36} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {member.name}{member.id === user?.id ? ' (you)' : ''}
+                        {member.name}{member.id === user?.id ? ` (${t('group.you')})` : ''}
                         {member.id === group.created_by && (
-                          <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '8px', background: 'var(--primary)', color: 'var(--btn-text, white)', fontWeight: 500 }}>creator</span>
+                          <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '8px', background: 'var(--primary)', color: 'var(--btn-text, white)', fontWeight: 500 }}>{t('group.creator')}</span>
                         )}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
@@ -1919,14 +1913,14 @@ export default function GroupDetail(): JSX.Element {
                         style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
                         onClick={() => handleRemoveMember(member.id, member.name)}
                       >
-                        Remove
+                        {t('group.remove')}
                       </button>
                     ) : (
                       <button
                         className="btn btn-outline btn-sm"
                         style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
                         onClick={async () => {
-                          if (!confirm('Leave this group? You will no longer have access.')) return;
+                          if (!confirm(t('group.leaveGroupConfirm'))) return;
                           try {
                             setMemberError('');
                             await api.removeMember(id!, member.id);
@@ -1936,7 +1930,7 @@ export default function GroupDetail(): JSX.Element {
                           }
                         }}
                       >
-                        Leave
+                        {t('group.leave')}
                       </button>
                     )}
                   </li>
@@ -1945,7 +1939,7 @@ export default function GroupDetail(): JSX.Element {
 
               {/* Add member */}
               <form onSubmit={handleAddMember} style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
-                <label className="form-label" style={{ marginBottom: '6px' }}>Add a member</label>
+                <label className="form-label" style={{ marginBottom: '6px' }}>{t('group.addAMember')}</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <select
                     className="form-select"
@@ -1954,14 +1948,14 @@ export default function GroupDetail(): JSX.Element {
                     onChange={(e) => setSelectedUser(e.target.value)}
                     required
                   >
-                    <option value="">Select a user</option>
+                    <option value="">{t('group.selectAUser')}</option>
                     {allUsers
                       .filter((u) => !group.members?.some((m) => m.id === u.id))
                       .map((u) => (
                         <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                       ))}
                   </select>
-                  <button type="submit" className="btn btn-primary" disabled={!selectedUser}>Add</button>
+                  <button type="submit" className="btn btn-primary" disabled={!selectedUser}>{t('group.addBtn')}</button>
                 </div>
               </form>
             </div>
@@ -1981,18 +1975,18 @@ export default function GroupDetail(): JSX.Element {
               {/* Expense Summary */}
               <div style={{ background: 'var(--card-bg)', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Total Amount:</span>
+                  <span>{t('group.totalAmount')}:</span>
                   <strong>{formatCurrency(selectedExpense.amount)}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Paid by:</span>
+                  <span>{t('group.paidByLabel')}:</span>
                   <strong style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     <Avatar name={selectedExpense.paid_by_user?.name || 'Unknown'} avatar={selectedExpense.paid_by_user?.avatar} size={22} />
                     {selectedExpense.paid_by_user?.name || 'Unknown'}
                   </strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Split type:</span>
+                  <span>{t('group.splitType')}:</span>
                   <span>{selectedExpense.split_type}</span>
                 </div>
               </div>
@@ -2000,7 +1994,7 @@ export default function GroupDetail(): JSX.Element {
               {/* Split Details */}
               {selectedExpense.splits && selectedExpense.splits.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ marginBottom: '8px', fontSize: '0.95rem' }}>Who owes what:</h4>
+                  <h4 style={{ marginBottom: '8px', fontSize: '0.95rem' }}>{t('group.whoOwesWhat')}:</h4>
                   {selectedExpense.splits.map((split) => {
                     const paidBack = expensePayments
                       .filter(p => p.paid_by === split.user_id)
@@ -2019,7 +2013,7 @@ export default function GroupDetail(): JSX.Element {
                             </span>
                           )}
                           <span style={{ color: remaining <= 0.01 ? 'var(--success)' : undefined, fontWeight: remaining <= 0.01 ? 600 : undefined }}>
-                            {remaining <= 0.01 ? '✅ Paid' : formatCurrency(remaining)}
+                            {remaining <= 0.01 ? `✅ ${t('group.paidStatus')}` : formatCurrency(remaining)}
                           </span>
                         </span>
                       </div>
@@ -2031,10 +2025,10 @@ export default function GroupDetail(): JSX.Element {
               {/* Payment History */}
               <div style={{ marginBottom: '16px' }}>
                 <h4 style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
-                  Payment History {expensePayments.length > 0 && `(${expensePayments.length})`}
+                  {t('group.paymentHistoryTitle')} {expensePayments.length > 0 && `(${expensePayments.length})`}
                 </h4>
                 {expensePayments.length === 0 ? (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No payments recorded yet</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('group.noPaymentsYet')}</div>
                 ) : (
                   <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
                     {expensePayments.map((payment) => (
@@ -2043,7 +2037,7 @@ export default function GroupDetail(): JSX.Element {
                           <div style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                             <Avatar name={payment.paid_by_user?.name || '?'} avatar={payment.paid_by_user?.avatar} size={18} />
                             <span>{payment.paid_by_user?.name}</span>
-                            <span>paid {formatCurrency(payment.amount)}</span>
+                            <span>{t('group.paidAmount', { amount: formatCurrency(payment.amount) })}</span>
                           </div>
                           {payment.note && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{payment.note}</div>}
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -2077,10 +2071,10 @@ export default function GroupDetail(): JSX.Element {
                 }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>✅</div>
                   <div style={{ fontWeight: '600', color: 'var(--success)', marginBottom: '4px' }}>
-                    Everything was paid!
+                    {t('group.everythingPaid')}
                   </div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    You may remove this expense :)
+                    {t('group.mayRemoveExpense')}
                   </div>
                 </div>
               )}
@@ -2088,7 +2082,7 @@ export default function GroupDetail(): JSX.Element {
               {/* Make Payment Form - only show if user owes money and not fully paid */}
               {selectedExpense.paid_by !== user?.id && !isExpenseFullyPaid() && (
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                  <h4 style={{ marginBottom: '12px', fontSize: '0.95rem' }}>Pay Back Your Share</h4>
+                  <h4 style={{ marginBottom: '12px', fontSize: '0.95rem' }}>{t('group.payBackYourShare')}</h4>
                   {paymentError && (
                     <div className="alert alert-error" style={{ marginBottom: '12px', padding: '10px', fontSize: '0.9rem' }}>
                       {paymentError}
@@ -2096,7 +2090,7 @@ export default function GroupDetail(): JSX.Element {
                   )}
                   <form onSubmit={handleMakePayment}>
                     <div className="form-group">
-                      <label className="form-label">Amount</label>
+                      <label className="form-label">{t('group.amount')}</label>
                       <input
                         type="number"
                         className="form-input"
@@ -2109,17 +2103,17 @@ export default function GroupDetail(): JSX.Element {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Note (optional)</label>
+                      <label className="form-label">{t('group.noteOptional')}</label>
                       <input
                         type="text"
                         className="form-input"
                         value={paymentNote}
                         onChange={(e) => setPaymentNote(e.target.value)}
-                        placeholder="e.g., Paid in cash"
+                        placeholder={t('group.notePlaceholder')}
                       />
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                      Record Payment
+                      {t('group.recordPayment')}
                     </button>
                   </form>
                 </div>

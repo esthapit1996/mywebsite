@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import type { User, WhitelistEntry, BlacklistEntry } from '../types';
@@ -10,6 +11,7 @@ type TabType = 'members' | 'whitelist' | 'blacklist';
 
 export default function Members() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('members');
   
@@ -50,7 +52,7 @@ export default function Members() {
       const response = await api.getAllUsers();
       setMembers(response.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load members');
+      setError(err instanceof Error ? err.message : t('members.failedLoad'));
     } finally {
       setLoadingMembers(false);
     }
@@ -80,11 +82,11 @@ export default function Members() {
 
   const handleDeleteMember = async (memberId: number, memberName: string, memberEmail: string) => {
     if (memberEmail === FOUNDER_EMAIL) {
-      setError("Cannot delete the founder account");
+      setError(t('members.cannotDeleteFounder'));
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${memberName}?\n\nThis will permanently delete:\n• All their expenses\n• All their settlements\n• All their group memberships\n• All their suggestions and votes\n\nThis action cannot be undone!`)) {
+    if (!confirm(t('members.deleteConfirm', { name: memberName }))) {
       return;
     }
 
@@ -94,7 +96,7 @@ export default function Members() {
       await api.deleteUser(memberId);
       loadMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete member');
+      setError(err instanceof Error ? err.message : t('members.failedDelete'));
     } finally {
       setDeleting(null);
     }
@@ -111,7 +113,7 @@ export default function Members() {
       setNewWhitelistEmail('');
       loadWhitelist();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add email');
+      setError(err instanceof Error ? err.message : t('members.failedAddEmail'));
     } finally {
       setAddingWhitelist(false);
     }
@@ -119,17 +121,17 @@ export default function Members() {
 
   const handleRemoveFromWhitelist = async (id: number, email: string) => {
     if (email.toLowerCase() === FOUNDER_EMAIL.toLowerCase()) {
-      setError("Cannot remove the founder from whitelist");
+      setError(t('members.cannotRemoveFounder'));
       return;
     }
-    if (!confirm(`Remove ${email} from whitelist?`)) return;
+    if (!confirm(t('members.removeWhitelistConfirm', { email }))) return;
 
     setError('');
     try {
       await api.removeFromWhitelist(id);
       loadWhitelist();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove email');
+      setError(err instanceof Error ? err.message : t('members.failedRemoveEmail'));
     }
   };
 
@@ -145,21 +147,21 @@ export default function Members() {
       setNewBlacklistReason('');
       loadBlacklist();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add email');
+      setError(err instanceof Error ? err.message : t('members.failedAddEmail'));
     } finally {
       setAddingBlacklist(false);
     }
   };
 
   const handleRemoveFromBlacklist = async (id: number, email: string) => {
-    if (!confirm(`Remove ${email} from blacklist?`)) return;
+    if (!confirm(t('members.removeBlacklistConfirm', { email }))) return;
 
     setError('');
     try {
       await api.removeFromBlacklist(id);
       loadBlacklist();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove email');
+      setError(err instanceof Error ? err.message : t('members.failedRemoveEmail'));
     }
   };
 
@@ -191,7 +193,7 @@ export default function Members() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>Loading...</p>
+          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('common.loading')}</p>
         </div>
         <style>{`
           @keyframes spin {
@@ -205,10 +207,14 @@ export default function Members() {
 
   return (
     <div className="container">
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+          {t('common.backToDashboard')}
+        </Link>
+      </div>
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">🛡️ Access Management</h2>
-          <Link to="/" className="btn btn-outline btn-sm">← Back</Link>
+          <h2 className="card-title">{t('members.title')}</h2>
         </div>
 
         {error && <div className="alert alert-error" style={{ margin: '16px' }}>{error}</div>}
@@ -222,9 +228,9 @@ export default function Members() {
           flexWrap: 'wrap'
         }}>
           {([
-            { id: 'members' as TabType, label: '👥 Members', count: members.length, color: '#3b82f6' },
-            { id: 'whitelist' as TabType, label: '✅ Whitelist', count: whitelist.length, color: '#22c55e' },
-            { id: 'blacklist' as TabType, label: '🚫 Blacklist', count: blacklist.length, color: '#ef4444' },
+            { id: 'members' as TabType, label: t('members.tabMembers'), count: members.length, color: '#3b82f6' },
+            { id: 'whitelist' as TabType, label: t('members.tabWhitelist'), count: whitelist.length, color: '#22c55e' },
+            { id: 'blacklist' as TabType, label: t('members.tabBlacklist'), count: blacklist.length, color: '#ef4444' },
           ]).map(tab => (
             <button
               key={tab.id}
@@ -254,8 +260,8 @@ export default function Members() {
               {members.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon">👥</div>
-                  <h3>No members yet</h3>
-                  <p>Members will appear here once they register</p>
+                  <h3>{t('members.noMembers')}</h3>
+                  <p>{t('members.noMembersDesc')}</p>
                 </div>
               ) : (
                 <ul className="list" style={{ margin: 0 }}>
@@ -287,7 +293,7 @@ export default function Members() {
                               fontSize: '0.7rem',
                               fontWeight: '600'
                             }}>
-                              FOUNDER
+                              {t('members.founder')}
                             </span>
                           )}
                         </div>
@@ -295,7 +301,7 @@ export default function Members() {
                           📧 {member.email}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Joined: {member.created_at ? formatDate(member.created_at) : 'N/A'}
+                          {t('members.joined', { date: member.created_at ? formatDate(member.created_at) : t('members.na') })}
                         </div>
                       </div>
                       
@@ -311,7 +317,7 @@ export default function Members() {
                             cursor: deleting === member.id ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          {deleting === member.id ? '⏳' : '🗑️'} Delete
+                          {deleting === member.id ? '⏳' : '🗑️'} {t('members.deleteBtn')}
                         </button>
                       )}
                     </li>
@@ -331,7 +337,7 @@ export default function Members() {
                     type="email"
                     value={newWhitelistEmail}
                     onChange={(e) => setNewWhitelistEmail(e.target.value)}
-                    placeholder="Enter email to whitelist..."
+                    placeholder={t('members.whitelistPlaceholder')}
                     className="form-input"
                     style={{ flex: 1 }}
                     required
@@ -341,7 +347,7 @@ export default function Members() {
                     className="btn btn-primary"
                     disabled={addingWhitelist || !newWhitelistEmail.trim()}
                   >
-                    {addingWhitelist ? '⏳' : '✅'} Add
+                    {addingWhitelist ? '⏳' : '✅'} {t('common.add')}
                   </button>
                 </div>
               </form>
@@ -349,8 +355,8 @@ export default function Members() {
               {whitelist.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon">✅</div>
-                  <h3>Whitelist is empty</h3>
-                  <p>Add emails to allow registration</p>
+                  <h3>{t('members.emptyWhitelist')}</h3>
+                  <p>{t('members.emptyWhitelistDesc')}</p>
                 </div>
               ) : (
                 <ul className="list" style={{ margin: 0 }}>
@@ -375,12 +381,12 @@ export default function Members() {
                               fontSize: '0.7rem',
                               fontWeight: '600'
                             }}>
-                              FOUNDER
+                              {t('members.founder')}
                             </span>
                           )}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Added: {formatDate(entry.created_at)}
+                          {t('members.added', { date: formatDate(entry.created_at) })}
                         </div>
                       </div>
                       
@@ -410,7 +416,7 @@ export default function Members() {
                     type="email"
                     value={newBlacklistEmail}
                     onChange={(e) => setNewBlacklistEmail(e.target.value)}
-                    placeholder="Enter email to block..."
+                    placeholder={t('members.blacklistPlaceholder')}
                     className="form-input"
                     style={{ flex: '1 1 200px' }}
                     required
@@ -419,7 +425,7 @@ export default function Members() {
                     type="text"
                     value={newBlacklistReason}
                     onChange={(e) => setNewBlacklistReason(e.target.value)}
-                    placeholder="Reason (optional)"
+                    placeholder={t('members.reasonPlaceholder')}
                     className="form-input"
                     style={{ flex: '1 1 150px' }}
                   />
@@ -433,7 +439,7 @@ export default function Members() {
                     }}
                     disabled={addingBlacklist || !newBlacklistEmail.trim()}
                   >
-                    {addingBlacklist ? '⏳' : '🚫'} Block
+                    {addingBlacklist ? '⏳' : '🚫'} {t('members.blockBtn')}
                   </button>
                 </div>
               </form>
@@ -441,8 +447,8 @@ export default function Members() {
               {blacklist.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon">🚫</div>
-                  <h3>Blacklist is empty</h3>
-                  <p>No emails are currently blocked</p>
+                  <h3>{t('members.emptyBlacklist')}</h3>
+                  <p>{t('members.emptyBlacklistDesc')}</p>
                 </div>
               ) : (
                 <ul className="list" style={{ margin: 0 }}>
@@ -461,11 +467,11 @@ export default function Members() {
                         </div>
                         {entry.reason && (
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                            Reason: {entry.reason}
+                            {t('members.reason', { reason: entry.reason })}
                           </div>
                         )}
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Blocked: {formatDate(entry.created_at)}
+                          {t('members.blocked', { date: formatDate(entry.created_at) })}
                         </div>
                       </div>
                       
@@ -474,7 +480,7 @@ export default function Members() {
                         className="btn btn-outline btn-sm"
                         style={{ color: 'var(--success-color, #22c55e)' }}
                       >
-                        ✅ Unblock
+                        {t('members.unblock')}
                       </button>
                     </li>
                   ))}
@@ -491,9 +497,9 @@ export default function Members() {
           color: 'var(--text-muted)',
           textAlign: 'center'
         }}>
-          {activeTab === 'members' && '⚠️ Deleting a member permanently removes all their data'}
-          {activeTab === 'whitelist' && '✅ Only whitelisted emails can register'}
-          {activeTab === 'blacklist' && '🚫 Blacklisted emails cannot register even if whitelisted'}
+          {activeTab === 'members' && t('members.hintDelete')}
+          {activeTab === 'whitelist' && t('members.hintWhitelist')}
+          {activeTab === 'blacklist' && t('members.hintBlacklist')}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
@@ -8,7 +9,7 @@ import type { CurrencyConvertResponse, CurrencyHistoryPoint } from '../types';
 const CURRENCIES = DISPLAY_CURRENCIES;
 
 export default function CurrencyConverter() {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const { displayCurrency } = useCurrency();
   const [amount, setAmount] = useState('1');
   const [fromCurrency, setFromCurrency] = useState(() => displayCurrency);
@@ -22,7 +23,7 @@ export default function CurrencyConverter() {
 
   const convert = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
+      setError(t('currencyConverter.enterValid'));
       return;
     }
 
@@ -32,7 +33,7 @@ export default function CurrencyConverter() {
       const data = await api.convertCurrency(fromCurrency, toCurrency, amount);
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to convert currency');
+      setError(err instanceof Error ? err.message : t('currencyConverter.failedConvert'));
     } finally {
       setLoading(false);
     }
@@ -88,17 +89,16 @@ export default function CurrencyConverter() {
 
   return (
     <div className="page-container">
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+          {t('common.backToDashboard')}
+        </Link>
+      </div>
       <div className="page-header" style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-          <h1 style={{ margin: 0 }}>💱 Currency Converter</h1>
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={() => navigate('/')}
-          >
-            ← Back
-          </button>
+          <h1 style={{ margin: 0 }}>{t('currencyConverter.title')}</h1>
         </div>
-        <p className="subtitle">Convert between currencies with live exchange rates</p>
+        <p className="subtitle">{t('currencyConverter.subtitle')}</p>
       </div>
 
       <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -111,13 +111,13 @@ export default function CurrencyConverter() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Amount Input */}
           <div className="form-group">
-            <label className="form-label">Amount</label>
+            <label className="form-label">{t('currencyConverter.amount')}</label>
             <input
               type="number"
               className="form-input"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
+              placeholder={t('currencyConverter.enterAmount')}
               min="0"
               step="0.01"
               style={{ fontSize: '1.5rem', padding: '1rem' }}
@@ -127,7 +127,7 @@ export default function CurrencyConverter() {
           {/* Currency Selection */}
           <div className="currency-select-row" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">From</label>
+              <label className="form-label">{t('currencyConverter.from')}</label>
               <select
                 className="form-input"
                 value={fromCurrency}
@@ -151,13 +151,13 @@ export default function CurrencyConverter() {
                 fontSize: '1.2rem',
                 background: 'var(--secondary)',
               }}
-              title="Swap currencies"
+              title={t('currencyConverter.swapCurrencies')}
             >
               ⇄
             </button>
 
             <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">To</label>
+              <label className="form-label">{t('currencyConverter.to')}</label>
               <select
                 className="form-input"
                 value={toCurrency}
@@ -185,7 +185,7 @@ export default function CurrencyConverter() {
                 animation: 'spin 1s linear infinite'
               }} />
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Converting...</span>
+              <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>{t('currencyConverter.converting')}</span>
             </div>
           ) : result && (
             <div style={{ 
@@ -204,7 +204,7 @@ export default function CurrencyConverter() {
                 {getCurrencySymbol(fromCurrency)} {parseFloat(amount).toLocaleString()} {fromCurrency} = {getCurrencySymbol(toCurrency)} {result.converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {toCurrency}
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                Rate: 1 {fromCurrency} = {result.rate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {toCurrency}
+                {t('currencyConverter.rate')}: 1 {fromCurrency} = {result.rate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {toCurrency}
               </div>
             </div>
           )}
@@ -216,11 +216,11 @@ export default function CurrencyConverter() {
             disabled={loading || !amount}
             style={{ padding: '1rem', fontSize: '1.1rem' }}
           >
-            {loading ? 'Converting...' : 'Convert'}
+            {loading ? t('currencyConverter.converting') : t('currencyConverter.convert')}
           </button>
         </div>
         <div style={{ textAlign: 'right', marginTop: '1rem', fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
-          Powered by <a href="https://open.er-api.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Open Exchange Rates</a>
+          {t('currencyConverter.poweredBy')} <a href="https://open.er-api.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Open Exchange Rates</a>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export default function CurrencyConverter() {
       {fromCurrency !== toCurrency && (
         <div className="card" style={{ maxWidth: '600px', margin: '1.5rem auto' }}>
           <div className="trend-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>📈 {fromCurrency}/{toCurrency} Trend</h3>
+            <h3 style={{ margin: 0 }}>📈 {fromCurrency}/{toCurrency} {t('currencyConverter.trendLabel')}</h3>
             <div className="trend-periods" style={{ display: 'flex', gap: '0.5rem' }}>
               {[7, 30, 90, 365].map(period => (
                 <button
@@ -253,7 +253,7 @@ export default function CurrencyConverter() {
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite'
               }} />
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading trend data...</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('currencyConverter.loadingTrend')}</span>
             </div>
           ) : historyData.length > 0 ? (
             <div style={{ width: '100%', height: 250 }}>
@@ -300,7 +300,7 @@ export default function CurrencyConverter() {
             </div>
           ) : (
             <div className="text-center" style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
-              <div>No historical data available</div>
+              <div>{t('currencyConverter.noHistorical')}</div>
               {historyError ? (
                 <div style={{ fontSize: '0.85rem', marginTop: '6px', color: 'var(--warning)' }}>
                   {historyError}
@@ -317,14 +317,14 @@ export default function CurrencyConverter() {
             </div>
           )}
           <div style={{ textAlign: 'right', marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
-            Data by <a href="https://www.frankfurter.app" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Frankfurter</a> · <a href="https://www.ecb.europa.eu" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>European Central Bank</a>
+            {t('currencyConverter.dataBy')} <a href="https://www.frankfurter.app" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Frankfurter</a> · <a href="https://www.ecb.europa.eu" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>European Central Bank</a>
           </div>
         </div>
       )}
 
       <div className="card" style={{ maxWidth: '600px', margin: '1.5rem auto', textAlign: 'center' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-          💡 Live rates cached for 1 hour · Historical data cached for 24 hours
+                    {t('currencyConverter.cacheHint')}
         </p>
       </div>
     </div>

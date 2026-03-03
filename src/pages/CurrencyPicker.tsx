@@ -1,7 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCurrency } from '../context/CurrencyContext';
 
 export default function CurrencyPicker(): JSX.Element {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { displayCurrency, setDisplayCurrency, currencies, ratesLoading } = useCurrency();
 
@@ -12,15 +14,20 @@ export default function CurrencyPicker(): JSX.Element {
 
   return (
     <div className="container" style={{ maxWidth: '520px' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+          {t('common.backToDashboard')}
+        </Link>
+      </div>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 6px' }}>💰 Display Currency</h1>
+        <h1 style={{ margin: '0 0 6px' }}>{t('currencyPicker.title')}</h1>
         <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
-          All amounts in the app will be shown in this currency
+          {t('currencyPicker.subtitle')}
         </p>
       </div>
 
       {ratesLoading ? (
-        <div className="text-center" style={{ padding: '2rem' }}>Loading rates...</div>
+        <div className="text-center" style={{ padding: '2rem' }}>{t('currencyPicker.loadingRates')}</div>
       ) : (
         <div style={{
           display: 'grid',
@@ -48,17 +55,13 @@ export default function CurrencyPicker(): JSX.Element {
               title={c.name}
             >
               <span style={{ fontSize: '1.4rem', fontWeight: 600 }}>{c.symbol}</span>
-              <span style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.8 }}>{c.code}</span>
+              <span style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.8 }} className="notranslate">{c.code}</span>
             </button>
           ))}
         </div>
       )}
 
-      <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        <button className="btn btn-outline" onClick={() => navigate(-1)}>
-          ← Back
-        </button>
-      </div>
+
     </div>
   );
 }

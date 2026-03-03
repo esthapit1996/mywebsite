@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
@@ -60,6 +61,7 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
 function Header(): JSX.Element | null {
   const { user, logout } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
+  const { t } = useTranslation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -104,9 +106,9 @@ function Header(): JSX.Element | null {
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo" onClick={handleLogoClick} title={location.pathname === '/' ? 'Refresh app' : 'Go to dashboard'}>
+        <Link to="/" className="logo" onClick={handleLogoClick} title={location.pathname === '/' ? t('header.refreshApp') : t('header.goToDashboard')}>
           <img src={logo} alt="GopherDebt" className="header-logo" />
-          <span>
+          <span className="notranslate">
             GopherDebt
             <span className="motto">GopherDebt Good, GoForDebt Bad.</span>
           </span>
@@ -120,7 +122,7 @@ function Header(): JSX.Element | null {
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 <Avatar name={user.name} avatar={user.avatar} size={26} />
-                {user.name.split(' ')[0]}
+                <span className="notranslate">{user.name.split(' ')[0]}</span>
               </span>
               <span className="dropdown-arrow">{showUserMenu ? '▲' : '▼'}</span>
             </button>
@@ -134,7 +136,7 @@ function Header(): JSX.Element | null {
                     value={theme} 
                     onChange={(e) => setTheme(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    title="Select theme"
+                    title={t('header.selectTheme')}
                     style={{
                       flex: 1,
                       background: 'transparent',
@@ -146,14 +148,14 @@ function Header(): JSX.Element | null {
                       cursor: 'pointer',
                     }}
                   >
-                    <optgroup label="🌙 Dark Themes">
+                    <optgroup label={t('header.darkThemes')}>
                       {themes.filter(t => t.category === 'dark').map(t => (
                         <option key={t.id} value={t.id}>
                           {t.icon} {t.name}
                         </option>
                       ))}
                     </optgroup>
-                    <optgroup label="☀️ Light Themes">
+                    <optgroup label={t('header.lightThemes')}>
                       {themes.filter(t => t.category === 'light').map(t => (
                         <option key={t.id} value={t.id}>
                           {t.icon} {t.name}
@@ -169,38 +171,38 @@ function Header(): JSX.Element | null {
                   className="user-menu-item"
                   onClick={() => handleNavigation('/payment-history')}
                 >
-                  📜 My Payment History
+                  {t('header.paymentHistory')}
                 </button>
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/suggestions')}
                 >
-                  💡 Suggestion Box
+                  {t('header.suggestionBox')}
                 </button>
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/currency')}
                 >
-                  💱 Currency Converter
+                  {t('header.currencyConverter')}
                 </button>
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/community')}
                 >
-                  🐹 GopherDebt Community
+                  {t('header.community')}
                 </button>
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/settings')}
                 >
-                  ⚙️ Settings
+                  {t('header.settings')}
                 </button>
                 <div className="user-menu-divider"></div>
                 <button 
                   className="user-menu-item user-menu-logout"
                   onClick={handleLogout}
                 >
-                  🚪 Sign Out
+                  {t('header.signOut')}
                 </button>
               </div>
             )}

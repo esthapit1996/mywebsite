@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import type { PaymentHistoryItem } from '../types';
 
 export default function PaymentHistory() {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,20 +20,20 @@ export default function PaymentHistory() {
       const response = await api.getPaymentHistory();
       setHistory(response.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load payment history');
+      setError(err instanceof Error ? err.message : t('paymentHistory.loadFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearHistory = async () => {
-    if (!confirm('Are you sure you want to clear your payment history? This cannot be undone.')) return;
+    if (!confirm(t('paymentHistory.clearConfirm'))) return;
     setClearing(true);
     try {
       await api.clearPaymentHistory();
       setHistory([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear history');
+      setError(err instanceof Error ? err.message : t('paymentHistory.clearFailed'));
     } finally {
       setClearing(false);
     }
@@ -61,7 +63,7 @@ export default function PaymentHistory() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>Loading payment history...</p>
+          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('paymentHistory.loading')}</p>
         </div>
         <style>{`
           @keyframes spin {
@@ -75,9 +77,15 @@ export default function PaymentHistory() {
 
   return (
     <div className="container">
+      <div style={{ marginBottom: '16px' }}>
+        <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+          {t('common.backToDashboard')}
+        </Link>
+      </div>
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">📜 My Payment History</h2>
+          <h2 className="card-title">{t('paymentHistory.title')}</h2>
+
           <div style={{ display: 'flex', gap: '8px' }}>
             {history.length > 0 && (
               <button 
@@ -86,10 +94,10 @@ export default function PaymentHistory() {
                 disabled={clearing}
                 style={{ color: 'var(--error-color, #ef4444)' }}
               >
-                {clearing ? 'Clearing...' : '🗑️ Clear'}
+                {clearing ? t('paymentHistory.clearing') : t('paymentHistory.clearBtn')}
               </button>
             )}
-            <Link to="/" className="btn btn-outline btn-sm">← Back</Link>
+
           </div>
         </div>
 
@@ -98,8 +106,8 @@ export default function PaymentHistory() {
         {history.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">💸</div>
-            <h3>No payment history</h3>
-            <p>When you send or receive payments, they'll appear here.</p>
+            <h3>{t('paymentHistory.noHistory')}</h3>
+            <p>{t('paymentHistory.noHistoryDesc')}</p>
           </div>
         ) : (
           <>
@@ -116,9 +124,9 @@ export default function PaymentHistory() {
                     <span>{item.is_payer ? '📤' : '📥'}</span>
                     <span>
                       {item.is_payer ? (
-                        <>You paid <strong>{item.other_user?.name}</strong></>
+                        <>{t('paymentHistory.youPaid')} <strong>{item.other_user?.name}</strong></>
                       ) : (
-                        <><strong>{item.other_user?.name}</strong> paid you</>
+                        <><strong>{item.other_user?.name}</strong> {t('paymentHistory.paidYou')}</>
                       )}
                     </span>
                   </div>
@@ -145,7 +153,7 @@ export default function PaymentHistory() {
             color: 'var(--text-muted)',
             textAlign: 'center'
           }}>
-            💡 Showing last 250 transactions to keep our database small and efficient
+                        {t('paymentHistory.showingLast')}
           </div>
           </>
         )}

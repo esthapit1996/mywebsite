@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useCurrency } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
@@ -7,6 +8,7 @@ import type { Group, User, DebtOverviewItem, DebtDetailItem } from '../types';
 
 export default function Dashboard() {
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -48,7 +50,7 @@ export default function Dashboard() {
       const response = await api.getGroups();
       setGroups(response.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load groups');
+      setError(err instanceof Error ? err.message : t('dashboard.failedLoadGroups'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function Dashboard() {
       setDebtError(null);
     } catch (err) {
       console.error('Failed to load debt overview:', err);
-      setDebtError(err instanceof Error ? err.message : 'Failed to load debt overview');
+      setDebtError(err instanceof Error ? err.message : t('dashboard.failedLoadDebt'));
     } finally {
       setLoadingDebt(false);
     }
@@ -145,7 +147,7 @@ export default function Dashboard() {
       setSelectedMembers([]);
       loadGroups();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create group');
+      setError(err instanceof Error ? err.message : t('dashboard.failedCreateGroup'));
     } finally {
       setCreating(false);
     }
@@ -164,7 +166,7 @@ export default function Dashboard() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 16px'
           }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>Fetching your data...</p>
+          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('common.fetchingData')}</p>
         </div>
         <style>{`
           @keyframes spin {
@@ -187,13 +189,13 @@ export default function Dashboard() {
         border: '1px solid var(--border)',
       }}>
         <span>💡</span>
-        <span>Tap the <strong style={{ color: 'var(--primary)' }}>GopherDebt</strong> logo to hard-refresh and get the latest app version.</span>
+        <span dangerouslySetInnerHTML={{ __html: t('dashboard.updateHint') }} />
       </div>
 
       {/* Debt Overview Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
-          <h2 className="card-title">Debt Overview</h2>
+          <h2 className="card-title">{t('dashboard.debtOverview')}</h2>
         </div>
         
         {loadingDebt ? (
@@ -205,8 +207,8 @@ export default function Dashboard() {
         ) : debtOverview.length === 0 ? (
           <div className="empty-state" style={{ padding: '30px' }}>
             <div className="empty-state-icon">✨</div>
-            <h3>All balanced!</h3>
-            <p>You have no outstanding debts.</p>
+            <h3>{t('dashboard.allBalanced')}</h3>
+            <p>{t('dashboard.noDebts')}</p>
           </div>
         ) : (
           <ul className="list">
@@ -253,11 +255,11 @@ export default function Dashboard() {
                   }}>
                     {loadingDetails === item.user.id ? (
                       <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        Loading details...
+                        {t('dashboard.loadingDetails')}
                       </div>
                     ) : !debtDetails[item.user.id] || debtDetails[item.user.id].length === 0 ? (
                       <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        No detail items found.
+                        {t('dashboard.noDetails')}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
@@ -311,9 +313,9 @@ export default function Dashboard() {
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">My Groups</h2>
+          <h2 className="card-title">{t('dashboard.myGroups')}</h2>
           <button className="btn btn-primary" onClick={openCreateModal}>
-            + New Group
+            {t('dashboard.newGroup')}
           </button>
         </div>
 
@@ -322,8 +324,8 @@ export default function Dashboard() {
         {groups.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">👥</div>
-            <h3>No groups yet</h3>
-            <p>Create a group to start splitting expenses with friends.</p>
+            <h3>{t('dashboard.noGroups')}</h3>
+            <p>{t('dashboard.noGroupsDesc')}</p>
           </div>
         ) : (
           <ul className="list">
@@ -348,13 +350,13 @@ export default function Dashboard() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Create New Group</h3>
+              <h3 className="modal-title">{t('dashboard.createNewGroup')}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleCreateGroup}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label className="form-label">Group Icon</label>
+                  <label className="form-label">{t('dashboard.groupIcon')}</label>
                   <div style={{ 
                     display: 'flex', 
                     flexWrap: 'wrap', 
@@ -386,7 +388,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Group Name</label>
+                  <label className="form-label">{t('dashboard.groupName')}</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '1.5rem' }}>{newGroupEmoji}</span>
                     <input
@@ -395,7 +397,7 @@ export default function Dashboard() {
                       style={{ flex: 1 }}
                       value={newGroupName}
                       onChange={(e) => setNewGroupName(e.target.value.slice(0, 69))}
-                      placeholder="e.g., Roommates"
+                      placeholder={t('dashboard.groupNamePlaceholder')}
                       required
                     />
                   </div>
@@ -404,26 +406,26 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Description (optional)</label>
+                  <label className="form-label">{t('dashboard.description')}</label>
                   <textarea
                     className="form-input"
                     value={newGroupDesc}
                     onChange={(e) => setNewGroupDesc(e.target.value.slice(0, 128))}
-                    placeholder="e.g., Shared apartment expenses"
+                    placeholder={t('dashboard.descPlaceholder')}
                     maxLength={128}
                     rows={3}
                     style={{ resize: 'vertical' }}
                   />
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
-                    {newGroupDesc.length}/128 characters
+                    {newGroupDesc.length}/128 {t('dashboard.characters')}
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Add Members (optional)</label>
+                  <label className="form-label">{t('dashboard.addMembers')}</label>
                   <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', background: 'var(--card-bg)' }}>
                     {allUsers.filter(u => u.id !== currentUser?.id).length === 0 ? (
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '8px' }}>
-                        No other users available yet
+                        {t('dashboard.noOtherUsers')}
                       </div>
                     ) : (
                       allUsers.filter(u => u.id !== currentUser?.id).map(user => (
@@ -454,16 +456,16 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    You will be automatically added as a member
+                    {t('dashboard.autoAdded')}
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={creating}>
-                  {creating ? 'Creating...' : 'Create Group'}
+                  {creating ? t('dashboard.creating') : t('dashboard.createGroup')}
                 </button>
               </div>
             </form>

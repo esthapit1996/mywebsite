@@ -423,9 +423,10 @@ export default function GopherStash() {
             {chartView === 'bar' && (() => {
               const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#333';
               const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+              const totalValue = chartData.reduce((sum, d) => sum + d.value, 0);
               return (
               <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 44)}>
-                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 80, top: 5, bottom: 5 }}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 120, top: 5, bottom: 5 }}>
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
@@ -439,7 +440,7 @@ export default function GopherStash() {
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={false}>
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                     {chartData.map((entry, index) => (
                       <Cell key={`bar-${index}`} fill={entry.color} />
                     ))}
@@ -447,7 +448,11 @@ export default function GopherStash() {
                       dataKey="value"
                       position="right"
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      formatter={(v: any) => formatAmount(Number(v) || 0)}
+                      formatter={(v: any) => {
+                        const num = Number(v) || 0;
+                        const pct = totalValue > 0 ? ((num / totalValue) * 100).toFixed(0) : '0';
+                        return `${formatAmount(num)} (${pct}%)`;
+                      }}
                       style={{ fontSize: '0.8rem', fontWeight: 600, fill: mutedColor }}
                     />
                   </Bar>

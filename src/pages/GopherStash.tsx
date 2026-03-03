@@ -16,6 +16,7 @@ const CATEGORIES = [
   { key: 'entertainment', icon: '🎬' },
   { key: 'health', icon: '🏥' },
   { key: 'bills', icon: '💡' },
+  { key: 'gas', icon: '⛽' },
   { key: 'travel', icon: '✈️' },
   { key: 'other', icon: '📦' },
 ];
@@ -554,6 +555,12 @@ export default function GopherStash() {
                         <span>{t(`stash.categories.${cat.key || 'none'}`)}</span>
                       </button>
                     ))}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    {t('stash.categoryHint')}{' '}
+                    <Link to="/suggestions" onClick={closeExpenseModal} style={{ color: 'var(--primary)' }}>
+                      {t('stash.suggestionBox')}
+                    </Link>
                   </div>
                 </div>
               </div>

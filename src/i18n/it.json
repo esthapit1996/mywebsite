@@ -497,8 +497,11 @@
       "entertainment": "Intrattenimento",
       "health": "Salute",
       "bills": "Bollette",
+      "gas": "Benzina",
       "travel": "Viaggi",
       "other": "Altro"
-    }
+    },
+    "categoryHint": "Vuoi più categorie? Richiedile nella",
+    "suggestionBox": "Cassetta dei Suggerimenti"
   }
 }

@@ -497,8 +497,11 @@
       "entertainment": "Entertainment",
       "health": "Health",
       "bills": "Bills",
+      "gas": "Gas",
       "travel": "Travel",
       "other": "Other"
-    }
+    },
+    "categoryHint": "Want more categories? Request them in the",
+    "suggestionBox": "Suggestion Box"
   }
 }

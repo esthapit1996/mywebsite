@@ -469,6 +469,7 @@
     "addExpense": "Add Expense",
     "adding": "Adding...",
     "addFailed": "Failed to add expense",
+    "waitConversion": "Please wait for currency conversion to complete.",
     "deleteConfirm": "Delete this expense?",
     "deleteFailed": "Failed to delete expense",
     "clearConfirm": "Clear ALL your stash expenses? This cannot be undone.",

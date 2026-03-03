@@ -1,15 +1,32 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { StashExpense, StashSummary } from '../types';
 
+const CATEGORIES = [
+  { key: '', icon: '📝' },
+  { key: 'food', icon: '🍔' },
+  { key: 'drinks', icon: '🍻' },
+  { key: 'transport', icon: '🚗' },
+  { key: 'shopping', icon: '🛒' },
+  { key: 'entertainment', icon: '🎬' },
+  { key: 'health', icon: '🏥' },
+  { key: 'bills', icon: '💡' },
+  { key: 'travel', icon: '✈️' },
+  { key: 'other', icon: '📦' },
+];
+
+function getCategoryIcon(category: string): string {
+  return CATEGORIES.find(c => c.key === category)?.icon || '📝';
+}
+
 export default function GopherStash() {
   const { t } = useTranslation();
-  const { formatAmount, currentCurrency } = useCurrency();
+  const { formatAmount } = useCurrency();
   const [summary, setSummary] = useState<StashSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,8 +35,17 @@ export default function GopherStash() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [adding, setAdding] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  // Currency picker state
+  const [expenseCurrency, setExpenseCurrency] = useState('EUR');
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
+  const [conversionRate, setConversionRate] = useState<number | null>(null);
+  const [converting, setConverting] = useState(false);
+  const currencyPickerRef = useRef<HTMLDivElement>(null);
 
   // History state — lazy-loaded on toggle
   const [showHistory, setShowHistory] = useState(false);
@@ -30,6 +56,41 @@ export default function GopherStash() {
   useEffect(() => {
     loadSummary();
   }, []);
+
+  // Close currency picker on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (currencyPickerRef.current && !currencyPickerRef.current.contains(event.target as Node)) {
+        setShowCurrencyPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Convert currency when amount or currency changes
+  useEffect(() => {
+    const doConvert = async () => {
+      if (!amount || expenseCurrency === 'EUR') {
+        setConvertedAmount(null);
+        setConversionRate(null);
+        return;
+      }
+      setConverting(true);
+      try {
+        const result = await api.convertCurrency(expenseCurrency, 'EUR', amount);
+        setConvertedAmount(result.converted);
+        setConversionRate(result.rate);
+      } catch {
+        setConvertedAmount(null);
+        setConversionRate(null);
+      } finally {
+        setConverting(false);
+      }
+    };
+    const timeoutId = setTimeout(doConvert, 300);
+    return () => clearTimeout(timeoutId);
+  }, [amount, expenseCurrency]);
 
   const loadSummary = async () => {
     try {
@@ -67,6 +128,11 @@ export default function GopherStash() {
     setShowExpenseModal(false);
     setAmount('');
     setDescription('');
+    setCategory('');
+    setExpenseCurrency('EUR');
+    setConvertedAmount(null);
+    setConversionRate(null);
+    setShowCurrencyPicker(false);
   };
 
   const handleAdd = async (e: FormEvent) => {
@@ -74,19 +140,38 @@ export default function GopherStash() {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0 || !description.trim()) return;
 
+    // If non-EUR, wait for conversion
+    const finalAmount = expenseCurrency === 'EUR' ? numAmount : convertedAmount;
+    if (!finalAmount) {
+      setError(t('stash.waitConversion'));
+      return;
+    }
+
+    // Append original currency info to description if non-EUR
+    let finalDesc = description.trim();
+    if (expenseCurrency !== 'EUR') {
+      const sym = DISPLAY_CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || expenseCurrency;
+      finalDesc = `${finalDesc} (${sym}${amount} ${expenseCurrency})`;
+    }
+
     setAdding(true);
     try {
-      const res = await api.createStashExpense(numAmount, description.trim(), '');
+      const res = await api.createStashExpense(finalAmount, finalDesc.slice(0, 420), category);
       if (res.data) {
         if (historyLoaded) {
           setExpenses(prev => [res.data!, ...prev]);
         }
         setSummary(prev => {
-          if (!prev) return { total_spent: numAmount, expense_count: 1, by_category: {} };
+          if (!prev) return { total_spent: finalAmount, expense_count: 1, by_category: { [category || 'uncategorized']: finalAmount } };
+          const cat = category || 'uncategorized';
           return {
             ...prev,
-            total_spent: prev.total_spent + numAmount,
+            total_spent: prev.total_spent + finalAmount,
             expense_count: prev.expense_count + 1,
+            by_category: {
+              ...prev.by_category,
+              [cat]: (prev.by_category[cat] || 0) + finalAmount,
+            },
           };
         });
       }
@@ -108,10 +193,15 @@ export default function GopherStash() {
       setExpenses(prev => prev.filter(e => e.id !== id));
       setSummary(prev => {
         if (!prev) return prev;
+        const cat = expense.category || 'uncategorized';
+        const newByCategory = { ...prev.by_category };
+        newByCategory[cat] = (newByCategory[cat] || 0) - expense.amount;
+        if (newByCategory[cat] <= 0) delete newByCategory[cat];
         return {
           ...prev,
           total_spent: prev.total_spent - expense.amount,
           expense_count: prev.expense_count - 1,
+          by_category: newByCategory,
         };
       });
     } catch (err) {
@@ -170,6 +260,7 @@ export default function GopherStash() {
         <div style={{
           textAlign: 'center',
           padding: '20px 0',
+          borderBottom: summary && Object.keys(summary.by_category).length > 0 ? '1px solid var(--border)' : 'none',
         }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
             {t('stash.totalSpent')}
@@ -185,6 +276,40 @@ export default function GopherStash() {
             {t('stash.expenseCount', { count: summary?.expense_count || 0 })}
           </div>
         </div>
+
+        {/* Category Breakdown */}
+        {summary && Object.keys(summary.by_category).length > 0 && (
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: 'var(--text-muted)' }}>
+              {t('stash.byCategory')}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {Object.entries(summary.by_category)
+                .sort(([, a], [, b]) => b - a)
+                .map(([cat, total]) => (
+                  <div
+                    key={cat}
+                    style={{
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>{getCategoryIcon(cat)}</span>
+                    <span style={{ textTransform: 'capitalize' }}>{t(`stash.categories.${cat}`)}</span>
+                    <span style={{ fontWeight: '600', color: 'var(--error-color, #ef4444)' }}>
+                      {formatAmount(total)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
@@ -229,7 +354,7 @@ export default function GopherStash() {
                     alignItems: 'flex-start',
                     gap: '12px',
                   }}>
-                    {/* Icon badge */}
+                    {/* Category icon badge */}
                     <div style={{
                       width: '36px',
                       height: '36px',
@@ -242,13 +367,23 @@ export default function GopherStash() {
                       flexShrink: 0,
                       border: '1px solid var(--border)',
                     }}>
-                      💰
+                      {getCategoryIcon(expense.category)}
                     </div>
                     {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: '500' }}>
                         {expense.description}
                       </div>
+                      {expense.category && (
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: 'var(--primary)',
+                          textTransform: 'capitalize',
+                          marginTop: '2px',
+                        }}>
+                          {t(`stash.categories.${expense.category}`)}
+                        </div>
+                      )}
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                         {new Date(expense.created_at).toLocaleString()}
                       </div>
@@ -300,9 +435,9 @@ export default function GopherStash() {
                 {/* Receipt Scanner */}
                 <ReceiptScanner onResult={(result) => {
                   if (result.storeName) {
-                    setDescription(result.storeName.slice(0, 255));
+                    setDescription(result.storeName.slice(0, 420));
                   } else if (result.items.length > 0) {
-                    setDescription(result.items.map(i => i.name).join(', ').slice(0, 255));
+                    setDescription(result.items.map(i => i.name).join(', ').slice(0, 420));
                   }
                   if (result.items.length > 0) {
                     const itemSum = Math.round(result.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
@@ -312,22 +447,71 @@ export default function GopherStash() {
                   }
                 }} />
 
-                {/* Amount with currency indicator */}
+                {/* Amount with currency picker */}
                 <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">
-                    {t('stash.amount')} ({currentCurrency?.symbol || '€'} {currentCurrency?.code || 'EUR'})
-                  </label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    autoFocus
-                  />
+                  <label className="form-label">{t('stash.amount')}</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      autoFocus
+                    />
+                    <div style={{ position: 'relative' }} ref={currencyPickerRef}>
+                      <button
+                        type="button"
+                        className="currency-picker-trigger"
+                        onClick={() => setShowCurrencyPicker(!showCurrencyPicker)}
+                      >
+                        <span>{DISPLAY_CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || '€'}</span>
+                        <span className="currency-picker-code">{expenseCurrency}</span>
+                        <span style={{ fontSize: '0.7rem' }}>{showCurrencyPicker ? '▲' : '▼'}</span>
+                      </button>
+                      {showCurrencyPicker && (
+                        <div className="currency-picker-menu">
+                          <div className="currency-picker-grid">
+                            {DISPLAY_CURRENCIES.map(c => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                className={`currency-picker-item ${expenseCurrency === c.code ? 'active' : ''}`}
+                                onClick={() => {
+                                  setExpenseCurrency(c.code);
+                                  setShowCurrencyPicker(false);
+                                }}
+                                title={c.name}
+                              >
+                                <span className="currency-picker-symbol">{c.symbol}</span>
+                                <span className="currency-picker-label">{c.code}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {expenseCurrency !== 'EUR' && amount && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.9rem' }}>
+                      {converting ? (
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('group.converting')}</span>
+                      ) : convertedAmount ? (
+                        <span>
+                          <strong>€{convertedAmount.toFixed(2)}</strong>
+                          <span style={{ color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                            (1 {expenseCurrency} = {conversionRate?.toFixed(4)} EUR)
+                          </span>
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--danger)' }}>{t('group.conversionFailed')}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -339,16 +523,45 @@ export default function GopherStash() {
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder={t('stash.descriptionPlaceholder')}
-                    maxLength={255}
+                    maxLength={420}
                     required
                   />
+                </div>
+
+                {/* Category picker */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="form-label">{t('stash.category')}</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {CATEGORIES.map(cat => (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setCategory(cat.key)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '16px',
+                          border: category === cat.key ? '2px solid var(--primary)' : '1px solid var(--border)',
+                          background: category === cat.key ? 'var(--primary-bg, rgba(99, 102, 241, 0.1))' : 'transparent',
+                          color: 'var(--text)',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span>{cat.icon}</span>
+                        <span>{t(`stash.categories.${cat.key || 'none'}`)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={closeExpenseModal}>
                   {t('common.cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={adding}>
+                <button type="submit" className="btn btn-primary" disabled={adding || (expenseCurrency !== 'EUR' && !convertedAmount)}>
                   {adding ? t('stash.adding') : t('stash.addExpense')}
                 </button>
               </div>

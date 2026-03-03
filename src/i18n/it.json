@@ -469,6 +469,7 @@
     "addExpense": "Aggiungi Spesa",
     "adding": "Aggiungendo...",
     "addFailed": "Aggiunta spesa fallita",
+    "waitConversion": "Attendere il completamento della conversione valuta.",
     "deleteConfirm": "Eliminare questa spesa?",
     "deleteFailed": "Eliminazione spesa fallita",
     "clearConfirm": "Cancellare TUTTE le spese del tuo stash? Non si può annullare.",

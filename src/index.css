@@ -184,7 +184,30 @@
   --alert-success-border: #f472b6;
 }
 
-/* 9. Lavender - Soft purple */
+/* 9. Purple Haze - Dark purple cyberpunk without neon */
+[data-theme="purplehaze"] {
+  --primary: #9b7ecb;
+  --primary-dark: #7c5db5;
+  --secondary: #6d5a9e;
+  --danger: #d4556b;
+  --warning: #c9a84c;
+  --bg: #13111c;
+  --bg-secondary: #1a1726;
+  --card-bg: #221e30;
+  --text: #ddd6f3;
+  --text-muted: #8b80a5;
+  --border: #352f4a;
+  --shadow: 0 1px 3px rgba(155,126,203,0.15);
+  --shadow-lg: 0 10px 15px -3px rgba(155,126,203,0.25);
+  --input-bg: #221e30;
+  --alert-error-bg: #2a1525;
+  --alert-error-border: #d4556b;
+  --alert-success-bg: #1a2025;
+  --alert-success-border: #7c9b6b;
+  --btn-text: #13111c;
+}
+
+/* 10. Lavender - Soft purple */
 [data-theme="lavender"] {
   --primary: #a78bfa;
   --primary-dark: #8b5cf6;

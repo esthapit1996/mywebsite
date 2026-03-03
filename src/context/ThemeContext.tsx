@@ -15,6 +15,7 @@ export const THEMES: Theme[] = [
   { id: 'ocean', name: 'Ocean', icon: '🌊', category: 'dark' },
   { id: 'matcha', name: 'Matcha', icon: '🍵', category: 'dark' },
   { id: 'rosegold', name: 'Rose Gold', icon: '🌹', category: 'dark' },
+  { id: 'purplehaze', name: 'Purple Haze', icon: '🔮', category: 'dark' },
   // Light themes
   { id: 'lavender', name: 'Lavender', icon: '💜', category: 'light' },
   { id: 'sakura', name: 'Sakura', icon: '🌸', category: 'light' },

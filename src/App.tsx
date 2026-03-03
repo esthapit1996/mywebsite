@@ -129,7 +129,6 @@ function Header(): JSX.Element | null {
               <div className="user-menu-dropdown">
                 {/* Theme Picker */}
                 <div className="user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
-                  <span>{currentTheme?.icon || '🎨'}</span>
                   <select 
                     className="theme-select-inline" 
                     value={theme} 

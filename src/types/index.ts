@@ -150,6 +150,14 @@ export interface DebtOverviewItem {
   amount: number;
 }
 
+export interface DebtDetailItem {
+  type: string;
+  group_name: string;
+  description: string;
+  amount: number;
+  created_at: string;
+}
+
 // ============================================
 // Activity Types
 // ============================================

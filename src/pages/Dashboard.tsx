@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useCurrency } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
-import type { Group, User, DebtOverviewItem } from '../types';
+import type { Group, User, DebtOverviewItem, DebtDetailItem } from '../types';
 
 export default function Dashboard() {
   const { formatAmount } = useCurrency();
@@ -21,6 +21,9 @@ export default function Dashboard() {
   const [debtOverview, setDebtOverview] = useState<DebtOverviewItem[]>([]);
   const [loadingDebt, setLoadingDebt] = useState(true);
   const [debtError, setDebtError] = useState<string | null>(null);
+  const [expandedDebt, setExpandedDebt] = useState<number | null>(null);
+  const [debtDetails, setDebtDetails] = useState<Record<number, DebtDetailItem[]>>({});
+  const [loadingDetails, setLoadingDetails] = useState<number | null>(null);
 
   // Available emojis for groups
   const availableEmojis = [
@@ -74,6 +77,24 @@ export default function Dashboard() {
       setDebtError(err instanceof Error ? err.message : 'Failed to load debt overview');
     } finally {
       setLoadingDebt(false);
+    }
+  };
+
+  const toggleDebtDetails = async (userId: number) => {
+    if (expandedDebt === userId) {
+      setExpandedDebt(null);
+      return;
+    }
+    setExpandedDebt(userId);
+    if (debtDetails[userId]) return; // Already loaded
+    setLoadingDetails(userId);
+    try {
+      const response = await api.getDebtDetails(userId);
+      setDebtDetails(prev => ({ ...prev, [userId]: response.data || [] }));
+    } catch (err) {
+      console.error('Failed to load debt details:', err);
+    } finally {
+      setLoadingDetails(null);
     }
   };
 
@@ -191,24 +212,97 @@ export default function Dashboard() {
           <ul className="list">
             {debtOverview.map((item) => (
               <li key={item.user.id} className="list-item" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center' 
+                display: 'block',
+                padding: 0,
               }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Avatar name={item.user.name} avatar={item.user.avatar} size={30} />
-                  {item.user.name}
-                </span>
-                <span style={{ 
-                  fontWeight: '600',
-                  color: item.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)'
-                }}>
-                  {item.amount > 0 ? (
-                    <>+{formatAmount(item.amount)}</>
-                  ) : (
-                    <>-{formatAmount(Math.abs(item.amount))}</>
-                  )}
-                </span>
+                <div
+                  onClick={() => toggleDebtDetails(item.user.id)}
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg, rgba(0,0,0,0.03))')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Avatar name={item.user.name} avatar={item.user.avatar} size={30} />
+                    {item.user.name}
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: expandedDebt === item.user.id ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                  </span>
+                  <span style={{ 
+                    fontWeight: '600',
+                    color: item.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)'
+                  }}>
+                    {item.amount > 0 ? (
+                      <>+{formatAmount(item.amount)}</>
+                    ) : (
+                      <>-{formatAmount(Math.abs(item.amount))}</>
+                    )}
+                  </span>
+                </div>
+
+                {expandedDebt === item.user.id && (
+                  <div style={{
+                    padding: '0 16px 12px',
+                    borderTop: '1px solid var(--border)',
+                    background: 'var(--card-bg-alt, var(--card-bg))',
+                  }}>
+                    {loadingDetails === item.user.id ? (
+                      <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        Loading details...
+                      </div>
+                    ) : !debtDetails[item.user.id] || debtDetails[item.user.id].length === 0 ? (
+                      <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        No detail items found.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
+                        {debtDetails[item.user.id].map((detail, idx) => (
+                          <div key={idx} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            background: 'var(--bg, #f8fafc)',
+                            fontSize: '0.85rem',
+                            gap: '12px',
+                          }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 500, marginBottom: '2px' }}>
+                                <span style={{ 
+                                  fontSize: '0.7rem', 
+                                  padding: '1px 5px', 
+                                  borderRadius: '4px',
+                                  marginRight: '6px',
+                                  background: detail.type === 'expense' ? 'var(--primary-light, #dbeafe)' : detail.type === 'settlement' ? 'var(--success-light, #dcfce7)' : 'var(--warning-light, #fef3c7)',
+                                  color: detail.type === 'expense' ? 'var(--primary, #3b82f6)' : detail.type === 'settlement' ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
+                                }}>
+                                  {detail.type}
+                                </span>
+                                {detail.description}
+                              </div>
+                              <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                📁 {detail.group_name} · 📅 {new Date(detail.created_at).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <span style={{
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                              color: detail.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)',
+                            }}>
+                              {detail.amount > 0 ? '+' : '-'}{formatAmount(Math.abs(detail.amount))}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

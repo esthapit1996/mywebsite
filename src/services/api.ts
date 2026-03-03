@@ -10,6 +10,7 @@ import type {
   BalancesResponse,
   MyBalanceResponse,
   DebtOverviewItem,
+  DebtDetailItem,
   Activity,
   Suggestion,
   SuggestionsResponse,
@@ -161,6 +162,10 @@ class ApiService {
 
   async getDebtOverview(): Promise<ApiResponse<DebtOverviewItem[]>> {
     return this.request<DebtOverviewItem[]>('/debt-overview');
+  }
+
+  async getDebtDetails(userId: number): Promise<ApiResponse<DebtDetailItem[]>> {
+    return this.request<DebtDetailItem[]>(`/debt-overview/${userId}`);
   }
 
   async getPaymentHistory(): Promise<ApiResponse<PaymentHistoryItem[]>> {

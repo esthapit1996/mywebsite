@@ -21,7 +21,7 @@ export const THEMES: Theme[] = [
   { id: 'sakura', name: 'Sakura', icon: '🌸', category: 'light' },
   { id: 'cottoncandy', name: 'Cotton Candy', icon: '🍬', category: 'light' },
   { id: 'solarized', name: 'Solarized', icon: '☀️', category: 'light' },
-  { id: 'light', name: 'Light', icon: '🌤️', category: 'light' },
+  { id: 'flashbang', name: 'Flashbang', icon: '💥', category: 'light' },
 ];
 
 export function useTheme(): ThemeContextType {

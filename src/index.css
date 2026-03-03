@@ -299,8 +299,8 @@
   --btn-text: #073642;
 }
 
-/* 13. Light - Clean white */
-[data-theme="light"] {
+/* 13. Flashbang - Clean white */
+[data-theme="flashbang"] {
   --primary: #10b981;
   --primary-dark: #059669;
   --secondary: #6366f1;

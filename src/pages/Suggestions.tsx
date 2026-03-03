@@ -239,9 +239,12 @@ export default function Suggestions() {
   const deniedSuggestions = typeFiltered.filter(s => s.status === 'denied');
 
   const renderSuggestionCard = (suggestion: Suggestion) => (
-    <li key={suggestion.id} className="list-item" style={{ 
+    <div key={suggestion.id} style={{ 
       display: 'block',
-      padding: '16px'
+      padding: '16px',
+      background: 'var(--card-bg)',
+      borderRadius: '10px',
+      border: '1px solid var(--border)',
     }}>
       <div style={{ 
         display: 'flex', 
@@ -721,7 +724,7 @@ export default function Suggestions() {
           )}
         </div>
       </div>
-    </li>
+    </div>
   );
 
   if (loading) {
@@ -928,9 +931,9 @@ export default function Suggestions() {
                       No open suggestions
                     </div>
                   ) : (
-                    <ul className="list" style={{ margin: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
                       {openSuggestions.map(renderSuggestionCard)}
-                    </ul>
+                    </div>
                   )}
                 </div>
               )}
@@ -945,9 +948,9 @@ export default function Suggestions() {
                       No suggestions in progress
                     </div>
                   ) : (
-                    <ul className="list" style={{ margin: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
                       {wipSuggestions.map(renderSuggestionCard)}
-                    </ul>
+                    </div>
                   )}
                 </div>
               )}
@@ -962,9 +965,9 @@ export default function Suggestions() {
                       No completed suggestions yet
                     </div>
                   ) : (
-                    <ul className="list" style={{ margin: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
                       {doneSuggestions.map(renderSuggestionCard)}
-                    </ul>
+                    </div>
                   )}
                 </div>
               )}
@@ -979,9 +982,9 @@ export default function Suggestions() {
                       No denied suggestions — Evan approves everything! 🎉
                     </div>
                   ) : (
-                    <ul className="list" style={{ margin: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
                       {deniedSuggestions.map(renderSuggestionCard)}
-                    </ul>
+                    </div>
                   )}
                 </div>
               )}

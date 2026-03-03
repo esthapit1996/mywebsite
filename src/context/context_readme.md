@@ -80,13 +80,13 @@ function MyComponent() {
 
 ## 🔧 ThemeContext.jsx
 
-Manages the app's visual theme with 12 themes (8 dark, 4 light).
+Manages the app's visual theme with 14 themes (9 dark, 5 light).
 
 ### Exported
 
 | Export | Type | Description |
 |--------|------|-------------|
-| `THEMES` | `Array` | List of all available themes |
+| `THEMES` | `Array` | List of all 14 available themes |
 | `ThemeProvider` | Component | Wraps app to provide theme state |
 | `useTheme()` | Hook | Access theme state and functions |
 
@@ -101,18 +101,19 @@ Manages the app's visual theme with 12 themes (8 dark, 4 light).
 }
 ```
 
-### Available Themes
+### Available Themes (14)
 
-| Dark Themes | Light Themes |
-|-------------|--------------|
-| 🌙 Dark | 💜 Lavender |
+| Dark Themes (9) | Light Themes (5) |
+|-----------------|-------------------|
+| 🦇 Dark Knight | 💜 Lavender |
 | ☕ Espresso | 🌸 Sakura |
-| 🧛 Dracula | ☀️ Solarized |
-| 🪵 Monokai | 🌤️ Light |
-| 🤖 Cyberpunk | |
+| 🧛 Dracula | 🍬 Cotton Candy |
+| 🪵 Monokai | ☀️ Solarized |
+| 🤖 Cyberpunk | 💥 Flashbang |
 | 🌊 Ocean | |
 | 🍵 Matcha | |
 | 🌹 Rose Gold | |
+| 🔮 Purple Haze | |
 
 ### State
 

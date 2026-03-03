@@ -10,10 +10,12 @@ Pages are the main **route components** - each represents a full screen in the a
 |---------|--------|---------|
 | `react` | `useState, useEffect, useRef` | State and lifecycle hooks |
 | `react-router-dom` | `useParams, useNavigate, Link` | Routing and navigation |
-| `recharts` | `LineChart, Line, XAxis, ...` | Charts for currency history |
+| `react-i18next` | `useTranslation` | Internationalization (EN + IT) |
+| `recharts` | `PieChart, BarChart, LineChart, ...` | Charts for GopherStash & currency |
 | `api` | `../services/api` | Backend API calls |
 | `useAuth` | `../context/AuthContext` | Authentication state |
 | `useCurrency` | `../context/CurrencyContext` | Currency formatting |
+| `useTheme` | `../context/ThemeContext` | Theme management |
 
 ---
 
@@ -21,13 +23,18 @@ Pages are the main **route components** - each represents a full screen in the a
 
 | Page | Route | Auth Required | Description |
 |------|-------|---------------|-------------|
-| `Login.jsx` | `/login` | ❌ | User login form |
-| `Register.jsx` | `/register` | ❌ | User registration form |
-| `Dashboard.jsx` | `/` | ✅ | Home - groups list, debt overview |
-| `GroupDetail.jsx` | `/groups/:id` | ✅ | Single group - expenses, balances, settle |
-| `PaymentHistory.jsx` | `/payment-history` | ✅ | User's payment history |
-| `Suggestions.jsx` | `/suggestions` | ✅ | Feature suggestion box |
-| `CurrencyConverter.jsx` | `/currency` | ✅ | Currency converter tool |
+| `Login.tsx` | `/login` | ❌ | User login form |
+| `Register.tsx` | `/register` | ❌ | User registration form |
+| `Dashboard.tsx` | `/` | ✅ | Home - groups list, debt overview, GopherStash card |
+| `GroupDetail.tsx` | `/groups/:id` | ✅ | Single group - expenses, balances, settle |
+| `GopherStash.tsx` | `/stash` | ✅ | Personal expense tracker with charts |
+| `PaymentHistory.tsx` | `/payment-history` | ✅ | User's payment history |
+| `Suggestions.tsx` | `/suggestions` | ✅ | Feature suggestion box with voting & comments |
+| `CurrencyConverter.tsx` | `/currency` | ✅ | Currency converter tool with trend chart |
+| `CurrencyPicker.tsx` | `/currency-picker` | ✅ | Display currency selection |
+| `Community.tsx` | `/community` | ✅ | All members with special titles |
+| `Members.tsx` | `/members` | ✅ | User management + whitelist/blacklist (founder) |
+| `Settings.tsx` | `/settings` | ✅ | Profile, avatar, password, language |
 
 ---
 
@@ -327,3 +334,105 @@ All pages use CSS classes from `index.css`:
 | `.modal` | Modal container |
 | `.alert` | Error/success messages |
 | `.empty-state` | "No data" placeholders |
+
+---
+
+## 🔧 GopherStash.tsx
+
+Personal expense tracker with category breakdown and chart views.
+
+### State (key)
+
+| State | Type | Purpose |
+|-------|------|---------|
+| `summary` | `StashSummary \| null` | Total spent + category breakdown |
+| `expenses` | `StashExpense[]` | All personal expenses |
+| `amount` | `string` | New expense amount input |
+| `description` | `string` | New expense description |
+| `category` | `string` | Selected category |
+| `chartView` | `'pills' \| 'pie' \| 'bar'` | Category breakdown view mode (default: pie) |
+| `showReceiptScanner` | `boolean` | Toggle receipt scanner modal |
+
+### Categories (11)
+
+| Key | Icon | Key | Icon |
+|-----|------|-----|------|
+| (none) | 📝 | entertainment | 🎬 |
+| food | 🍔 | health | 🏥 |
+| drinks | 🍻 | bills | 💡 |
+| transport | 🚗 | gas | ⛽ |
+| shopping | 🛒 | travel | ✈️ |
+| other | 📦 | | |
+
+### Chart Views
+
+| View | Component | Description |
+|------|-----------|-------------|
+| **Pills** (📋) | CSS pills | Category badges with amount + percentage |
+| **Pie** (🥧) | recharts `PieChart` | Pie chart with emoji + % labels, no tooltip |
+| **Bar** (📊) | recharts `BarChart` | Horizontal bars with value + % labels, no tooltip |
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Add Expense** | Amount + description + category + currency picker |
+| **Receipt Scanner** | Upload photo → AI extracts items → auto-fill |
+| **Category Breakdown** | Three chart views (pills/pie/bar, default: pie) |
+| **Currency Conversion** | Enter amount in any currency, auto-convert to EUR |
+| **Clear All** | Delete all personal expenses with confirmation |
+| **Default Description** | If empty, backend defaults to capitalized category name |
+
+---
+
+## 🔧 Community.tsx
+
+Displays all registered users with special titles for select members.
+
+### Special Titles
+
+| Email | Title | Emoji | Color |
+|-------|-------|-------|-------|
+| `evansthapit20@gmail.com` | Founder | 👑 | Gold |
+| `e.ivanishcheva@yandex.ru` | Trailblazer | 🚀 | Purple |
+| `beghettirocce@gmail.com` | Mafia Boss | 🤌 | Red |
+
+Default members get the "Gopher" title with 🐹.
+
+---
+
+## 🔧 Members.tsx
+
+User management page with access control (founder only).
+
+### Tabs
+
+| Tab | Access | Description |
+|-----|--------|-------------|
+| **Members** | All users | View/delete registered users |
+| **Whitelist** | Founder only | Manage approved registration emails |
+| **Blacklist** | Founder only | Manage blocked emails with reasons |
+
+---
+
+## 🔧 Settings.tsx
+
+Profile and preferences page.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Avatar** | Pick from emoji avatars via AvatarPicker modal |
+| **Change Password** | Old + new + confirm, min 6 chars |
+| **Delete Account** | With confirmation modal |
+| **Language** | Switch between English and Italian |
+| **Currency** | Navigate to CurrencyPicker page |
+
+---
+
+## 🔧 CurrencyPicker.tsx
+
+Full-page currency selection (25 currencies).
+
+Displays all currencies in a grid. Selecting one updates the display currency app-wide and navigates back.

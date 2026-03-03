@@ -16,13 +16,13 @@ Services handle communication with external APIs (primarily our backend).
 
 | File | Purpose |
 |------|---------|
-| `api.js` | API client for all backend communication |
+| `api.ts` | TypeScript API client for all backend communication |
 
 ---
 
-## 🔧 api.js
+## 🔧 api.ts
 
-A class-based API client that handles all HTTP requests to the backend.
+A class-based TypeScript API client that handles all HTTP requests to the backend.
 
 ### Configuration
 
@@ -71,7 +71,7 @@ async request(endpoint, options = {}) {
 
 ---
 
-### Authentication Methods
+### Authentication & Profile Methods
 
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
@@ -80,6 +80,9 @@ async request(endpoint, options = {}) {
 | `logout` | - | - | - | Clear stored token (local only) |
 | `getProfile` | - | GET | `/profile` | Get current user info |
 | `updateTheme` | `theme` | PUT | `/profile/theme` | Update theme preference |
+| `updateAvatar` | `avatar` | PUT | `/profile/avatar` | Update avatar |
+| `updateLanguage` | `language` | PUT | `/profile/language` | Update language preference |
+| `changePassword` | `oldPassword, newPassword, confirmPassword` | PUT | `/profile/password` | Change password |
 
 ---
 
@@ -88,7 +91,9 @@ async request(endpoint, options = {}) {
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
 | `getAllUsers` | - | GET | `/users` | List all users |
+| `deleteUser` | `userId` | DELETE | `/users/:id` | Delete a user |
 | `getDebtOverview` | - | GET | `/debt-overview` | User's debts across groups |
+| `getDebtDetails` | `userId` | GET | `/debt-overview/:id` | Debt details with specific user |
 | `getPaymentHistory` | - | GET | `/payment-history` | User's payment history |
 | `clearPaymentHistory` | - | DELETE | `/payment-history` | Clear payment history |
 
@@ -101,6 +106,7 @@ async request(endpoint, options = {}) {
 | `createGroup` | `name, description, emoji` | POST | `/groups` | Create new group |
 | `getGroups` | - | GET | `/groups` | List user's groups |
 | `getGroup` | `groupId` | GET | `/groups/:id` | Get single group |
+| `updateGroup` | `groupId, name, description` | PUT | `/groups/:id` | Update group details |
 | `deleteGroup` | `groupId` | DELETE | `/groups/:id` | Delete group |
 | `addMember` | `groupId, userId` | POST | `/groups/:id/members` | Add user to group |
 | `removeMember` | `groupId, memberId` | DELETE | `/groups/:id/members/:id` | Remove user |
@@ -114,7 +120,9 @@ async request(endpoint, options = {}) {
 | `createExpense` | `groupId, amount, description, splitType, splitWith` | POST | `/groups/:id/expenses` | Create expense |
 | `getExpenses` | `groupId` | GET | `/groups/:id/expenses` | List group expenses |
 | `getExpense` | `groupId, expenseId` | GET | `/groups/:id/expenses/:id` | Get single expense |
+| `getUnpaidExpenses` | `groupId` | GET | `/groups/:id/expenses/unpaid` | Get unpaid expenses |
 | `deleteExpense` | `groupId, expenseId` | DELETE | `/groups/:id/expenses/:id` | Delete expense |
+| `clearAllExpenses` | `groupId` | DELETE | `/groups/:id/expenses` | Clear all group expenses |
 
 ### createExpense Parameters
 
@@ -145,6 +153,7 @@ async request(endpoint, options = {}) {
 |--------|------------|------|----------|-------------|
 | `createSettlement` | `groupId, paidTo, amount` | POST | `/groups/:id/settlements` | Record direct payment |
 | `getSettlements` | `groupId` | GET | `/groups/:id/settlements` | List group settlements |
+| `deleteSettlement` | `groupId, settlementId` | DELETE | `/groups/:id/settlements/:id` | Delete settlement |
 
 ---
 
@@ -171,11 +180,16 @@ async request(endpoint, options = {}) {
 |--------|------------|------|----------|-------------|
 | `getSuggestions` | - | GET | `/suggestions` | List all suggestions |
 | `createSuggestion` | `content` | POST | `/suggestions` | Submit suggestion |
+| `editSuggestion` | `suggestionId, content, type` | PUT | `/suggestions/:id` | Edit own suggestion |
 | `deleteSuggestion` | `suggestionId` | DELETE | `/suggestions/:id` | Delete own suggestion |
 | `voteSuggestion` | `suggestionId, voteType` | POST | `/suggestions/:id/vote` | Vote on suggestion |
 | `removeVote` | `suggestionId` | DELETE | `/suggestions/:id/vote` | Remove vote |
 | `getSuggestionVoters` | `suggestionId` | GET | `/suggestions/:id/voters` | Get voter list |
 | `updateSuggestionStatus` | `suggestionId, status` | PUT | `/suggestions/:id/status` | Update status (admin) |
+| `getSuggestionComments` | `suggestionId` | GET | `/suggestions/:id/comments` | Get comments |
+| `createSuggestionComment` | `suggestionId, content` | POST | `/suggestions/:id/comments` | Add comment |
+| `editSuggestionComment` | `suggestionId, commentId, content` | PUT | `/suggestions/:id/comments/:id` | Edit comment |
+| `deleteSuggestionComment` | `suggestionId, commentId` | DELETE | `/suggestions/:id/comments/:id` | Delete comment |
 
 ---
 
@@ -186,6 +200,31 @@ async request(endpoint, options = {}) {
 | `getCurrencyRates` | `base='USD'` | GET | `/currency/rates` | Get exchange rates |
 | `convertCurrency` | `from, to, amount` | GET | `/currency/convert` | Convert amount |
 | `getCurrencyHistory` | `from, to, days=7` | GET | `/currency/history` | Historical rates |
+
+---
+
+### GopherStash Methods
+
+| Method | Parameters | HTTP | Endpoint | Description |
+|--------|------------|------|----------|-------------|
+| `getStashExpenses` | - | GET | `/stash` | Get all personal expenses |
+| `createStashExpense` | `amount, description, category` | POST | `/stash` | Add personal expense |
+| `deleteStashExpense` | `id` | DELETE | `/stash/:id` | Delete personal expense |
+| `getStashSummary` | - | GET | `/stash/summary` | Total spent + category breakdown |
+| `clearStashExpenses` | - | DELETE | `/stash` | Clear all personal expenses |
+
+---
+
+### Access Control Methods (Founder Only)
+
+| Method | Parameters | HTTP | Endpoint | Description |
+|--------|------------|------|----------|-------------|
+| `getWhitelist` | - | GET | `/whitelist` | List whitelisted emails |
+| `addToWhitelist` | `email` | POST | `/whitelist` | Add email to whitelist |
+| `removeFromWhitelist` | `id` | DELETE | `/whitelist/:id` | Remove from whitelist |
+| `getBlacklist` | - | GET | `/blacklist` | List blacklisted emails |
+| `addToBlacklist` | `email, reason?` | POST | `/blacklist` | Add email to blacklist |
+| `removeFromBlacklist` | `id` | DELETE | `/blacklist/:id` | Remove from blacklist |
 
 ---
 

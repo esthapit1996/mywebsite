@@ -7,27 +7,9 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { StashExpense, StashSummary } from '../types';
 
-const CATEGORIES = [
-  { key: '', icon: '📝' },
-  { key: 'food', icon: '🍔' },
-  { key: 'drinks', icon: '🍻' },
-  { key: 'transport', icon: '🚗' },
-  { key: 'shopping', icon: '🛒' },
-  { key: 'entertainment', icon: '🎬' },
-  { key: 'health', icon: '🏥' },
-  { key: 'bills', icon: '💡' },
-  { key: 'travel', icon: '✈️' },
-  { key: 'other', icon: '📦' },
-];
-
-function getCategoryIcon(category: string): string {
-  return CATEGORIES.find(c => c.key === category)?.icon || '📝';
-}
-
 export default function GopherStash() {
   const { t } = useTranslation();
   const { formatAmount, currentCurrency } = useCurrency();
-  const [expenses, setExpenses] = useState<StashExpense[]>([]);
   const [summary, setSummary] = useState<StashSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,25 +18,23 @@ export default function GopherStash() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
   const [adding, setAdding] = useState(false);
   const [clearing, setClearing] = useState(false);
 
-  // Filter state
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  // History state — lazy-loaded on toggle
+  const [showHistory, setShowHistory] = useState(false);
+  const [expenses, setExpenses] = useState<StashExpense[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
-    loadData();
+    loadSummary();
   }, []);
 
-  const loadData = async () => {
+  const loadSummary = async () => {
     try {
-      const [expRes, sumRes] = await Promise.all([
-        api.getStashExpenses(),
-        api.getStashSummary(),
-      ]);
-      setExpenses(expRes.data || []);
-      setSummary(sumRes.data || null);
+      const res = await api.getStashSummary();
+      setSummary(res.data || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('stash.loadFailed'));
     } finally {
@@ -62,11 +42,31 @@ export default function GopherStash() {
     }
   };
 
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.getStashExpenses();
+      setExpenses(res.data || []);
+      setHistoryLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('stash.loadFailed'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const toggleHistory = () => {
+    const opening = !showHistory;
+    setShowHistory(opening);
+    if (opening && !historyLoaded) {
+      loadHistory();
+    }
+  };
+
   const closeExpenseModal = () => {
     setShowExpenseModal(false);
     setAmount('');
     setDescription('');
-    setCategory('');
   };
 
   const handleAdd = async (e: FormEvent) => {
@@ -76,20 +76,17 @@ export default function GopherStash() {
 
     setAdding(true);
     try {
-      const res = await api.createStashExpense(numAmount, description.trim(), category);
+      const res = await api.createStashExpense(numAmount, description.trim(), '');
       if (res.data) {
-        setExpenses(prev => [res.data!, ...prev]);
+        if (historyLoaded) {
+          setExpenses(prev => [res.data!, ...prev]);
+        }
         setSummary(prev => {
-          if (!prev) return { total_spent: numAmount, expense_count: 1, by_category: { [category || 'uncategorized']: numAmount } };
-          const cat = category || 'uncategorized';
+          if (!prev) return { total_spent: numAmount, expense_count: 1, by_category: {} };
           return {
             ...prev,
             total_spent: prev.total_spent + numAmount,
             expense_count: prev.expense_count + 1,
-            by_category: {
-              ...prev.by_category,
-              [cat]: (prev.by_category[cat] || 0) + numAmount,
-            },
           };
         });
       }
@@ -111,15 +108,10 @@ export default function GopherStash() {
       setExpenses(prev => prev.filter(e => e.id !== id));
       setSummary(prev => {
         if (!prev) return prev;
-        const cat = expense.category || 'uncategorized';
-        const newByCategory = { ...prev.by_category };
-        newByCategory[cat] = (newByCategory[cat] || 0) - expense.amount;
-        if (newByCategory[cat] <= 0) delete newByCategory[cat];
         return {
           ...prev,
           total_spent: prev.total_spent - expense.amount,
           expense_count: prev.expense_count - 1,
-          by_category: newByCategory,
         };
       });
     } catch (err) {
@@ -141,12 +133,6 @@ export default function GopherStash() {
     }
   };
 
-  const filteredExpenses = filterCategory === 'all'
-    ? expenses
-    : expenses.filter(e => (e.category || 'uncategorized') === filterCategory);
-
-  const activeCategories = Array.from(new Set(expenses.map(e => e.category || 'uncategorized')));
-
   if (loading) {
     return <LoadingSpinner message={t('stash.loading')} />;
   }
@@ -167,7 +153,7 @@ export default function GopherStash() {
             <button className="btn btn-primary btn-sm" onClick={() => setShowExpenseModal(true)}>
               + {t('stash.addExpense')}
             </button>
-            {expenses.length > 0 && (
+            {(summary?.expense_count || 0) > 0 && (
               <button
                 className="btn btn-outline btn-sm"
                 onClick={handleClearAll}
@@ -184,7 +170,6 @@ export default function GopherStash() {
         <div style={{
           textAlign: 'center',
           padding: '20px 0',
-          borderBottom: '1px solid var(--border)',
         }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
             {t('stash.totalSpent')}
@@ -200,151 +185,105 @@ export default function GopherStash() {
             {t('stash.expenseCount', { count: summary?.expense_count || 0 })}
           </div>
         </div>
-
-        {/* Category Breakdown */}
-        {summary && Object.keys(summary.by_category).length > 0 && (
-          <div style={{ padding: '12px 16px' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: 'var(--text-muted)' }}>
-              {t('stash.byCategory')}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {Object.entries(summary.by_category)
-                .sort(([, a], [, b]) => b - a)
-                .map(([cat, total]) => (
-                  <div
-                    key={cat}
-                    style={{
-                      background: 'var(--card-bg)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      fontSize: '0.85rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <span>{getCategoryIcon(cat)}</span>
-                    <span style={{ textTransform: 'capitalize' }}>{t(`stash.categories.${cat}`)}</span>
-                    <span style={{ fontWeight: '600', color: 'var(--error-color, #ef4444)' }}>
-                      {formatAmount(total)}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
 
-      {/* Expense History — Activity Feed Style */}
+      {/* Expense History — collapsible, lazy-loaded */}
       <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">{t('stash.history')}</h3>
-          {activeCategories.length > 1 && (
-            <select
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: '6px',
-                color: 'var(--text)',
-                padding: '4px 8px',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">{t('stash.allCategories')}</option>
-              {activeCategories.map(cat => (
-                <option key={cat} value={cat}>
-                  {getCategoryIcon(cat)} {t(`stash.categories.${cat}`)}
-                </option>
-              ))}
-            </select>
-          )}
+        <div
+          className="card-header"
+          onClick={toggleHistory}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              display: 'inline-block',
+              transition: 'transform 0.2s',
+              transform: showHistory ? 'rotate(90deg)' : 'rotate(0deg)',
+              fontSize: '0.8rem',
+            }}>▶</span>
+            {t('stash.history')}
+          </h3>
         </div>
 
-        {filteredExpenses.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🐿️</div>
-            <h3>{t('stash.empty')}</h3>
-            <p>{t('stash.emptyDesc')}</p>
-          </div>
-        ) : (
-          <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-            {filteredExpenses.map(expense => (
-              <div key={expense.id} style={{
-                padding: '12px',
-                borderBottom: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-              }}>
-                {/* Category icon badge */}
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'var(--card-bg)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px',
-                  flexShrink: 0,
-                  border: '1px solid var(--border)',
-                }}>
-                  {getCategoryIcon(expense.category)}
-                </div>
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: '500' }}>
-                    {expense.description}
-                  </div>
-                  {expense.category && (
-                    <div style={{
-                      fontSize: '0.8rem',
-                      color: 'var(--primary)',
-                      textTransform: 'capitalize',
-                      marginTop: '2px',
-                    }}>
-                      {t(`stash.categories.${expense.category}`)}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {new Date(expense.created_at).toLocaleString()}
-                  </div>
-                </div>
-                {/* Amount + delete */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{
-                    fontWeight: '600',
-                    color: 'var(--error-color, #ef4444)',
-                  }}>
-                    -{formatAmount(expense.amount)}
-                  </span>
-                  <button
-                    onClick={() => handleDelete(expense.id)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      opacity: 0.4,
-                      padding: '4px',
-                      transition: 'opacity 0.15s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
-                    title={t('common.delete')}
-                  >
-                    🗑️
-                  </button>
-                </div>
+        {showHistory && (
+          <>
+            {historyLoading ? (
+              <div style={{ padding: '24px', textAlign: 'center' }}>
+                <LoadingSpinner message={t('stash.loading')} />
               </div>
-            ))}
-          </div>
+            ) : expenses.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">🐿️</div>
+                <h3>{t('stash.empty')}</h3>
+                <p>{t('stash.emptyDesc')}</p>
+              </div>
+            ) : (
+              <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                {expenses.map(expense => (
+                  <div key={expense.id} style={{
+                    padding: '12px',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                  }}>
+                    {/* Icon badge */}
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'var(--card-bg)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      flexShrink: 0,
+                      border: '1px solid var(--border)',
+                    }}>
+                      💰
+                    </div>
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: '500' }}>
+                        {expense.description}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {new Date(expense.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                    {/* Amount + delete */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <span style={{
+                        fontWeight: '600',
+                        color: 'var(--error-color, #ef4444)',
+                      }}>
+                        -{formatAmount(expense.amount)}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(expense.id)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          opacity: 0.4,
+                          padding: '4px',
+                          transition: 'opacity 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
+                        title={t('common.delete')}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -403,35 +342,6 @@ export default function GopherStash() {
                     maxLength={255}
                     required
                   />
-                </div>
-
-                {/* Category picker */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('stash.category')}</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {CATEGORIES.map(cat => (
-                      <button
-                        key={cat.key}
-                        type="button"
-                        onClick={() => setCategory(cat.key)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '16px',
-                          border: category === cat.key ? '2px solid var(--primary)' : '1px solid var(--border)',
-                          background: category === cat.key ? 'var(--primary-bg, rgba(99, 102, 241, 0.1))' : 'transparent',
-                          color: 'var(--text)',
-                          cursor: 'pointer',
-                          fontSize: '0.85rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span>{cat.icon}</span>
-                        <span>{t(`stash.categories.${cat.key || 'none'}`)}</span>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
               <div className="modal-footer">

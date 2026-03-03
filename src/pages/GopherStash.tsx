@@ -6,7 +6,7 @@ import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { StashExpense, StashSummary } from '../types';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 const CATEGORIES = [
   { key: '', icon: '📝' },
@@ -420,37 +420,41 @@ export default function GopherStash() {
             )}
 
             {/* Bar Chart View */}
-            {chartView === 'bar' && (
-              <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 40)}>
-                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-                  <XAxis type="number" tickFormatter={(v: number) => formatAmount(v)} style={{ fontSize: '0.7rem' }} />
+            {chartView === 'bar' && (() => {
+              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#333';
+              const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+              return (
+              <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 44)}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 80, top: 5, bottom: 5 }}>
+                  <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={100}
-                    tick={{ fontSize: '0.75rem' }}
+                    width={110}
+                    tick={{ fontSize: '0.8rem', fill: textColor }}
                     tickFormatter={(name: string) => {
                       const item = chartData.find(d => d.name === name);
                       return item ? `${item.icon} ${name}` : name;
                     }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <Tooltip
-                    formatter={(value: number | undefined) => formatAmount(value ?? 0)}
-                    contentStyle={{
-                      background: 'var(--card-bg)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                    }}
-                  />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={false}>
                     {chartData.map((entry, index) => (
                       <Cell key={`bar-${index}`} fill={entry.color} />
                     ))}
+                    <LabelList
+                      dataKey="value"
+                      position="right"
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(v: any) => formatAmount(Number(v) || 0)}
+                      style={{ fontSize: '0.8rem', fontWeight: 600, fill: mutedColor }}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            )}
+              );
+            })()}
           </div>
           );
         })()}

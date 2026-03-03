@@ -60,7 +60,7 @@ export default function GopherStash() {
   const [clearing, setClearing] = useState(false);
 
   // Chart view state
-  const [chartView, setChartView] = useState<'pills' | 'pie' | 'bar'>('pills');
+  const [chartView, setChartView] = useState<'pills' | 'pie' | 'bar'>('pie');
 
   // Currency picker state
   const [expenseCurrency, setExpenseCurrency] = useState('EUR');

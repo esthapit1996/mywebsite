@@ -400,15 +400,6 @@ export default function GopherStash() {
                         <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--card-bg)" strokeWidth={2} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value: number | undefined) => formatAmount(value ?? 0)}
-                      contentStyle={{
-                        background: 'var(--card-bg)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                        fontSize: '0.85rem',
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* Legend */}

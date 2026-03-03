@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import Tesseract from 'tesseract.js';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const API_BASE = import.meta.env.PROD
+  ? 'https://gopherdebt-api.fly.dev/api'
+  : 'http://localhost:8080/api';
 
 interface ReceiptItem {
   name: string;
@@ -20,88 +22,38 @@ interface ReceiptScannerProps {
 }
 
 /**
- * Convert a File to a base64 string (without the data URL prefix).
- */
-function fileToBase64(file: File | Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Strip "data:image/...;base64," prefix
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Use Gemini 2.0 Flash to extract receipt items from an image.
- * Works with any language (German, Dutch, English, etc.).
+ * Use backend Gemini proxy to extract receipt items from an image.
+ * API key stays server-side — no leak risk.
  */
 async function scanWithGemini(file: File): Promise<ReceiptResult> {
-  const base64 = await fileToBase64(file);
-  const mimeType = file.type || 'image/jpeg';
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('image', file);
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              inlineData: {
-                mimeType,
-                data: base64,
-              },
-            },
-            {
-              text: `You are a receipt parsing expert. Analyze this receipt image and extract structured data.
-The receipt can be in ANY language (German, Dutch, English, French, etc.) — you must understand it regardless.
-
-Return ONLY valid JSON in this exact format, nothing else:
-{
-  "store_name": "Store Name or null",
-  "items": [
-    {"name": "Item name in English", "price": 3.50}
-  ],
-  "total": 15.99
-}
-
-Rules:
-- Extract ONLY purchased items/products with their prices
-- Translate all item names to English
-- Prices must be numbers (use . as decimal separator, e.g. 3.50 not "3,50")
-- "total" = the final total amount (e.g. Total, Summe, Gesamtbetrag, Totaal, etc.) — NOT an item
-- NEVER include these as items: totals, subtotals, tax (MwSt/BTW/VAT), discounts, payment method, change, tips, or any summary lines
-- If multiple totals exist, use the largest (grand total)
-- If no clear total line, set total to null
-- Return ONLY the JSON object, no markdown fences, no explanation`
-            },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2048,
-        },
-      }),
-    }
-  );
+  const response = await fetch(`${API_BASE}/receipt/scan`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} ${errText}`);
+    throw new Error(`Receipt scan error: ${response.status} ${errText}`);
   }
 
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || 'Receipt scan failed');
+  }
+
+  const text = result.data?.text || '';
 
   // Extract JSON from response (may be wrapped in ```json ... ```)
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error('Gemini returned no valid JSON');
+    throw new Error('AI returned no valid JSON');
   }
 
   const parsed = JSON.parse(jsonMatch[0]);

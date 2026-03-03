@@ -6,6 +6,7 @@ import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { StashExpense, StashSummary } from '../types';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const CATEGORIES = [
   { key: '', icon: '📝' },
@@ -25,6 +26,24 @@ function getCategoryIcon(category: string): string {
   return CATEGORIES.find(c => c.key === category)?.icon || '📝';
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  food: '#ef4444',
+  drinks: '#f97316',
+  transport: '#eab308',
+  shopping: '#22c55e',
+  entertainment: '#3b82f6',
+  health: '#ec4899',
+  bills: '#a855f7',
+  gas: '#64748b',
+  travel: '#06b6d4',
+  other: '#78716c',
+  '': '#9ca3af',
+};
+
+function getCategoryColor(category: string): string {
+  return CATEGORY_COLORS[category] || '#9ca3af';
+}
+
 export default function GopherStash() {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -36,9 +55,12 @@ export default function GopherStash() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('shopping');
   const [adding, setAdding] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  // Chart view state
+  const [chartView, setChartView] = useState<'pills' | 'pie' | 'bar'>('pills');
 
   // Currency picker state
   const [expenseCurrency, setExpenseCurrency] = useState('EUR');
@@ -129,7 +151,7 @@ export default function GopherStash() {
     setShowExpenseModal(false);
     setAmount('');
     setDescription('');
-    setCategory('');
+    setCategory('shopping');
     setExpenseCurrency('EUR');
     setConvertedAmount(null);
     setConversionRate(null);
@@ -279,17 +301,58 @@ export default function GopherStash() {
         </div>
 
         {/* Category Breakdown */}
-        {summary && Object.keys(summary.by_category).length > 0 && (
+        {summary && Object.keys(summary.by_category).length > 0 && (() => {
+          const chartData = Object.entries(summary.by_category)
+            .sort(([, a], [, b]) => b - a)
+            .map(([cat, total]) => ({
+              name: t(`stash.categories.${cat || 'uncategorized'}`),
+              icon: getCategoryIcon(cat),
+              value: total,
+              color: getCategoryColor(cat),
+              key: cat,
+            }));
+
+          return (
           <div style={{ padding: '12px 16px' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: 'var(--text-muted)' }}>
-              {t('stash.byCategory')}
+            {/* Header + Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                {t('stash.byCategory')}
+              </div>
+              <div style={{
+                display: 'flex',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+              }}>
+                {(['pills', 'pie', 'bar'] as const).map((view) => (
+                  <button
+                    key={view}
+                    onClick={() => setChartView(view)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      fontWeight: chartView === view ? '600' : '400',
+                      background: chartView === view ? 'var(--primary)' : 'transparent',
+                      color: chartView === view ? '#fff' : 'var(--text-muted)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {view === 'pills' ? '📋' : view === 'pie' ? '🥧' : '📊'} {t(`stash.view${view.charAt(0).toUpperCase() + view.slice(1)}` as never)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {Object.entries(summary.by_category)
-                .sort(([, a], [, b]) => b - a)
-                .map(([cat, total]) => (
+
+            {/* Pills View */}
+            {chartView === 'pills' && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {chartData.map((item) => (
                   <div
-                    key={cat}
+                    key={item.key}
                     style={{
                       background: 'var(--card-bg)',
                       border: '1px solid var(--border)',
@@ -301,16 +364,96 @@ export default function GopherStash() {
                       gap: '6px',
                     }}
                   >
-                    <span>{getCategoryIcon(cat)}</span>
-                    <span style={{ textTransform: 'capitalize' }}>{t(`stash.categories.${cat}`)}</span>
+                    <span>{item.icon}</span>
+                    <span style={{ textTransform: 'capitalize' }}>{item.name}</span>
                     <span style={{ fontWeight: '600', color: 'var(--error-color, #ef4444)' }}>
-                      {formatAmount(total)}
+                      {formatAmount(item.value)}
                     </span>
                   </div>
                 ))}
-            </div>
+              </div>
+            )}
+
+            {/* Pie Chart View */}
+            {chartView === 'pie' && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      innerRadius={45}
+                      paddingAngle={2}
+                      label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      labelLine={true}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--card-bg)" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number | undefined) => formatAmount(value ?? 0)}
+                      contentStyle={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Legend */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
+                  {chartData.map((item) => (
+                    <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: item.color }} />
+                      <span>{item.icon} {item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bar Chart View */}
+            {chartView === 'bar' && (
+              <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 40)}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+                  <XAxis type="number" tickFormatter={(v: number) => formatAmount(v)} style={{ fontSize: '0.7rem' }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={100}
+                    tick={{ fontSize: '0.75rem' }}
+                    tickFormatter={(name: string) => {
+                      const item = chartData.find(d => d.name === name);
+                      return item ? `${item.icon} ${name}` : name;
+                    }}
+                  />
+                  <Tooltip
+                    formatter={(value: number | undefined) => formatAmount(value ?? 0)}
+                    contentStyle={{
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`bar-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}

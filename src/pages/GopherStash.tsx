@@ -388,7 +388,11 @@ export default function GopherStash() {
                       outerRadius={100}
                       innerRadius={45}
                       paddingAngle={2}
-                      label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      label={({ percent, index }: { percent?: number; index?: number }) => {
+                        const pct = ((percent ?? 0) * 100).toFixed(0);
+                        const icon = index != null && chartData[index] ? chartData[index].icon : '';
+                        return `${icon} ${pct}%`;
+                      }}
                       labelLine={true}
                       style={{ fontSize: '0.75rem' }}
                     >

@@ -7,7 +7,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // Themes sorted from darkest to brightest, with category labels
 export const THEMES: Theme[] = [
   // Dark themes
-  { id: 'dark', name: 'Dark', icon: '🌙', category: 'dark' },
+  { id: 'darkknight', name: 'Dark Knight', icon: '🦇', category: 'dark' },
   { id: 'espresso', name: 'Espresso', icon: '☕', category: 'dark' },
   { id: 'dracula', name: 'Dracula', icon: '🧛', category: 'dark' },
   { id: 'monokai', name: 'Monokai', icon: '🪵', category: 'dark' },
@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<string>(() => {
     // Default to dark, but check localStorage first
     const saved = localStorage.getItem('gopherdebt-theme');
-    return saved || 'dark';
+    return saved || 'darkknight';
   });
 
   useEffect(() => {

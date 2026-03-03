@@ -6,9 +6,9 @@
 
 /* ===== THEMES (Darkest to Brightest) ===== */
 
-/* 1. Dark (Default) - Deep slate blue */
+/* 1. Dark Knight (Default) - OLED black */
 :root,
-[data-theme="dark"] {
+[data-theme="darkknight"] {
   --primary: #10b981;
   --primary-dark: #059669;
   --secondary: #6366f1;

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LANGUAGES } from './i18n/i18n';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
@@ -61,7 +62,7 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
 function Header(): JSX.Element | null {
   const { user, logout } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -162,6 +163,31 @@ function Header(): JSX.Element | null {
                         </option>
                       ))}
                     </optgroup>
+                  </select>
+                </div>
+
+                {/* Language Picker */}
+                <div className="user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
+                  <select
+                    className="theme-select-inline"
+                    value={i18n.language}
+                    onChange={(e) => i18n.changeLanguage(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    title={t('settings.language')}
+                    style={{
+                      flex: 1,
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      color: 'var(--text)',
+                      padding: '4px 6px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+                    ))}
                   </select>
                 </div>
 

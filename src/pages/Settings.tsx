@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { LANGUAGES } from '../i18n/i18n';
 import api from '../services/api';
 import Avatar from '../components/Avatar';
 import AvatarPicker from '../components/AvatarPicker';
@@ -111,7 +110,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 export default function Settings() {
   const { user, refreshUser } = useAuth();
   const { currentCurrency, ratesLoading } = useCurrency();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -175,31 +174,6 @@ export default function Settings() {
           </li>
 
           {/* Language */}
-          <li className="list-item">
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
-                padding: '4px 0', fontSize: '1rem',
-              }}
-            >
-              <span style={{ fontSize: '1.4rem', width: '36px', textAlign: 'center' }}>🌐</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500 }}>{t('settings.language')}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('settings.changeLanguage')}</div>
-              </div>
-              <select
-                className="form-select"
-                value={i18n.language}
-                onChange={(e) => i18n.changeLanguage(e.target.value)}
-                style={{ width: 'auto', minWidth: '120px', fontSize: '0.9rem' }}
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
-                ))}
-              </select>
-            </div>
-          </li>
-
           {/* Reset Password */}
           <li className="list-item">
             <button

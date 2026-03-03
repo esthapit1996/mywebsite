@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LANGUAGES } from '../i18n/i18n';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../images/GopherDebt_Mascot.png';
@@ -19,7 +20,7 @@ export default function Login() {
   const [greetingKey] = useState(() => greetingKeys[Math.floor(Math.random() * greetingKeys.length)]);
   const { login } = useAuth();
   const { theme, setTheme, currentTheme, themes } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -39,19 +40,34 @@ export default function Login() {
 
   return (
     <div className="auth-container">
-      <div className="theme-dropdown" style={{ position: 'absolute', top: 20, right: 20 }}>
-        <span className="theme-icon">{currentTheme.icon}</span>
-        <select 
-          className="theme-select" 
-          value={theme} 
-          onChange={(e) => setTheme(e.target.value)}
-        >
-          {themes.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+      <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div className="theme-dropdown">
+          <select
+            className="theme-select"
+            value={i18n.language}
+            onChange={(e) => i18n.changeLanguage(e.target.value)}
+            title={t('settings.language')}
+            style={{ fontSize: '0.85rem' }}
+          >
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="theme-dropdown">
+          <span className="theme-icon">{currentTheme.icon}</span>
+          <select 
+            className="theme-select" 
+            value={theme} 
+            onChange={(e) => setTheme(e.target.value)}
+          >
+            {themes.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="auth-card card">
         <div className="auth-header">

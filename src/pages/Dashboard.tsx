@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -276,6 +277,40 @@ export default function Dashboard() {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* GopherStash Card */}
+      <div
+        className="card"
+        onClick={() => navigate('/stash')}
+        style={{
+          marginBottom: '24px',
+          cursor: 'pointer',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '20px 24px',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <span style={{ fontSize: '2.5rem' }}>🐿️</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: '700', fontSize: '1.15rem', marginBottom: '4px' }}>
+            {t('stash.title')}
+          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            {t('stash.tagline')}
+          </div>
+        </div>
+        <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>→</span>
       </div>
 
       <div className="card">

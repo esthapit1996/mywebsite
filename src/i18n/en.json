@@ -463,6 +463,7 @@
   },
   "stash": {
     "title": "Gopher Stash",
+    "tagline": "Keep track of your expenses with GopherStash",
     "loading": "Loading your stash...",
     "loadFailed": "Failed to load stash",
     "addExpense": "Add Expense",

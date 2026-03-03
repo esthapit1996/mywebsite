@@ -312,3 +312,22 @@ export interface BlacklistEntry {
   added_by?: number;
   created_at: string;
 }
+
+// ============================================
+// GopherStash Types
+// ============================================
+
+export interface StashExpense {
+  id: number;
+  user_id: number;
+  amount: number;
+  description: string;
+  category: string;
+  created_at: string;
+}
+
+export interface StashSummary {
+  total_spent: number;
+  expense_count: number;
+  by_category: Record<string, number>;
+}

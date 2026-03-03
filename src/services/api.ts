@@ -22,6 +22,8 @@ import type {
   SplitWith,
   WhitelistEntry,
   BlacklistEntry,
+  StashExpense,
+  StashSummary,
 } from '../types';
 
 // API Configuration
@@ -450,6 +452,30 @@ class ApiService {
 
   async removeFromBlacklist(id: number): Promise<ApiResponse> {
     return this.request(`/blacklist/${id}`, { method: 'DELETE' });
+  }
+
+  // GopherStash (personal expense tracker)
+  async getStashExpenses(): Promise<ApiResponse<StashExpense[]>> {
+    return this.request<StashExpense[]>('/stash');
+  }
+
+  async createStashExpense(amount: number, description: string, category: string = ''): Promise<ApiResponse<StashExpense>> {
+    return this.request<StashExpense>('/stash', {
+      method: 'POST',
+      body: JSON.stringify({ amount, description, category }),
+    });
+  }
+
+  async deleteStashExpense(id: number): Promise<ApiResponse> {
+    return this.request(`/stash/${id}`, { method: 'DELETE' });
+  }
+
+  async getStashSummary(): Promise<ApiResponse<StashSummary>> {
+    return this.request<StashSummary>('/stash/summary');
+  }
+
+  async clearStashExpenses(): Promise<ApiResponse> {
+    return this.request('/stash', { method: 'DELETE' });
   }
 }
 

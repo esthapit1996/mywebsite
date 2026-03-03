@@ -1185,7 +1185,7 @@ export default function GroupDetail(): JSX.Element {
                                       >
                                         Others owe payer
                                       </button>
-                                      {group.members!.map(member => (
+                                      {group.members!.filter(member => member.id !== (config.paidBy || user?.id)).map(member => (
                                         <button
                                           key={member.id}
                                           type="button"
@@ -1689,7 +1689,7 @@ export default function GroupDetail(): JSX.Element {
                       >
                         Others owe {expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : 'me'} 100%
                       </button>
-                      {group.members!.map(member => (
+                      {group.members!.filter(member => member.id !== (expensePaidBy || user?.id)).map(member => (
                         <button
                           key={member.id}
                           type="button"

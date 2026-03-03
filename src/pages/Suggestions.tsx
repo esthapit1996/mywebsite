@@ -27,6 +27,11 @@ export default function Suggestions() {
   const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null);
   const [newComment, setNewComment] = useState<Record<number, string>>({});
   const [commentSubmitting, setCommentSubmitting] = useState<number | null>(null);
+  const [editingSuggestion, setEditingSuggestion] = useState<number | null>(null);
+  const [editSuggestionContent, setEditSuggestionContent] = useState('');
+  const [editSuggestionType, setEditSuggestionType] = useState('feature');
+  const [editingComment, setEditingComment] = useState<number | null>(null);
+  const [editCommentContent, setEditCommentContent] = useState('');
 
   const isFounder = user?.email === FOUNDER_EMAIL;
 
@@ -157,6 +162,40 @@ export default function Suggestions() {
     }
   };
 
+  const handleEditSuggestion = (suggestion: Suggestion) => {
+    setEditingSuggestion(suggestion.id);
+    setEditSuggestionContent(suggestion.content);
+    setEditSuggestionType(suggestion.type || 'other');
+  };
+
+  const handleSaveEditSuggestion = async (suggestionId: number) => {
+    if (!editSuggestionContent.trim()) return;
+    try {
+      await api.editSuggestion(suggestionId, editSuggestionContent.trim(), editSuggestionType);
+      setEditingSuggestion(null);
+      loadSuggestions();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to edit suggestion');
+    }
+  };
+
+  const handleEditComment = (comment: SuggestionComment) => {
+    setEditingComment(comment.id);
+    setEditCommentContent(comment.content);
+  };
+
+  const handleSaveEditComment = async (suggestionId: number, commentId: number) => {
+    if (!editCommentContent.trim()) return;
+    try {
+      await api.editSuggestionComment(suggestionId, commentId, editCommentContent.trim());
+      setEditingComment(null);
+      const response = await api.getSuggestionComments(suggestionId);
+      setComments(prev => ({ ...prev, [suggestionId]: response.data || [] }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to edit comment');
+    }
+  };
+
   const canComment = (suggestion: Suggestion) => {
     return user?.id === suggestion.user_id || isFounder;
   };
@@ -241,14 +280,87 @@ export default function Suggestions() {
               {formatDate(suggestion.created_at)}
             </span>
           </div>
-          <p style={{ 
-            margin: 0,
-            lineHeight: '1.5',
-            wordBreak: 'break-word',
-            marginBottom: '12px'
-          }}>
-            {suggestion.content}
-          </p>
+          {editingSuggestion === suggestion.id ? (
+            <div style={{ marginBottom: '12px' }}>
+              <textarea
+                value={editSuggestionContent}
+                onChange={(e) => setEditSuggestionContent(e.target.value.slice(0, MAX_CHARS))}
+                style={{
+                  width: '100%',
+                  minHeight: '60px',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--card-bg)',
+                  color: 'var(--text-color)',
+                  fontSize: '0.9rem',
+                  resize: 'vertical'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                <select
+                  value={editSuggestionType}
+                  onChange={(e) => setEditSuggestionType(e.target.value)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-color)',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  {Object.entries(typeConfig).map(([key, cfg]) => (
+                    <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {editSuggestionContent.length}/{MAX_CHARS}
+                </span>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => setEditingSuggestion(null)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSaveEditSuggestion(suggestion.id)}
+                    disabled={!editSuggestionContent.trim()}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: 'var(--primary)',
+                      color: 'white',
+                      cursor: editSuggestionContent.trim() ? 'pointer' : 'not-allowed',
+                      fontSize: '0.8rem',
+                      opacity: editSuggestionContent.trim() ? 1 : 0.5
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p style={{ 
+              margin: 0,
+              lineHeight: '1.5',
+              wordBreak: 'break-word',
+              marginBottom: '12px'
+            }}>
+              {suggestion.content}
+            </p>
+          )}
           
           {/* Voting and status controls */}
           <div style={{ 
@@ -429,6 +541,22 @@ export default function Suggestions() {
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                             {formatDate(comment.created_at)}
                           </span>
+                          {user?.id === comment.user_id && editingComment !== comment.id && (
+                            <button
+                              onClick={() => handleEditComment(comment)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                fontSize: '0.8rem'
+                              }}
+                              title="Edit comment"
+                            >
+                              ✏️
+                            </button>
+                          )}
                           {(user?.id === comment.user_id || isFounder) && (
                             <button
                               onClick={() => handleDeleteComment(suggestion.id, comment.id)}
@@ -447,9 +575,61 @@ export default function Suggestions() {
                           )}
                         </div>
                       </div>
-                      <p style={{ margin: 0, lineHeight: '1.4', wordBreak: 'break-word' }}>
-                        {comment.content}
-                      </p>
+                      {editingComment === comment.id ? (
+                        <div>
+                          <textarea
+                            value={editCommentContent}
+                            onChange={(e) => setEditCommentContent(e.target.value.slice(0, MAX_COMMENT_CHARS))}
+                            style={{
+                              width: '100%',
+                              minHeight: '50px',
+                              padding: '6px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-secondary)',
+                              color: 'var(--text-color)',
+                              fontSize: '0.85rem',
+                              resize: 'vertical'
+                            }}
+                          />
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => setEditingComment(null)}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-color)',
+                                background: 'transparent',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSaveEditComment(suggestion.id, comment.id)}
+                              disabled={!editCommentContent.trim()}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                border: 'none',
+                                background: 'var(--primary)',
+                                color: 'white',
+                                cursor: editCommentContent.trim() ? 'pointer' : 'not-allowed',
+                                fontSize: '0.75rem',
+                                opacity: editCommentContent.trim() ? 1 : 0.5
+                              }}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, lineHeight: '1.4', wordBreak: 'break-word' }}>
+                          {comment.content}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -512,19 +692,32 @@ export default function Suggestions() {
             </div>
           )}
         </div>
-        {canDelete(suggestion) && (
-          <button
-            onClick={() => handleDelete(suggestion.id)}
-            className="btn btn-outline btn-sm"
-            style={{ 
-              color: 'var(--error-color, #ef4444)',
-              flexShrink: 0
-            }}
-            title="Delete suggestion"
-          >
-            🗑️
-          </button>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+          {user?.id === suggestion.user_id && editingSuggestion !== suggestion.id && (
+            <button
+              onClick={() => handleEditSuggestion(suggestion)}
+              className="btn btn-outline btn-sm"
+              style={{ 
+                color: 'var(--text-muted)',
+              }}
+              title="Edit suggestion"
+            >
+              ✏️
+            </button>
+          )}
+          {canDelete(suggestion) && (
+            <button
+              onClick={() => handleDelete(suggestion.id)}
+              className="btn btn-outline btn-sm"
+              style={{ 
+                color: 'var(--error-color, #ef4444)',
+              }}
+              title="Delete suggestion"
+            >
+              🗑️
+            </button>
+          )}
+        </div>
       </div>
     </li>
   );

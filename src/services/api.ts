@@ -339,6 +339,13 @@ class ApiService {
     });
   }
 
+  async editSuggestion(suggestionId: number | string, content: string, type: string): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content, type }),
+    });
+  }
+
   async voteSuggestion(suggestionId: number | string, voteType: 'like' | 'dislike'): Promise<ApiResponse> {
     return this.request(`/suggestions/${suggestionId}/vote`, {
       method: 'POST',
@@ -377,6 +384,13 @@ class ApiService {
   async deleteSuggestionComment(suggestionId: number | string, commentId: number): Promise<ApiResponse> {
     return this.request(`/suggestions/${suggestionId}/comments/${commentId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async editSuggestionComment(suggestionId: number | string, commentId: number, content: string): Promise<ApiResponse> {
+    return this.request(`/suggestions/${suggestionId}/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
     });
   }
 

@@ -263,12 +263,12 @@ export default function GopherStash() {
         <div className="card-header">
           <h2 className="card-title">🐿️ {t('stash.title')}</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowExpenseModal(true)}>
+            <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>
               + {t('stash.addExpense')}
             </button>
             {(summary?.expense_count || 0) > 0 && (
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline"
                 onClick={handleClearAll}
                 disabled={clearing}
                 style={{ color: 'var(--error-color, #ef4444)' }}
@@ -331,8 +331,8 @@ export default function GopherStash() {
                     key={view}
                     onClick={() => setChartView(view)}
                     style={{
-                      padding: '4px 10px',
-                      fontSize: '0.75rem',
+                      padding: '8px 14px',
+                      fontSize: '0.85rem',
                       fontWeight: chartView === view ? '600' : '400',
                       background: chartView === view ? 'var(--primary)' : 'transparent',
                       color: chartView === view ? '#fff' : 'var(--text-muted)',

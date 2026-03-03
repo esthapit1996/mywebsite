@@ -8,6 +8,7 @@ import type { User } from '../types';
 const TITLE_KEYS: Record<string, { key: string; emoji: string; color: string }> = {
   'evansthapit20@gmail.com': { key: 'community.founder', emoji: '👑', color: '#f59e0b' },
   'e.ivanishcheva@yandex.ru': { key: 'community.trailblazer', emoji: '🚀', color: '#8b5cf6' },
+  'beghettirocce@gmail.com': { key: 'community.mafiaBoss', emoji: '🤌', color: '#dc2626' },
 };
 
 const DEFAULT_TITLE_KEY = { key: 'community.memberTitle', emoji: '🐹', color: 'var(--primary, #3b82f6)' };

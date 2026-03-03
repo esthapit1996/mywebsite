@@ -161,6 +161,7 @@ function Header(): JSX.Element | null {
               <div className="user-menu-dropdown">
                 {/* Theme Picker */}
                 <div className="user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('header.themeLabel')}</span>
                   <select 
                     className="theme-select-inline" 
                     value={theme} 

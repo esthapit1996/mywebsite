@@ -55,6 +55,7 @@ export default function Login() {
           </select>
         </div>
         <div className="theme-dropdown">
+          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('header.themeLabel')}</span>
           <span className="theme-icon">{currentTheme.icon}</span>
           <select 
             className="theme-select" 

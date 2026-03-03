@@ -300,7 +300,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scanMethod, setScanMethod] = useState<string>('');
-  const [selectedMethod, setSelectedMethod] = useState<'ocr' | 'ai'>('ocr');
+  const [selectedMethod, setSelectedMethod] = useState<'ocr' | 'ai'>('ai');
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -317,7 +317,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     reader.readAsDataURL(file);
 
     try {
-      if (selectedMethod === 'ai' && GEMINI_API_KEY) {
+      if (selectedMethod === 'ai') {
         setScanMethod('AI');
         setProgress(30);
         const result = await scanWithGemini(file);
@@ -411,18 +411,16 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
             <button
               type="button"
               onClick={() => setSelectedMethod('ai')}
-              disabled={!GEMINI_API_KEY}
               style={{
                 flex: 1,
                 padding: '8px 12px',
                 border: 'none',
                 borderLeft: '2px solid var(--border)',
-                cursor: GEMINI_API_KEY ? 'pointer' : 'not-allowed',
+                cursor: 'pointer',
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 background: selectedMethod === 'ai' ? 'var(--primary)' : 'var(--bg)',
                 color: selectedMethod === 'ai' ? 'white' : 'var(--text-muted)',
-                opacity: GEMINI_API_KEY ? 1 : 0.5,
                 transition: 'all 0.2s',
               }}
             >

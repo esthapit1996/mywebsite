@@ -958,127 +958,6 @@ export default function GroupDetail(): JSX.Element {
                         </span>
                       </div>
 
-                      {/* Action buttons — at top */}
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          style={{ flex: 1 }}
-                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0 || (() => {
-                            const sub = receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0);
-                            if ((sub + (parseFloat(receiptDiscount) || 0)) <= 0) return true;
-                            // Check all included items have a name and price > 0
-                            for (let idx = 0; idx < receiptItems.length; idx++) {
-                              if (!receiptItemConfigs[idx]?.included) continue;
-                              if (!receiptItems[idx].name.trim()) return true;
-                              if (receiptItems[idx].price <= 0) return true;
-                            }
-                            return false;
-                          })()}
-                          onClick={async () => {
-                            setAddingReceipt(true);
-                            try {
-                              // Group included items by paidBy + splitType + memberSplits
-                              // so items with different split configs become separate expenses
-                              const groups: Record<string, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
-                              for (let i = 0; i < receiptItems.length; i++) {
-                                const config = receiptItemConfigs[i];
-                                if (!config?.included) continue;
-                                // Build a unique key from paidBy + splitType + sorted memberSplits
-                                const splitsKey = config.splitType === 'percentage'
-                                  ? Object.entries(config.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
-                                  : 'equal';
-                                const key = `${config.paidBy}-${config.splitType}-${splitsKey}`;
-                                if (!groups[key]) groups[key] = { items: [], config };
-                                groups[key].items.push({ ...receiptItems[i], idx: i });
-                              }
-                              // Debug: log all item configs
-                              console.log('[Receipt] All item configs:', receiptItemConfigs.map((c, idx) => ({
-                                idx,
-                                item: receiptItems[idx]?.name,
-                                included: c.included,
-                                splitType: c.splitType,
-                                memberSplits: c.memberSplits,
-                                paidBy: c.paidBy,
-                              })));
-                              console.log('[Receipt] Groups:', Object.entries(groups).map(([key, g]) => ({
-                                key,
-                                items: g.items.map(it => it.name),
-                                splitType: g.config.splitType,
-                                memberSplits: g.config.memberSplits,
-                              })));
-
-                              // Create one expense per group — distribute discount proportionally
-                              const allIncludedTotal = Math.round(receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0) * 100) / 100;
-                              const discount = parseFloat(receiptDiscount) || 0;
-                              for (const [gKey, group] of Object.entries(groups)) {
-                                const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
-                                // Distribute discount proportionally to this group's share
-                                const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
-                                const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
-                                const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
-                                const cfg = group.config;
-                                let splitWith: Array<{ user_id: number; amount: number }> = [];
-                                if (cfg.splitType === 'percentage') {
-                                  const pctTotal = Object.values(cfg.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
-                                  if (Math.abs(pctTotal - 100) > 0.01) {
-                                    setError('Percentages must total 100%');
-                                    setAddingReceipt(false);
-                                    return;
-                                  }
-                                  splitWith = Object.entries(cfg.memberSplits).map(([uid, pct]) => ({
-                                    user_id: parseInt(uid),
-                                    amount: parseFloat(pct) || 0,
-                                  }));
-                                }
-                                console.log(`[Receipt] Creating expense [${gKey}]:`, { desc, amount: totalAmount, splitType: cfg.splitType, splitWith, paidBy: cfg.paidBy });
-                                await api.createExpense(
-                                  id!,
-                                  totalAmount.toFixed(2),
-                                  desc,
-                                  cfg.splitType,
-                                  splitWith,
-                                  cfg.paidBy || undefined,
-                                );
-                              }
-                              closeExpenseModal();
-                              await loadData();
-                            } catch (err: any) {
-                              setError(err.message);
-                            } finally {
-                              setAddingReceipt(false);
-                            }
-                          }}
-                        >
-                          {addingReceipt ? 'Adding...' : (() => {
-                            const included = receiptItemConfigs.filter(c => c.included);
-                            // Count unique groups (by paidBy + splitType + memberSplits)
-                            const groupKeys = new Set(included.map(c => {
-                              const splitsKey = c.splitType === 'percentage'
-                                ? Object.entries(c.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
-                                : 'equal';
-                              return `${c.paidBy}-${c.splitType}-${splitsKey}`;
-                            }));
-                            return `Add as ${groupKeys.size} expense${groupKeys.size !== 1 ? 's' : ''}`;
-                          })()}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-sm"
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
-                            const itemSum = Math.round(included.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
-                            const discount = parseFloat(receiptDiscount) || 0;
-                            const total = Math.round((itemSum + discount) * 100) / 100;
-                            setExpenseAmount(total.toFixed(2));
-                            setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
-                            setReceiptMode('none');
-                          }}
-                        >
-                          Combine all into one expense
-                        </button>
-                      </div>
                       <button
                         type="button"
                         style={{ 
@@ -1467,6 +1346,119 @@ export default function GroupDetail(): JSX.Element {
                         </div>
                       </div>
 
+                      {/* Action buttons — at bottom */}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 1 }}
+                          disabled={addingReceipt || receiptItemConfigs.filter(c => c.included).length === 0 || (() => {
+                            const sub = receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0);
+                            if ((sub + (parseFloat(receiptDiscount) || 0)) <= 0) return true;
+                            for (let idx = 0; idx < receiptItems.length; idx++) {
+                              if (!receiptItemConfigs[idx]?.included) continue;
+                              if (!receiptItems[idx].name.trim()) return true;
+                              if (receiptItems[idx].price <= 0) return true;
+                            }
+                            return false;
+                          })()}
+                          onClick={async () => {
+                            setAddingReceipt(true);
+                            try {
+                              const groups: Record<string, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
+                              for (let i = 0; i < receiptItems.length; i++) {
+                                const config = receiptItemConfigs[i];
+                                if (!config?.included) continue;
+                                const splitsKey = config.splitType === 'percentage'
+                                  ? Object.entries(config.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                                  : 'equal';
+                                const key = `${config.paidBy}-${config.splitType}-${splitsKey}`;
+                                if (!groups[key]) groups[key] = { items: [], config };
+                                groups[key].items.push({ ...receiptItems[i], idx: i });
+                              }
+                              console.log('[Receipt] All item configs:', receiptItemConfigs.map((c, idx) => ({
+                                idx,
+                                item: receiptItems[idx]?.name,
+                                included: c.included,
+                                splitType: c.splitType,
+                                memberSplits: c.memberSplits,
+                                paidBy: c.paidBy,
+                              })));
+                              console.log('[Receipt] Groups:', Object.entries(groups).map(([key, g]) => ({
+                                key,
+                                items: g.items.map(it => it.name),
+                                splitType: g.config.splitType,
+                                memberSplits: g.config.memberSplits,
+                              })));
+
+                              const allIncludedTotal = Math.round(receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0) * 100) / 100;
+                              const discount = parseFloat(receiptDiscount) || 0;
+                              for (const [gKey, group] of Object.entries(groups)) {
+                                const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
+                                const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
+                                const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
+                                const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
+                                const cfg = group.config;
+                                let splitWith: Array<{ user_id: number; amount: number }> = [];
+                                if (cfg.splitType === 'percentage') {
+                                  const pctTotal = Object.values(cfg.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                                  if (Math.abs(pctTotal - 100) > 0.01) {
+                                    setError('Percentages must total 100%');
+                                    setAddingReceipt(false);
+                                    return;
+                                  }
+                                  splitWith = Object.entries(cfg.memberSplits).map(([uid, pct]) => ({
+                                    user_id: parseInt(uid),
+                                    amount: parseFloat(pct) || 0,
+                                  }));
+                                }
+                                console.log(`[Receipt] Creating expense [${gKey}]:`, { desc, amount: totalAmount, splitType: cfg.splitType, splitWith, paidBy: cfg.paidBy });
+                                await api.createExpense(
+                                  id!,
+                                  totalAmount.toFixed(2),
+                                  desc,
+                                  cfg.splitType,
+                                  splitWith,
+                                  cfg.paidBy || undefined,
+                                );
+                              }
+                              closeExpenseModal();
+                              await loadData();
+                            } catch (err: any) {
+                              setError(err.message);
+                            } finally {
+                              setAddingReceipt(false);
+                            }
+                          }}
+                        >
+                          {addingReceipt ? 'Adding...' : (() => {
+                            const included = receiptItemConfigs.filter(c => c.included);
+                            const groupKeys = new Set(included.map(c => {
+                              const splitsKey = c.splitType === 'percentage'
+                                ? Object.entries(c.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                                : 'equal';
+                              return `${c.paidBy}-${c.splitType}-${splitsKey}`;
+                            }));
+                            return `Add as ${groupKeys.size} expense${groupKeys.size !== 1 ? 's' : ''}`;
+                          })()}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            const included = receiptItems.filter((_, i) => receiptItemConfigs[i]?.included);
+                            const itemSum = Math.round(included.reduce((sum, item) => sum + item.price, 0) * 100) / 100;
+                            const discount = parseFloat(receiptDiscount) || 0;
+                            const total = Math.round((itemSum + discount) * 100) / 100;
+                            setExpenseAmount(total.toFixed(2));
+                            setExpenseDesc(included.map(i => i.name).join(', ').slice(0, 420));
+                            setReceiptMode('none');
+                          }}
+                        >
+                          Combine all into one expense
+                        </button>
+                      </div>
 
                     </div>
                   </div>

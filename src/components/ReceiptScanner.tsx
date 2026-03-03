@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import Tesseract from 'tesseract.js';
 
 const API_BASE = import.meta.env.PROD
   ? 'https://gopherdebt-api.fly.dev/api'
@@ -184,6 +183,7 @@ function preprocessImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       try {
         // 1. Resize — OCR works best around 2000-3000px wide
         const MAX_WIDTH = 2800;
@@ -292,8 +292,12 @@ function preprocessImage(file: File): Promise<Blob> {
         reject(err);
       }
     };
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image'));
+    };
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
   });
 }
 
@@ -306,6 +310,13 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clean up preview data URL on unmount
+  useEffect(() => {
+    return () => {
+      // preview is a data URL from FileReader, no revoke needed
+    };
+  }, []);
 
   const processImage = async (file: File) => {
     setError(null);
@@ -329,7 +340,8 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
         setScanMethod('OCR');
         const processed = await preprocessImage(file);
 
-        const result = await Tesseract.recognize(processed, 'eng+nld+deu+fra', {
+        const Tesseract = await import('tesseract.js');
+        const result = await Tesseract.default.recognize(processed, 'eng+nld+deu+fra', {
           logger: (m) => {
             if (m.status === 'recognizing text') {
               setProgress(Math.round(m.progress * 100));

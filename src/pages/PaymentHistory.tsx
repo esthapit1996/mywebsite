@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
+import { useCurrency } from '../context/CurrencyContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 import type { PaymentHistoryItem } from '../types';
 
 export default function PaymentHistory() {
   const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
   const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,28 +54,7 @@ export default function PaymentHistory() {
   };
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="card text-center" style={{ padding: '60px 20px' }}>
-          <div className="loading-spinner" style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #e2e8f0',
-            borderTop: '4px solid #10b981',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('paymentHistory.loading')}</p>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+    return <LoadingSpinner message={t('paymentHistory.loading')} />;
   }
 
   return (
@@ -141,7 +123,7 @@ export default function PaymentHistory() {
                   fontSize: '1.1rem',
                   color: item.is_payer ? 'var(--error-color, #ef4444)' : 'var(--success-color, #22c55e)'
                 }}>
-                  {item.is_payer ? '-' : '+'}€{item.amount.toFixed(2)}
+                  {item.is_payer ? '-' : '+'}{formatAmount(item.amount)}
                 </span>
               </li>
             ))}

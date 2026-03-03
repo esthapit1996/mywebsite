@@ -1,12 +1,15 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import type { Group, User, DebtOverviewItem, DebtDetailItem } from '../types';
 
 export default function Dashboard() {
+  const { user: currentUser } = useAuth();
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -19,7 +22,6 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [debtOverview, setDebtOverview] = useState<DebtOverviewItem[]>([]);
   const [loadingDebt, setLoadingDebt] = useState(true);
   const [debtError, setDebtError] = useState<string | null>(null);
@@ -41,7 +43,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadGroups();
-    loadCurrentUser();
     loadDebtOverview();
   }, []);
 
@@ -53,17 +54,6 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : t('dashboard.failedLoadGroups'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCurrentUser = async () => {
-    try {
-      const response = await api.getProfile();
-      if (response.data) {
-        setCurrentUser(response.data);
-      }
-    } catch {
-      console.error('Failed to load profile');
     }
   };
 
@@ -133,11 +123,9 @@ export default function Dashboard() {
       const response = await api.createGroup(newGroupName, newGroupDesc, newGroupEmoji);
       const groupId = response.data?.id;
       
-      if (groupId) {
-        // Add selected members to the group
-        for (const userId of selectedMembers) {
-          await api.addMember(groupId, userId);
-        }
+      if (groupId && selectedMembers.length > 0) {
+        // Add selected members in parallel
+        await Promise.all(selectedMembers.map(userId => api.addMember(groupId, userId)));
       }
       
       setShowModal(false);
@@ -154,28 +142,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="card text-center" style={{ padding: '60px 20px' }}>
-          <div className="loading-spinner" style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #e2e8f0',
-            borderTop: '4px solid #10b981',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('common.fetchingData')}</p>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+    return <LoadingSpinner message={t('common.fetchingData')} />;
   }
 
   return (
@@ -189,7 +156,7 @@ export default function Dashboard() {
         border: '1px solid var(--border)',
       }}>
         <span>💡</span>
-        <span dangerouslySetInnerHTML={{ __html: t('dashboard.updateHint') }} />
+        <span><Trans i18nKey="dashboard.updateHint" components={{ strong: <strong /> }} /></span>
       </div>
 
       {/* Debt Overview Card */}

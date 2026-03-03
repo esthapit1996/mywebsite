@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-import Avatar, { AVATAR_MAP, AVATAR_KEYS } from './Avatar';
+import Avatar, { AVATAR_KEYS } from './Avatar';
 
 interface AvatarPickerProps {
   currentAvatar?: string;
@@ -96,8 +96,9 @@ export default function AvatarPicker({ currentAvatar, userName, onClose, onAvata
               }}
             >
               <img
-                src={AVATAR_MAP[key]}
+                src={`/avatars/${key}.png`}
                 alt={key}
+                loading="lazy"
                 style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }}
               />
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>

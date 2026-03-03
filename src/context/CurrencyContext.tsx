@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import api from '../services/api';
 import type { CurrencyInfo, CurrencyContextType, FormatOptions } from '../types';
 
@@ -144,9 +144,14 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
       : `${currentCurrency.symbol}${formatted}`;
   }, [displayCurrency, rates]);
 
-  const currentCurrency = DISPLAY_CURRENCIES.find(c => c.code === displayCurrency) || DISPLAY_CURRENCIES[0];
+  const currentCurrency = useMemo(
+    () => DISPLAY_CURRENCIES.find(c => c.code === displayCurrency) || DISPLAY_CURRENCIES[0],
+    [displayCurrency]
+  );
 
-  const value: CurrencyContextType = {
+  const hasRate = displayCurrency === 'EUR' || !!rates[displayCurrency];
+
+  const value = useMemo<CurrencyContextType>(() => ({
     displayCurrency,
     setDisplayCurrency,
     currentCurrency,
@@ -154,8 +159,8 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     convertAmount,
     formatAmount,
     ratesLoading,
-    hasRate: displayCurrency === 'EUR' || !!rates[displayCurrency],
-  };
+    hasRate,
+  }), [displayCurrency, setDisplayCurrency, currentCurrency, convertAmount, formatAmount, ratesLoading, hasRate]);
 
   return (
     <CurrencyContext.Provider value={value}>

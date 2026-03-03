@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
 import type { Suggestion, Voter, SuggestionComment } from '../types';
 
 const MAX_CHARS = 420;
@@ -730,28 +731,7 @@ export default function Suggestions() {
   );
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="card text-center" style={{ padding: '60px 20px' }}>
-          <div className="loading-spinner" style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #e2e8f0',
-            borderTop: '4px solid #10b981',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: '#64748b', fontSize: '1rem' }}>{t('suggestions.loadingSuggestions')}</p>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+    return <LoadingSpinner message={t('suggestions.loadingSuggestions')} />;
   }
 
   return (

@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import type { 
   Group, 
@@ -407,7 +408,7 @@ export default function GroupDetail(): JSX.Element {
     return totalPaidBack >= totalOwed - 0.01;
   };
 
-  const getMyExpenseDebts = (): ExpenseDebt[] => {
+  const myExpenseDebts = useMemo((): ExpenseDebt[] => {
     const unpaidIds = new Set(unpaidExpenses.map(e => e.id));
     return expenses.filter(expense => {
       if (expense.paid_by == user?.id) return false;
@@ -425,7 +426,7 @@ export default function GroupDetail(): JSX.Element {
         paid: !unpaidIds.has(expense.id)
       };
     });
-  };
+  }, [expenses, unpaidExpenses, user?.id, group?.members]);
 
   const formatCurrency = (amount: number): string => formatAmount(amount);
 
@@ -474,28 +475,7 @@ export default function GroupDetail(): JSX.Element {
   };
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="card text-center" style={{ padding: '60px 20px' }}>
-          <div className="loading-spinner" style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid var(--border)',
-            borderTop: '4px solid var(--primary)',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>{t('common.fetchingData')}</p>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+    return <LoadingSpinner message={t('common.fetchingData')} />;
   }
 
   if (!group) {
@@ -1212,7 +1192,11 @@ export default function GroupDetail(): JSX.Element {
                                       ))}
                                     </div>
                                     {/* Explanation */}
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--card-bg)', borderRadius: '6px', border: '1px solid var(--border)', marginBottom: '4px' }} dangerouslySetInnerHTML={{ __html: t('group.receipt.enterOwes') + '<br/>' + t('group.receipt.zeroOnPayer') + '<br/>' + t('group.receipt.hundredOnSomeone') }} />
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--card-bg)', borderRadius: '6px', border: '1px solid var(--border)', marginBottom: '4px' }}>
+                                      <Trans i18nKey="group.receipt.enterOwes" components={{ em: <em /> }} /><br/>
+                                      {t('group.receipt.zeroOnPayer')}<br/>
+                                      {t('group.receipt.hundredOnSomeone')}
+                                    </div>
                                     {group.members.map(member => (
                                       <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{ minWidth: '80px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1706,9 +1690,13 @@ export default function GroupDetail(): JSX.Element {
                         </button>
                       ))}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }} dangerouslySetInnerHTML={{ __html: 
-                      `<strong>${t('group.payerIsPaying', { name: expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : t('common.you'), verb: expensePaidBy ? 'is' : 'are', amount: expenseAmount ? (expenseCurrency === 'EUR' ? `€${expenseAmount}` : `${CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || ''}${expenseAmount} ${expenseCurrency}${convertedAmount ? ` (€${convertedAmount.toFixed(2)})` : ''}`) : 'this expense' })}</strong><br/>${t('group.enterPercent')}<br/>${t('group.zeroPercent')}<br/>${t('group.fiftyPercent')}<br/>${t('group.hundredPercent')}`
-                    }} />
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                      <strong>{t('group.payerIsPaying', { name: expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name : t('common.you'), verb: expensePaidBy ? 'is' : 'are', amount: expenseAmount ? (expenseCurrency === 'EUR' ? `€${expenseAmount}` : `${CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || ''}${expenseAmount} ${expenseCurrency}${convertedAmount ? ` (€${convertedAmount.toFixed(2)})` : ''}`) : 'this expense' })}</strong><br/>
+                      <Trans i18nKey="group.enterPercent" components={{ em: <em /> }} /><br/>
+                      <Trans i18nKey="group.zeroPercent" components={{ strong: <strong /> }} /><br/>
+                      <Trans i18nKey="group.fiftyPercent" components={{ strong: <strong /> }} /><br/>
+                      <Trans i18nKey="group.hundredPercent" components={{ strong: <strong /> }} />
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {group.members.map((member) => (
                         <div key={member.id} className="split-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1770,11 +1758,11 @@ export default function GroupDetail(): JSX.Element {
             
             {goPayMode === 'select' ? (
               <div className="modal-body">
-                {getMyExpenseDebts().length > 0 ? (
+                {myExpenseDebts.length > 0 ? (
                   <>
                     <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>{t('group.yourExpenses')}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
-                      {getMyExpenseDebts().map(({ expense, splitAmount, payerName, paid }) => (
+                      {myExpenseDebts.map(({ expense, splitAmount, payerName, paid }) => (
                         <div 
                           key={expense.id} 
                           style={{ 

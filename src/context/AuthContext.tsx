@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import i18n from 'i18next';
 import api from '../services/api';
 import { useTheme } from './ThemeContext';
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(false);
   };
 
-  const login = async (email: string, password: string): Promise<ApiResponse<LoginResponse>> => {
+  const login = useCallback(async (email: string, password: string): Promise<ApiResponse<LoginResponse>> => {
     const response = await api.login(email, password);
     if (response.data?.user) {
       setUser(response.data.user);
@@ -65,19 +65,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
     return response;
-  };
+  }, [loadUserTheme]);
 
-  const register = async (email: string, password: string, name: string): Promise<ApiResponse> => {
+  const register = useCallback(async (email: string, password: string, name: string): Promise<ApiResponse> => {
     const response = await api.register(email, password, name);
     return response;
-  };
+  }, []);
 
-  const logout = (): void => {
+  const logout = useCallback((): void => {
     api.logout();
     setUser(null);
-  };
+  }, []);
 
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const response = await api.getProfile();
       if (response.data) {
@@ -86,10 +86,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {
       // ignore
     }
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user, loading, login, register, logout, refreshUser
+  }), [user, loading, login, register, logout, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

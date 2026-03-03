@@ -1,22 +1,14 @@
-import camel from '../images/avatars/camel.png';
-import cat from '../images/avatars/cat.png';
-import dog from '../images/avatars/dog.png';
-import duck from '../images/avatars/duck.png';
-import elephant from '../images/avatars/elephant.png';
-import flower from '../images/avatars/flower.png';
-import gopher from '../images/avatars/gopher.png';
-import mafia_1 from '../images/avatars/mafia_1.png';
-import mafia_2 from '../images/avatars/mafia_2.png';
-import monkey from '../images/avatars/monkey.png';
-import mouse from '../images/avatars/mouse.png';
-import rhino from '../images/avatars/rhino.png';
+import { memo } from 'react';
 
-export const AVATAR_MAP: Record<string, string> = {
-  camel, cat, dog, duck, elephant, flower, gopher,
-  mafia_1, mafia_2, monkey, mouse, rhino,
-};
+// Avatar images served from public/avatars/ — not bundled, loaded on demand
+export const AVATAR_KEYS = [
+  'camel', 'cat', 'dog', 'duck', 'elephant', 'flower',
+  'gopher', 'mafia_1', 'mafia_2', 'monkey', 'mouse', 'rhino',
+];
 
-export const AVATAR_KEYS = Object.keys(AVATAR_MAP);
+function getAvatarUrl(key: string): string {
+  return `/avatars/${key}.png`;
+}
 
 // Color palette for initials fallback
 const COLORS = [
@@ -61,8 +53,8 @@ interface AvatarProps {
   style?: React.CSSProperties;
 }
 
-export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) {
-  if (avatar && AVATAR_MAP[avatar]) {
+export default memo(function Avatar({ name, avatar, size = 36, style }: AvatarProps) {
+  if (avatar && AVATAR_KEYS.includes(avatar)) {
     return (
       <div
         style={{
@@ -77,8 +69,9 @@ export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) 
         }}
       >
         <img
-          src={AVATAR_MAP[avatar]}
+          src={getAvatarUrl(avatar)}
           alt={name}
+          loading="lazy"
           style={{
             width: '100%',
             height: '100%',
@@ -115,4 +108,4 @@ export default function Avatar({ name, avatar, size = 36, style }: AvatarProps) 
       {initials}
     </div>
   );
-}
+});

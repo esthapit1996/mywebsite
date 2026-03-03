@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode } from 'react';
+import { useState, useRef, useEffect, ReactNode, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from './i18n/i18n';
@@ -8,17 +8,20 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import api from './services/api';
 import logo from './images/GopherDebt_Mascot.png';
 import Avatar from './components/Avatar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import GroupDetail from './pages/GroupDetail';
-import PaymentHistory from './pages/PaymentHistory';
-import Suggestions from './pages/Suggestions';
-import CurrencyConverter from './pages/CurrencyConverter';
-import CurrencyPicker from './pages/CurrencyPicker';
-import Members from './pages/Members';
-import Settings from './pages/Settings';
-import Community from './pages/Community';
+import LoadingSpinner from './components/LoadingSpinner';
+
+// Lazy-loaded page components — each gets its own chunk
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const GroupDetail = lazy(() => import('./pages/GroupDetail'));
+const PaymentHistory = lazy(() => import('./pages/PaymentHistory'));
+const Suggestions = lazy(() => import('./pages/Suggestions'));
+const CurrencyConverter = lazy(() => import('./pages/CurrencyConverter'));
+const CurrencyPicker = lazy(() => import('./pages/CurrencyPicker'));
+const Members = lazy(() => import('./pages/Members'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Community = lazy(() => import('./pages/Community'));
 
 interface RouteProps {
   children: ReactNode;
@@ -243,97 +246,99 @@ function AppRoutes(): JSX.Element {
   return (
     <>
       <Header />
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/groups/:id"
-          element={
-            <ProtectedRoute>
-              <GroupDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/payment-history"
-          element={
-            <ProtectedRoute>
-              <PaymentHistory />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/suggestions"
-          element={
-            <ProtectedRoute>
-              <Suggestions />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/currency"
-          element={
-            <ProtectedRoute>
-              <CurrencyConverter />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/currency-picker"
-          element={
-            <ProtectedRoute>
-              <CurrencyPicker />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/members"
-          element={
-            <ProtectedRoute>
-              <Members />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <ProtectedRoute>
-              <Community />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups/:id"
+            element={
+              <ProtectedRoute>
+                <GroupDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment-history"
+            element={
+              <ProtectedRoute>
+                <PaymentHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suggestions"
+            element={
+              <ProtectedRoute>
+                <Suggestions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/currency"
+            element={
+              <ProtectedRoute>
+                <CurrencyConverter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/currency-picker"
+            element={
+              <ProtectedRoute>
+                <CurrencyPicker />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/members"
+            element={
+              <ProtectedRoute>
+                <Members />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <Community />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

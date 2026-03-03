@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import api from '../services/api';
 import type { Theme, ThemeContextType } from '../types';
 
@@ -72,15 +72,15 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     }
   }, []);
 
-  const currentTheme = THEMES.find(t => t.id === theme) || THEMES[0];
+  const currentTheme = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
 
-  const value: ThemeContextType = {
+  const value = useMemo<ThemeContextType>(() => ({
     theme,
     setTheme,
     loadUserTheme,
     currentTheme,
     themes: THEMES,
-  };
+  }), [theme, setTheme, loadUserTheme, currentTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

@@ -200,12 +200,6 @@ function Header(): JSX.Element | null {
 
                 <button 
                   className="user-menu-item"
-                  onClick={() => handleNavigation('/stash')}
-                >
-                  {t('header.gopherStash')}
-                </button>
-                <button 
-                  className="user-menu-item"
                   onClick={() => handleNavigation('/payment-history')}
                 >
                   {t('header.paymentHistory')}

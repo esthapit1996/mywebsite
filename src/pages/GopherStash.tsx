@@ -139,7 +139,7 @@ export default function GopherStash() {
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0 || !description.trim()) return;
+    if (!numAmount || numAmount <= 0) return;
 
     // If non-EUR, wait for conversion
     const finalAmount = expenseCurrency === 'EUR' ? numAmount : convertedAmount;
@@ -448,6 +448,54 @@ export default function GopherStash() {
                   }
                 }} />
 
+                {/* Category picker */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="form-label">{t('stash.category')}</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {CATEGORIES.map(cat => (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setCategory(cat.key)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '16px',
+                          border: category === cat.key ? '2px solid var(--primary)' : '1px solid var(--border)',
+                          background: category === cat.key ? 'var(--primary-bg, rgba(99, 102, 241, 0.1))' : 'transparent',
+                          color: 'var(--text)',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span>{cat.icon}</span>
+                        <span>{t(`stash.categories.${cat.key || 'none'}`)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    {t('stash.categoryHint')}{' '}
+                    <Link to="/suggestions" onClick={closeExpenseModal} style={{ color: 'var(--primary)' }}>
+                      {t('stash.suggestionBox')}
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Description (optional) */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="form-label">{t('stash.description')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span></label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder={t('stash.descriptionPlaceholder')}
+                    maxLength={420}
+                  />
+                </div>
+
                 {/* Amount with currency picker */}
                 <div style={{ marginBottom: '12px' }}>
                   <label className="form-label">{t('stash.amount')}</label>
@@ -462,7 +510,6 @@ export default function GopherStash() {
                       step="0.01"
                       min="0.01"
                       required
-                      autoFocus
                     />
                     <div style={{ position: 'relative' }} ref={currencyPickerRef}>
                       <button
@@ -513,55 +560,6 @@ export default function GopherStash() {
                       )}
                     </div>
                   )}
-                </div>
-
-                {/* Description */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('stash.description')}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder={t('stash.descriptionPlaceholder')}
-                    maxLength={420}
-                    required
-                  />
-                </div>
-
-                {/* Category picker */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('stash.category')}</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {CATEGORIES.map(cat => (
-                      <button
-                        key={cat.key}
-                        type="button"
-                        onClick={() => setCategory(cat.key)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '16px',
-                          border: category === cat.key ? '2px solid var(--primary)' : '1px solid var(--border)',
-                          background: category === cat.key ? 'var(--primary-bg, rgba(99, 102, 241, 0.1))' : 'transparent',
-                          color: 'var(--text)',
-                          cursor: 'pointer',
-                          fontSize: '0.85rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span>{cat.icon}</span>
-                        <span>{t(`stash.categories.${cat.key || 'none'}`)}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                    {t('stash.categoryHint')}{' '}
-                    <Link to="/suggestions" onClick={closeExpenseModal} style={{ color: 'var(--primary)' }}>
-                      {t('stash.suggestionBox')}
-                    </Link>
-                  </div>
                 </div>
               </div>
               <div className="modal-footer">

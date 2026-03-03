@@ -2,6 +2,7 @@
   "common": {
     "backToDashboard": "← Back to Dashboard",
     "cancel": "Cancel",
+    "optional": "optional",
     "save": "Save",
     "delete": "Delete",
     "loading": "Loading...",

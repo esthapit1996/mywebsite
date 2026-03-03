@@ -2,6 +2,7 @@
   "common": {
     "backToDashboard": "← Torna alla Dashboard",
     "cancel": "Annulla",
+    "optional": "facoltativo",
     "save": "Salva",
     "delete": "Elimina",
     "loading": "Caricamento...",

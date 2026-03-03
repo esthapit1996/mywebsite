@@ -21,7 +21,7 @@ export default function Suggestions() {
   const [submitting, setSubmitting] = useState(false);
   const [voters, setVoters] = useState<Voter[] | null>(null);
   const [showVotersFor, setShowVotersFor] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'open' | 'wip' | 'done'>('open');
+  const [activeTab, setActiveTab] = useState<'open' | 'wip' | 'done' | 'denied'>('open');
   const [filterType, setFilterType] = useState<string>('all');
   const [comments, setComments] = useState<Record<number, SuggestionComment[]>>({});
   const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null);
@@ -236,6 +236,7 @@ export default function Suggestions() {
   const openSuggestions = typeFiltered.filter(s => !s.status || s.status === 'open');
   const wipSuggestions = typeFiltered.filter(s => s.status === 'wip');
   const doneSuggestions = typeFiltered.filter(s => s.status === 'done');
+  const deniedSuggestions = typeFiltered.filter(s => s.status === 'denied');
 
   const renderSuggestionCard = (suggestion: Suggestion) => (
     <li key={suggestion.id} className="list-item" style={{ 
@@ -431,6 +432,7 @@ export default function Suggestions() {
                   <option value="open">📋 Open</option>
                   <option value="wip">🔨 WIP</option>
                   <option value="done">✅ Done</option>
+                  <option value="denied">🚫 Denied</option>
                 </select>
                 <button
                   onClick={() => handleShowVoters(suggestion.id)}
@@ -875,11 +877,12 @@ export default function Suggestions() {
             marginBottom: '16px',
             flexWrap: 'wrap'
           }}>
-            {(['open', 'wip', 'done'] as const).map(tab => {
+            {(['open', 'wip', 'done', 'denied'] as const).map(tab => {
               const tabConfig = {
                 open: { label: '📋 Open', count: openSuggestions.length, color: '#3b82f6' },
                 wip: { label: '🔨 WIP', count: wipSuggestions.length, color: '#f59e0b' },
-                done: { label: '✅ Done', count: doneSuggestions.length, color: '#22c55e' }
+                done: { label: '✅ Done', count: doneSuggestions.length, color: '#22c55e' },
+                denied: { label: '🚫 Denied', count: deniedSuggestions.length, color: '#ef4444' }
               };
               const config = tabConfig[tab];
               return (
@@ -961,6 +964,23 @@ export default function Suggestions() {
                   ) : (
                     <ul className="list" style={{ margin: 0 }}>
                       {doneSuggestions.map(renderSuggestionCard)}
+                    </ul>
+                  )}
+                </div>
+              )}
+              {activeTab === 'denied' && (
+                <div style={{ 
+                  borderLeft: '4px solid #ef4444',
+                  borderRadius: '0 8px 8px 0',
+                  background: 'var(--bg-secondary, #1f2937)'
+                }}>
+                  {deniedSuggestions.length === 0 ? (
+                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No denied suggestions — Evan approves everything! 🎉
+                    </div>
+                  ) : (
+                    <ul className="list" style={{ margin: 0 }}>
+                      {deniedSuggestions.map(renderSuggestionCard)}
                     </ul>
                   )}
                 </div>

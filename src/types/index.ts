@@ -182,7 +182,7 @@ export interface Suggestion {
   user_name: string;
   content: string;
   type: string;
-  status?: 'open' | 'wip' | 'done';
+  status?: 'open' | 'wip' | 'done' | 'denied';
   likes: number;
   dislikes: number;
   user_vote?: 'like' | 'dislike' | null;

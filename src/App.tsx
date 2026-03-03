@@ -214,40 +214,7 @@ function Header(): JSX.Element | null {
           </span>
         </Link>
         <nav className="nav">
-          {/* Currency Display Selector */}
-          <button
-            className="currency-trigger"
-            onClick={() => navigate('/currency-picker')}
-            title="Change display currency"
-          >
-            <span>{ratesLoading ? '⏳' : currentCurrency.symbol}</span>
-          </button>
-
-          <div className="theme-dropdown">
-            <select 
-              className="theme-select" 
-              value={theme} 
-              onChange={(e) => setTheme(e.target.value)}
-              title="Select theme"
-            >
-              <optgroup label="🌙 Dark Themes">
-                {themes.filter(t => t.category === 'dark').map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.icon} {t.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="☀️ Light Themes">
-                {themes.filter(t => t.category === 'light').map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.icon} {t.name}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </div>
-          
-          {/* User Menu Dropdown */}
+          {/* User Menu Dropdown — universal menu */}
           <div className="user-menu" ref={menuRef}>
             <button 
               className="user-menu-trigger"
@@ -255,13 +222,60 @@ function Header(): JSX.Element | null {
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 <Avatar name={user.name} avatar={user.avatar} size={26} />
-                {user.name}
+                {user.name.split(' ')[0]}
               </span>
               <span className="dropdown-arrow">{showUserMenu ? '▲' : '▼'}</span>
             </button>
             
             {showUserMenu && (
               <div className="user-menu-dropdown">
+                {/* Theme Picker */}
+                <div className="user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
+                  <span>{currentTheme?.icon || '🎨'}</span>
+                  <select 
+                    className="theme-select-inline" 
+                    value={theme} 
+                    onChange={(e) => setTheme(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Select theme"
+                    style={{
+                      flex: 1,
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      color: 'var(--text)',
+                      padding: '4px 6px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <optgroup label="🌙 Dark Themes">
+                      {themes.filter(t => t.category === 'dark').map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.icon} {t.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="☀️ Light Themes">
+                      {themes.filter(t => t.category === 'light').map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.icon} {t.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                {/* Currency Display Selector */}
+                <button 
+                  className="user-menu-item"
+                  onClick={() => handleNavigation('/currency-picker')}
+                >
+                  {ratesLoading ? '⏳' : currentCurrency.symbol} Display Currency ({currentCurrency.code})
+                </button>
+
+                <div className="user-menu-divider"></div>
+
                 <button 
                   className="user-menu-item"
                   onClick={() => handleNavigation('/payment-history')}

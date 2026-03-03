@@ -15,6 +15,7 @@ import CurrencyConverter from './pages/CurrencyConverter';
 import CurrencyPicker from './pages/CurrencyPicker';
 import Members from './pages/Members';
 import Settings from './pages/Settings';
+import Community from './pages/Community';
 
 interface RouteProps {
   children: ReactNode;
@@ -185,6 +186,12 @@ function Header(): JSX.Element | null {
                 </button>
                 <button 
                   className="user-menu-item"
+                  onClick={() => handleNavigation('/community')}
+                >
+                  🐹 GopherDebt Community
+                </button>
+                <button 
+                  className="user-menu-item"
                   onClick={() => handleNavigation('/settings')}
                 >
                   ⚙️ Settings
@@ -287,6 +294,14 @@ function AppRoutes(): JSX.Element {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <ProtectedRoute>
+              <Community />
             </ProtectedRoute>
           }
         />

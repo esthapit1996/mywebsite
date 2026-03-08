@@ -507,6 +507,8 @@
       "gas": "Benzina",
       "travel": "Viaggi",
       "other": "Altro"
+      ,"restaurant": "Ristorante"
+      ,"online_shopping": "Acquisti online"
     },
     "categoryHint": "Vuoi più categorie? Richiedile nella",
     "suggestionBox": "Cassetta dei Suggerimenti"

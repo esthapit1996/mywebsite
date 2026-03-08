@@ -592,38 +592,19 @@ export default function GopherStash() {
                         -{formatAmount(expense.amount)}
                       </span>
                       <button
-                        onClick={() => openEditExpense(expense)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem',
-                          opacity: 0.6,
-                          padding: '4px',
-                          transition: 'opacity 0.15s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
-                        title={t('common.edit')}
+                        className="btn btn-outline btn-sm"
+                        onClick={(e) => { e.stopPropagation(); openEditExpense(expense); }}
+                        title={t('stash.editExpense')}
+                        style={{ fontSize: '0.9rem' }}
                       >
-                        ✏️
+                        ✎
                       </button>
                       <button
-                        onClick={() => handleDelete(expense.id)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem',
-                          opacity: 0.4,
-                          padding: '4px',
-                          transition: 'opacity 0.15s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
+                        className="btn btn-outline btn-sm"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(expense.id); }}
                         title={t('common.delete')}
                       >
-                        🗑️
+                        ×
                       </button>
                     </div>
                   </div>

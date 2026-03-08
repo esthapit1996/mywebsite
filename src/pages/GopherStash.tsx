@@ -57,6 +57,8 @@ export default function GopherStash() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('shopping');
   const [adding, setAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [clearing, setClearing] = useState(false);
 
   // Chart view state
@@ -156,6 +158,18 @@ export default function GopherStash() {
     setConvertedAmount(null);
     setConversionRate(null);
     setShowCurrencyPicker(false);
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  const openEditExpense = (e: StashExpense) => {
+    setEditingId(e.id);
+    setIsEditing(true);
+    setAmount(String(e.amount.toFixed(2)));
+    setDescription(e.description || '');
+    setCategory(e.category || '');
+    setExpenseCurrency('EUR');
+    setShowExpenseModal(true);
   };
 
   const handleAdd = async (e: FormEvent) => {
@@ -179,24 +193,57 @@ export default function GopherStash() {
 
     setAdding(true);
     try {
-      const res = await api.createStashExpense(finalAmount, finalDesc.slice(0, 420), category);
-      if (res.data) {
-        if (historyLoaded) {
-          setExpenses(prev => [res.data!, ...prev]);
+      if (isEditing && editingId) {
+        const res = await api.updateStashExpense(editingId, finalAmount, finalDesc.slice(0, 420), category);
+        if (res.data) {
+          // Update history list
+          if (historyLoaded) {
+            setExpenses(prev => prev.map(it => it.id === editingId ? res.data! : it));
+          }
+          // Adjust summary totals
+          setSummary(prev => {
+            if (!prev) return prev;
+            // find previous amount in list if available
+            const prevAmount = expenses.find(it => it.id === editingId)?.amount || 0;
+            const delta = finalAmount - prevAmount;
+            const cat = category || 'uncategorized';
+            const newByCategory = { ...prev.by_category };
+            // subtract from old category if changed
+            const oldCat = expenses.find(it => it.id === editingId)?.category || 'uncategorized';
+            if (oldCat && oldCat !== cat) {
+              newByCategory[oldCat] = (newByCategory[oldCat] || 0) - prevAmount;
+              if (newByCategory[oldCat] <= 0) delete newByCategory[oldCat];
+              newByCategory[cat] = (newByCategory[cat] || 0) + finalAmount;
+            } else {
+              newByCategory[cat] = (newByCategory[cat] || 0) + delta;
+            }
+            return {
+              ...prev,
+              total_spent: prev.total_spent + delta,
+              by_category: newByCategory,
+            };
+          });
         }
-        setSummary(prev => {
-          if (!prev) return { total_spent: finalAmount, expense_count: 1, by_category: { [category || 'uncategorized']: finalAmount } };
-          const cat = category || 'uncategorized';
-          return {
-            ...prev,
-            total_spent: prev.total_spent + finalAmount,
-            expense_count: prev.expense_count + 1,
-            by_category: {
-              ...prev.by_category,
-              [cat]: (prev.by_category[cat] || 0) + finalAmount,
-            },
-          };
-        });
+      } else {
+        const res = await api.createStashExpense(finalAmount, finalDesc.slice(0, 420), category);
+        if (res.data) {
+          if (historyLoaded) {
+            setExpenses(prev => [res.data!, ...prev]);
+          }
+          setSummary(prev => {
+            if (!prev) return { total_spent: finalAmount, expense_count: 1, by_category: { [category || 'uncategorized']: finalAmount } };
+            const cat = category || 'uncategorized';
+            return {
+              ...prev,
+              total_spent: prev.total_spent + finalAmount,
+              expense_count: prev.expense_count + 1,
+              by_category: {
+                ...prev.by_category,
+                [cat]: (prev.by_category[cat] || 0) + finalAmount,
+              },
+            };
+          });
+        }
       }
       closeExpenseModal();
     } catch (err) {
@@ -536,7 +583,7 @@ export default function GopherStash() {
                         {new Date(expense.created_at).toLocaleString()}
                       </div>
                     </div>
-                    {/* Amount + delete */}
+                    {/* Amount + edit/delete */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                       <span style={{
                         fontWeight: '600',
@@ -544,6 +591,23 @@ export default function GopherStash() {
                       }}>
                         -{formatAmount(expense.amount)}
                       </span>
+                      <button
+                        onClick={() => openEditExpense(expense)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          opacity: 0.6,
+                          padding: '4px',
+                          transition: 'opacity 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+                        title={t('common.edit')}
+                      >
+                        ✏️
+                      </button>
                       <button
                         onClick={() => handleDelete(expense.id)}
                         style={{
@@ -575,7 +639,7 @@ export default function GopherStash() {
         <div className="modal-overlay" onClick={closeExpenseModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">{t('stash.addExpense')}</h3>
+              <h3 className="modal-title">{isEditing ? t('stash.editExpense') : t('stash.addExpense')}</h3>
               <button className="modal-close" onClick={closeExpenseModal}>×</button>
             </div>
             <form onSubmit={handleAdd}>
@@ -714,7 +778,7 @@ export default function GopherStash() {
                   {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={adding || (expenseCurrency !== 'EUR' && !convertedAmount)}>
-                  {adding ? t('stash.adding') : t('stash.addExpense')}
+                  {adding ? t('stash.adding') : isEditing ? t('stash.editExpense') : t('stash.addExpense')}
                 </button>
               </div>
             </form>

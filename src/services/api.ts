@@ -488,6 +488,13 @@ class ApiService {
     });
   }
 
+  async updateStashExpense(id: number | string, amount: number, description: string, category: string = ''): Promise<ApiResponse<StashExpense>> {
+    return this.request<StashExpense>(`/stash/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, description, category }),
+    });
+  }
+
   async deleteStashExpense(id: number): Promise<ApiResponse> {
     return this.request(`/stash/${id}`, { method: 'DELETE' });
   }

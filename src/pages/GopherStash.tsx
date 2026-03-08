@@ -11,6 +11,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 const CATEGORIES = [
   { key: '', icon: '📝' },
   { key: 'food', icon: '🍔' },
+  { key: 'restaurant', icon: '🍽️' },
   { key: 'drinks', icon: '🍻' },
   { key: 'transport', icon: '🚗' },
   { key: 'shopping', icon: '🛒' },
@@ -28,6 +29,7 @@ function getCategoryIcon(category: string): string {
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: '#ef4444',
+  restaurant: '#fb7185',
   drinks: '#f97316',
   transport: '#eab308',
   shopping: '#22c55e',

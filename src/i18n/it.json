@@ -467,6 +467,7 @@
   "stash": {
     "title": "Gopher Stash",
     "tagline": "Tieni traccia delle tue spese con GopherStash",
+    "editExpense": "Modifica Spesa",
     "loading": "Caricamento del tuo stash...",
     "loadFailed": "Caricamento stash fallito",
     "addExpense": "Aggiungi Spesa",

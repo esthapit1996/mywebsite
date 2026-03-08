@@ -430,6 +430,11 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
           }}
         >
           <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📸</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+            {backendAiAvailable === null && 'Checking scan method...'}
+            {backendAiAvailable === true && 'Using AI for scanning'}
+            {backendAiAvailable === false && 'Using OCR for scanning'}
+          </div>
           <div style={{ fontWeight: 500, marginBottom: '4px' }}>{t('receipt.scanOrUpload')}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             {t('receipt.takePhoto')}

@@ -317,7 +317,10 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     // Query backend to see whether AI receipt scanning is enabled
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/receipt/config`);
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/receipt/config`, { headers });
         if (!res.ok) {
           setBackendAiAvailable(false);
           return;

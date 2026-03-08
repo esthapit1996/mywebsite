@@ -263,6 +263,28 @@ class ApiService {
     return this.request<Expense>(`/groups/${groupId}/expenses/${expenseId}`);
   }
 
+  async updateExpense(
+    groupId: number | string,
+    expenseId: number | string,
+    amount: number | string,
+    description: string,
+    splitType: string,
+    splitWith: SplitWith[] = [],
+    paidBy?: number
+  ): Promise<ApiResponse<Expense>> {
+    const body: Record<string, unknown> = {
+      amount: parseFloat(String(amount)),
+      description,
+      split_type: splitType,
+      split_with: splitWith,
+    };
+    if (paidBy) body.paid_by = paidBy;
+    return this.request<Expense>(`/groups/${groupId}/expenses/${expenseId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+  }
+
   async deleteExpense(groupId: number | string, expenseId: number | string): Promise<ApiResponse> {
     return this.request(`/groups/${groupId}/expenses/${expenseId}`, {
       method: 'DELETE',

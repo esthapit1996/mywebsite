@@ -90,6 +90,8 @@ export default function GroupDetail(): JSX.Element {
 
   // Modal states
   const [showExpenseModal, setShowExpenseModal] = useState<boolean>(false);
+  const [isEditingExpense, setIsEditingExpense] = useState<boolean>(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
   const [showSettleModal, setShowSettleModal] = useState<boolean>(false);
   const [showMemberModal, setShowMemberModal] = useState<boolean>(false);
   const [memberError, setMemberError] = useState<string>('');
@@ -253,7 +255,7 @@ export default function GroupDetail(): JSX.Element {
       }
 
       let splitWith: Array<{ user_id: number; amount: number }> = [];
-      
+
       if (splitType === 'percentage') {
         const totalPercent = Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
         if (Math.abs(totalPercent - 100) > 0.01) {
@@ -264,13 +266,51 @@ export default function GroupDetail(): JSX.Element {
           user_id: parseInt(userId),
           amount: parseFloat(percent) || 0
         }));
+      } else if (splitType === 'exact') {
+        // treat memberSplits values as exact amounts when editing/creating exact splits
+        splitWith = Object.entries(memberSplits).map(([userId, amt]) => ({
+          user_id: parseInt(userId),
+          amount: parseFloat(amt) || 0
+        }));
       }
-      await api.createExpense(id!, finalAmount, finalDesc, splitType, splitWith, expensePaidBy || undefined);
+
+      if (isEditingExpense && editingExpenseId) {
+        await api.updateExpense(id!, editingExpenseId, finalAmount, finalDesc, splitType, splitWith, expensePaidBy || undefined);
+      } else {
+        await api.createExpense(id!, finalAmount, finalDesc, splitType, splitWith, expensePaidBy || undefined);
+      }
       closeExpenseModal();
+      setIsEditingExpense(false);
+      setEditingExpenseId(null);
       await loadData();
     } catch (err: any) {
       setError(err.message);
     }
+  };
+
+  const openEditExpense = (expense: ExpenseDetail) => {
+    setIsEditingExpense(true);
+    setEditingExpenseId(expense.id);
+    setShowExpenseModal(true);
+    setExpenseAmount(expense.amount.toFixed(2));
+    setExpenseDesc(expense.description || '');
+    setExpensePaidBy(expense.paid_by || 0);
+    setSplitType(expense.split_type === 'percentage' ? 'percentage' : (expense.split_type === 'exact' ? 'exact' : 'equal'));
+    // Prefill memberSplits for percentage or exact
+    const preSplits: Record<number, string> = {};
+    if (expense.splits && expense.splits.length > 0) {
+      if (expense.split_type === 'percentage') {
+        expense.splits.forEach(s => {
+          const pct = expense.amount > 0 ? (s.amount / expense.amount) * 100 : 0;
+          preSplits[s.user_id] = pct.toFixed(2);
+        });
+      } else if (expense.split_type === 'exact') {
+        expense.splits.forEach(s => {
+          preSplits[s.user_id] = s.amount.toFixed(2);
+        });
+      }
+    }
+    setMemberSplits(preSplits);
   };
 
   const handleSettle = async (e: FormEvent) => {
@@ -742,8 +782,20 @@ export default function GroupDetail(): JSX.Element {
                         className="btn btn-outline btn-sm" 
                         onClick={(e) => {
                           e.stopPropagation();
+                          openEditExpense(expense as unknown as ExpenseDetail);
+                        }}
+                        title={t('group.editExpense')}
+                        style={{ fontSize: '0.9rem' }}
+                      >
+                        ✎
+                      </button>
+                      <button 
+                        className="btn btn-outline btn-sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleDeleteExpense(expense.id);
                         }}
+                        title={t('group.deleteExpense')}
                       >
                         ×
                       </button>

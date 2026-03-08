@@ -436,7 +436,10 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
                 <span style={{ marginLeft: '6px' }}>OCR</span>
               </label>
               {backendAiAvailable === false && (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginLeft: '12px' }}>{t('receipt.aiUnavailable')}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '12px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('receipt.aiUnavailable')}</div>
+                  <div title="Server-side GEMINI_API_KEY not configured. Set GEMINI_API_KEY on the API server to enable AI receipt scanning." style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>ⓘ</div>
+                </div>
               )}
             </div>
             <button

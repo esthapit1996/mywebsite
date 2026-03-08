@@ -307,7 +307,6 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
   const [backendAiAvailable, setBackendAiAvailable] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
   const [scanMethod, setScanMethod] = useState<string>('');
-  const [selectedMethod, setSelectedMethod] = useState<'ocr' | 'ai'>('ai');
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -348,7 +347,8 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     reader.readAsDataURL(file);
 
     try {
-      if (selectedMethod === 'ai') {
+      // Choose AI when backend reports it's available; otherwise fallback to OCR
+      if (backendAiAvailable !== false) {
         setScanMethod('AI');
         setProgress(30);
         const result = await scanWithGemini(file);
@@ -414,73 +414,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
 
       {!preview && !scanning ? (
         <div>
-          {/* Method toggle */}
-          <div style={{
-            display: 'flex',
-            gap: '0',
-            marginBottom: '10px',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            border: '2px solid var(--border)',
-          }}>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center', padding: '8px' }}>
-              <label style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <input
-                  type="radio"
-                  name="scanMethod"
-                  checked={selectedMethod === 'ai'}
-                  onChange={() => setSelectedMethod('ai')}
-                  disabled={backendAiAvailable === false}
-                />
-                <span style={{ marginLeft: '6px' }}>AI</span>
-              </label>
-              <label style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <input type="radio" name="scanMethod" checked={selectedMethod === 'ocr'} onChange={() => setSelectedMethod('ocr')} />
-                <span style={{ marginLeft: '6px' }}>OCR</span>
-              </label>
-              {backendAiAvailable === false && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '12px' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('receipt.aiUnavailable')}</div>
-                  <div title="Server-side GEMINI_API_KEY not configured. Set GEMINI_API_KEY on the API server to enable AI receipt scanning." style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>ⓘ</div>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedMethod('ocr')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                background: selectedMethod === 'ocr' ? 'var(--primary)' : 'var(--bg)',
-                color: selectedMethod === 'ocr' ? 'white' : 'var(--text-muted)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t('receipt.ocrButton')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedMethod('ai')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                border: 'none',
-                borderLeft: '2px solid var(--border)',
-                cursor: 'pointer',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                background: selectedMethod === 'ai' ? 'var(--primary)' : 'var(--bg)',
-                color: selectedMethod === 'ai' ? 'white' : 'var(--text-muted)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t('receipt.aiButton')}
-            </button>
-          </div>
+          {/* Single scan area — method chosen automatically (AI if available, otherwise OCR) */}
           <div
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}

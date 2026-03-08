@@ -304,6 +304,7 @@ function preprocessImage(file: File): Promise<Blob> {
 export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.Element {
   const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
+  const [backendAiAvailable, setBackendAiAvailable] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
   const [scanMethod, setScanMethod] = useState<string>('');
   const [selectedMethod, setSelectedMethod] = useState<'ocr' | 'ai'>('ai');
@@ -313,6 +314,20 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
 
   // Clean up preview data URL on unmount
   useEffect(() => {
+    // Query backend to see whether AI receipt scanning is enabled
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/receipt/config`);
+        if (!res.ok) {
+          setBackendAiAvailable(false);
+          return;
+        }
+        const data = await res.json();
+        setBackendAiAvailable(Boolean(data.data?.enabled));
+      } catch (err) {
+        setBackendAiAvailable(false);
+      }
+    })();
     return () => {
       // preview is a data URL from FileReader, no revoke needed
     };
@@ -405,6 +420,25 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
             overflow: 'hidden',
             border: '2px solid var(--border)',
           }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center', padding: '8px' }}>
+              <label style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input
+                  type="radio"
+                  name="scanMethod"
+                  checked={selectedMethod === 'ai'}
+                  onChange={() => setSelectedMethod('ai')}
+                  disabled={backendAiAvailable === false}
+                />
+                <span style={{ marginLeft: '6px' }}>AI</span>
+              </label>
+              <label style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input type="radio" name="scanMethod" checked={selectedMethod === 'ocr'} onChange={() => setSelectedMethod('ocr')} />
+                <span style={{ marginLeft: '6px' }}>OCR</span>
+              </label>
+              {backendAiAvailable === false && (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginLeft: '12px' }}>{t('receipt.aiUnavailable')}</div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => setSelectedMethod('ocr')}

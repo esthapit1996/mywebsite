@@ -249,10 +249,10 @@ export default function Dashboard() {
                                   padding: '1px 5px', 
                                   borderRadius: '4px',
                                   marginRight: '6px',
-                                  background: detail.type === 'expense' ? 'var(--primary-light, #dbeafe)' : detail.type === 'settlement' ? 'var(--success-light, #dcfce7)' : 'var(--warning-light, #fef3c7)',
-                                  color: detail.type === 'expense' ? 'var(--primary, #3b82f6)' : detail.type === 'settlement' ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
+                                  background: detail.type === 'settled' ? 'var(--success-light, #dcfce7)' : detail.type === 'expense' ? 'var(--primary-light, #dbeafe)' : detail.type === 'settlement' ? 'var(--success-light, #dcfce7)' : 'var(--warning-light, #fef3c7)',
+                                  color: detail.type === 'settled' ? 'var(--success-color, #22c55e)' : detail.type === 'expense' ? 'var(--primary, #3b82f6)' : detail.type === 'settlement' ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
                                 }}>
-                                  {detail.type}
+                                  {detail.type === 'settled' ? '✅ settled' : detail.type}
                                 </span>
                                 {detail.description}
                               </div>
@@ -260,13 +260,15 @@ export default function Dashboard() {
                                 📁 {detail.group_name} · 📅 {new Date(detail.created_at).toLocaleDateString()}
                               </div>
                             </div>
-                            <span style={{
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                              color: detail.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)',
-                            }}>
-                              {detail.amount > 0 ? '+' : '-'}{formatAmount(Math.abs(detail.amount))}
-                            </span>
+                            {detail.type !== 'settled' && (
+                              <span style={{
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                color: detail.amount > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)',
+                              }}>
+                                {detail.amount > 0 ? '+' : '-'}{formatAmount(Math.abs(detail.amount))}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

@@ -788,24 +788,24 @@ export default function GroupDetail(): JSX.Element {
                           <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>{t('group.settlementsWereMade')}</div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                       <span className="expense-amount">{formatCurrency(expense.amount)}</span>
+                      {expense.paid_by !== user?.id && 
+                        expense.splits?.find(s => s.user_id === user?.id) && 
+                        unpaidExpenses.some(u => u.id === expense.id) && (
+                        <button 
+                          className="btn btn-outline btn-sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePayMyShare(expense);
+                          }}
+                          title={t('group.markAsPaid')}
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          {t('group.paidStatus')}
+                        </button>
+                      )}
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        {expense.paid_by !== user?.id && 
-                          expense.splits?.find(s => s.user_id === user?.id) && 
-                          unpaidExpenses.some(u => u.id === expense.id) && (
-                          <button 
-                            className="btn btn-outline btn-sm" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePayMyShare(expense);
-                            }}
-                            title={t('group.markAsPaid')}
-                            style={{ fontSize: '0.8rem' }}
-                          >
-                            {t('group.paidStatus')}
-                          </button>
-                        )}
                         <button 
                           className="btn btn-outline btn-sm" 
                           onClick={(e) => {
@@ -2151,6 +2151,32 @@ export default function GroupDetail(): JSX.Element {
               {/* Make Payment Form - only show if user owes money and not fully paid */}
               {selectedExpense.paid_by !== user?.id && !isExpenseFullyPaid() && (
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                  {/* Quick Pay My Share button */}
+                  {selectedExpense.splits?.find(s => s.user_id === user?.id) && (() => {
+                    const userSplit = selectedExpense.splits!.find(s => s.user_id === user?.id)!;
+                    const paidBack = expensePayments
+                      .filter(p => p.paid_by === user?.id)
+                      .reduce((sum, p) => sum + p.amount, 0);
+                    const remaining = userSplit.amount - paidBack;
+                    return remaining > 0.01 ? (
+                      <button
+                        className="btn btn-primary"
+                        style={{ width: '100%', marginBottom: '16px' }}
+                        onClick={async () => {
+                          try {
+                            await api.createExpensePayment(selectedExpense.id, remaining, 'Paid my share');
+                            await loadData();
+                            const res = await api.getExpensePayments(selectedExpense.id);
+                            setExpensePayments(res.data || []);
+                          } catch (err: any) {
+                            setPaymentError(err.message);
+                          }
+                        }}
+                      >
+                        {t('group.paidStatus')} ({formatCurrency(remaining)})
+                      </button>
+                    ) : null;
+                  })()}
                   <h4 style={{ marginBottom: '12px', fontSize: '0.95rem' }}>{t('group.payBackYourShare')}</h4>
                   {paymentError && (
                     <div className="alert alert-error" style={{ marginBottom: '12px', padding: '10px', fontSize: '0.9rem' }}>

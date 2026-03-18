@@ -232,7 +232,7 @@ export default function Dashboard() {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
                         {debtDetails[item.user.id].map((detail, idx) => (
-                          <div key={idx} onClick={() => navigate(`/groups/${detail.group_id}`)} style={{
+                          <div key={idx} onClick={() => navigate(detail.expense_id ? `/groups/${detail.group_id}?expense=${detail.expense_id}` : `/groups/${detail.group_id}`)} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'flex-start',

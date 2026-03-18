@@ -156,6 +156,7 @@ export interface DebtDetailItem {
   type: string;
   group_id: number;
   group_name: string;
+  expense_id?: number;
   description: string;
   amount: number;
   created_at: string;

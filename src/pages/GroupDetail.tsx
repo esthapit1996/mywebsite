@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +68,7 @@ const CURRENCIES: CurrencyInfo[] = DISPLAY_CURRENCIES;
 export default function GroupDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
@@ -139,6 +140,18 @@ export default function GroupDetail(): JSX.Element {
   useEffect(() => {
     loadData();
   }, [id]);
+
+  // Auto-open expense from query param (e.g. ?expense=123)
+  useEffect(() => {
+    const expenseId = searchParams.get('expense');
+    if (expenseId && expenses.length > 0) {
+      const expense = expenses.find(e => e.id === parseInt(expenseId));
+      if (expense) {
+        openExpenseDetail(expense);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [expenses, searchParams]);
 
   // Close currency picker when clicking outside
   useEffect(() => {

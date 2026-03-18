@@ -788,23 +788,24 @@ export default function GroupDetail(): JSX.Element {
                           <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>{t('group.settlementsWereMade')}</div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="expense-amount">{formatCurrency(expense.amount)}</span>
-                      {expense.paid_by !== user?.id && expense.splits?.find(s => s.user_id === user?.id) && 
-                        !(expensePaymentStatus[expense.id] && expensePaymentStatus[expense.id].totalOwed > 0 && expensePaymentStatus[expense.id].totalPaid >= expensePaymentStatus[expense.id].totalOwed - 0.01) && (
-                        <button 
-                          className="btn btn-outline btn-sm" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePayMyShare(expense);
-                          }}
-                          title={t('group.markAsPaid')}
-                          style={{ fontSize: '0.8rem' }}
-                        >
-                          {t('group.paidStatus')}
-                        </button>
-                      )}
                       <div style={{ display: 'flex', gap: '6px' }}>
+                        {expense.paid_by !== user?.id && 
+                          expense.splits?.find(s => s.user_id === user?.id) && 
+                          unpaidExpenses.some(u => u.id === expense.id) && (
+                          <button 
+                            className="btn btn-outline btn-sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePayMyShare(expense);
+                            }}
+                            title={t('group.markAsPaid')}
+                            style={{ fontSize: '0.8rem' }}
+                          >
+                            {t('group.paidStatus')}
+                          </button>
+                        )}
                         <button 
                           className="btn btn-outline btn-sm" 
                           onClick={(e) => {

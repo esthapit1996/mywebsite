@@ -364,7 +364,13 @@ export default function GroupDetail(): JSX.Element {
     const userSplit = expense.splits.find(s => s.user_id === user.id);
     if (!userSplit) return;
     try {
-      await api.createExpensePayment(expense.id, userSplit.amount, 'Paid my share');
+      // Fetch existing payments to calculate remaining amount
+      const res = await api.getExpensePayments(expense.id);
+      const myPayments = (res.data || []).filter(p => p.paid_by === user.id);
+      const alreadyPaid = myPayments.reduce((sum, p) => sum + p.amount, 0);
+      const remaining = userSplit.amount - alreadyPaid;
+      if (remaining <= 0.01) return;
+      await api.createExpensePayment(expense.id, remaining, 'Paid my share');
       await loadData();
     } catch (err: any) {
       setError(err.message);

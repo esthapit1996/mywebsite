@@ -291,6 +291,13 @@ class ApiService {
     });
   }
 
+  async markExpensePaid(groupId: number | string, expenseId: number | string, isPaid: boolean): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>(`/groups/${groupId}/expenses/${expenseId}/paid`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_paid: isPaid }),
+    });
+  }
+
   async clearAllExpenses(groupId: number | string): Promise<ApiResponse> {
     return this.request(`/groups/${groupId}/expenses`, {
       method: 'DELETE',

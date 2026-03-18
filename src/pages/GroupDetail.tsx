@@ -359,6 +359,15 @@ export default function GroupDetail(): JSX.Element {
     }
   };
 
+  const handleTogglePaid = async (expense: ExpenseWithUser) => {
+    try {
+      await api.markExpensePaid(id!, expense.id, !expense.is_paid);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const handleDeleteSettlement = async (settlementId: number) => {
     if (!confirm(t('group.deleteSettlement'))) return;
     try {
@@ -762,8 +771,12 @@ export default function GroupDetail(): JSX.Element {
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>{expense.description}</div>
+                        overflow: 'hidden',
+                        ...(expense.is_paid ? { textDecoration: 'line-through', opacity: 0.5 } : {})
+                      }}>
+                        {expense.is_paid && <span style={{ color: 'var(--success)', marginRight: '6px' }}>✓</span>}
+                        {expense.description}
+                      </div>
                       <div className="expense-meta" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                         <span>{t('common.paidBy')}</span>
                         <Avatar name={expense.paid_by_user?.name || 'Unknown'} avatar={expense.paid_by_user?.avatar} size={16} />
@@ -777,7 +790,18 @@ export default function GroupDetail(): JSX.Element {
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span className="expense-amount">{formatCurrency(expense.amount)}</span>
+                      <span className="expense-amount" style={expense.is_paid ? { textDecoration: 'line-through', opacity: 0.5 } : {}}>{formatCurrency(expense.amount)}</span>
+                      <button 
+                        className="btn btn-outline btn-sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTogglePaid(expense);
+                        }}
+                        title={expense.is_paid ? t('group.unmarkAsPaid') : t('group.markAsPaid')}
+                        style={{ fontSize: '0.9rem', color: expense.is_paid ? 'var(--success)' : undefined }}
+                      >
+                        ✓
+                      </button>
                       <button 
                         className="btn btn-outline btn-sm" 
                         onClick={(e) => {

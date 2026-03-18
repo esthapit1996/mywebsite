@@ -178,6 +178,8 @@
     "addBtn": "Aggiungi",
     "paidByLabel": "Pagato da",
     "paidStatus": "Pagato",
+    "markAsPaid": "Segna come pagato",
+    "unmarkAsPaid": "Segna come non pagato",
     "paymentHistoryTitle": "Storico Pagamenti",
     "noPaymentsYet": "Nessun pagamento registrato",
     "mayRemoveExpense": "Puoi rimuovere questa spesa :)",

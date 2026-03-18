@@ -62,6 +62,7 @@ export interface Expense {
   amount: number;
   description: string;
   split_type: 'equal' | 'exact' | 'percentage';
+  is_paid: boolean;
   created_at: string;
   splits?: ExpenseSplit[];
 }

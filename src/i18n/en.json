@@ -178,6 +178,8 @@
     "addBtn": "Add",
     "paidByLabel": "Paid by",
     "paidStatus": "Paid",
+    "markAsPaid": "Mark as paid",
+    "unmarkAsPaid": "Mark as unpaid",
     "paymentHistoryTitle": "Payment History",
     "noPaymentsYet": "No payments recorded yet",
     "mayRemoveExpense": "You may remove this expense :)",

@@ -154,6 +154,7 @@ export interface DebtOverviewItem {
 
 export interface DebtDetailItem {
   type: string;
+  group_id: number;
   group_name: string;
   description: string;
   amount: number;

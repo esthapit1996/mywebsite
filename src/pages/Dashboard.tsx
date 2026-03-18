@@ -232,7 +232,7 @@ export default function Dashboard() {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
                         {debtDetails[item.user.id].map((detail, idx) => (
-                          <div key={idx} style={{
+                          <div key={idx} onClick={() => navigate(`/groups/${detail.group_id}`)} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'flex-start',
@@ -241,6 +241,7 @@ export default function Dashboard() {
                             background: 'var(--bg, #f8fafc)',
                             fontSize: '0.85rem',
                             gap: '12px',
+                            cursor: 'pointer',
                           }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 500, marginBottom: '2px' }}>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, ReactNode, lazy, Suspense, JSX } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from './i18n/i18n';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
+import { useState, useEffect, useRef, useMemo, FormEvent, JSX } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
@@ -108,7 +108,7 @@ export default function GroupDetail(): JSX.Element {
   // Expense form
   const [expenseAmount, setExpenseAmount] = useState<string>('');
   const [expenseDesc, setExpenseDesc] = useState<string>('');
-  const [splitType, setSplitType] = useState<'equal' | 'percentage'>('equal');
+  const [splitType, setSplitType] = useState<'equal' | 'percentage' | 'exact'>('equal');
   const [memberSplits, setMemberSplits] = useState<Record<number, string>>({});
   const [expenseCurrency, setExpenseCurrency] = useState<string>('EUR');
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
@@ -1708,7 +1708,7 @@ export default function GroupDetail(): JSX.Element {
                     className="form-select"
                     value={splitType}
                     onChange={(e) => {
-                      setSplitType(e.target.value as 'equal' | 'percentage');
+                      setSplitType(e.target.value as 'equal' | 'percentage' | 'exact');
                       if (e.target.value === 'percentage' && group?.members) {
                         const initialSplits: Record<number, string> = {};
                         const share = (100 / group.members.length).toFixed(1);

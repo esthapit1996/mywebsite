@@ -1,0 +1,17 @@
+{
+  "name": "GopherDebt - Split Expenses",
+  "short_name": "GopherDebt",
+  "description": "Split expenses easily with friends and groups",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "i18next": "^26.3.4",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-i18next": "^17.0.7",
     "react-router-dom": "^7.18.0",
     "recharts": "^3.9.2",

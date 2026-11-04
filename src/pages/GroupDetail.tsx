@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, FormEvent, JSX } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, FormEvent, JSX } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import api from '../services/api';
@@ -82,6 +82,10 @@ export default function GroupDetail(): JSX.Element {
   const [error, setError] = useState<string>('');
   const [expensePaymentStatus, setExpensePaymentStatus] = useState<Record<number, PaymentStatus>>({});
   const [showUnpaidOnly, setShowUnpaidOnly] = useState<boolean>(false);
+  // Keep the page from jumping when the unpaid filter shrinks the list
+  const expensesListRef = useRef<HTMLDivElement>(null);
+  const [expensesListMinHeight, setExpensesListMinHeight] = useState<number | undefined>(undefined);
+  const scrollBeforeFilter = useRef<number | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
@@ -509,6 +513,24 @@ export default function GroupDetail(): JSX.Element {
     return Math.max(0, status.totalOwed - status.totalPaid);
   };
 
+  const toggleUnpaidOnly = () => {
+    if (!showUnpaidOnly) {
+      // Remember where we were and reserve the list's height so the page doesn't shrink and jump
+      scrollBeforeFilter.current = window.scrollY;
+      setExpensesListMinHeight(expensesListRef.current?.offsetHeight);
+    } else {
+      setExpensesListMinHeight(undefined);
+    }
+    setShowUnpaidOnly(prev => !prev);
+  };
+
+  // Back to "show all": return to the scroll position from before filtering
+  useLayoutEffect(() => {
+    if (showUnpaidOnly || scrollBeforeFilter.current === null) return;
+    window.scrollTo(0, scrollBeforeFilter.current);
+    scrollBeforeFilter.current = null;
+  }, [showUnpaidOnly]);
+
   const visibleExpenses = showUnpaidOnly
     ? expenses.filter(e => {
         const remaining = remainingFor(e.id);
@@ -785,7 +807,7 @@ export default function GroupDetail(): JSX.Element {
       {/* Tab Content */}
       <div className="card">
         {activeTab === 'expenses' && (
-          <>
+          <div ref={expensesListRef} style={{ minHeight: expensesListMinHeight }}>
             {expenses.length === 0 && settlements.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">💸</div>
@@ -798,7 +820,7 @@ export default function GroupDetail(): JSX.Element {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px', borderBottom: '1px solid var(--border-color)' }}>
                     <button
                       className={`btn btn-sm ${showUnpaidOnly ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setShowUnpaidOnly(prev => !prev)}
+                      onClick={toggleUnpaidOnly}
                       aria-pressed={showUnpaidOnly}
                     >
                       {showUnpaidOnly ? t('common.showAll') : t('common.showUnpaidOnly')}
@@ -940,7 +962,7 @@ export default function GroupDetail(): JSX.Element {
                 )}
               </>
             )}
-          </>
+          </div>
         )}
 
         {activeTab === 'balances' && (

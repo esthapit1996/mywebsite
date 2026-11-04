@@ -81,6 +81,7 @@ export default function GroupDetail(): JSX.Element {
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'history'>('expenses');
   const [error, setError] = useState<string>('');
   const [expensePaymentStatus, setExpensePaymentStatus] = useState<Record<number, PaymentStatus>>({});
+  const [showUnpaidOnly, setShowUnpaidOnly] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
@@ -501,6 +502,20 @@ export default function GroupDetail(): JSX.Element {
 
   const formatCurrency = (amount: number): string => formatAmount(amount);
 
+  // Amount still owed back to the payer; null when status is unknown
+  const remainingFor = (expenseId: number): number | null => {
+    const status = expensePaymentStatus[expenseId];
+    if (!status) return null;
+    return Math.max(0, status.totalOwed - status.totalPaid);
+  };
+
+  const visibleExpenses = showUnpaidOnly
+    ? expenses.filter(e => {
+        const remaining = remainingFor(e.id);
+        return remaining === null || remaining > 0.01;
+      })
+    : expenses;
+
   const getActivityIcon = (actionType: string): string => {
     switch (actionType) {
       case 'expense_created': return '💰';
@@ -779,7 +794,24 @@ export default function GroupDetail(): JSX.Element {
               </div>
             ) : (
               <>
-                {expenses.map((expense) => (
+                {expenses.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                    <button
+                      className={`btn btn-sm ${showUnpaidOnly ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setShowUnpaidOnly(prev => !prev)}
+                      aria-pressed={showUnpaidOnly}
+                    >
+                      {showUnpaidOnly ? t('group.showAllExpenses') : t('group.showUnpaidOnly')}
+                    </button>
+                  </div>
+                )}
+                {showUnpaidOnly && visibleExpenses.length === 0 && (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">🎉</div>
+                    <h3>{t('group.allPaidBack')}</h3>
+                  </div>
+                )}
+                {visibleExpenses.map((expense) => (
                   <div 
                     key={expense.id} 
                     className="expense-item" 
@@ -805,6 +837,11 @@ export default function GroupDetail(): JSX.Element {
                         expensePaymentStatus[expense.id].totalOwed > 0 && 
                         expensePaymentStatus[expense.id].totalPaid >= expensePaymentStatus[expense.id].totalOwed - 0.01 && (
                           <div style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '4px' }}>{t('group.settlementsWereMade')}</div>
+                      )}
+                      {showUnpaidOnly && (remainingFor(expense.id) ?? 0) > 0.01 && (
+                        <div style={{ color: 'var(--warning)', fontSize: '0.85rem', marginTop: '4px' }}>
+                          {t('group.leftToPayBack', { amount: formatCurrency(remainingFor(expense.id)!) })}
+                        </div>
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
@@ -851,10 +888,10 @@ export default function GroupDetail(): JSX.Element {
                   </div>
                 ))}
                 {/* Free-form Payments (Settlements) */}
-                {settlements.length > 0 && (
+                {!showUnpaidOnly && settlements.length > 0 && (
                   <>
-                    <div style={{ 
-                      padding: '10px 16px', 
+                    <div style={{
+                      padding: '10px 16px',
                       background: 'var(--bg-secondary)', 
                       borderTop: '1px solid var(--border-color)',
                       borderBottom: '1px solid var(--border-color)',

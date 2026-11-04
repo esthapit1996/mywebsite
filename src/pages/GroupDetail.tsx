@@ -801,14 +801,14 @@ export default function GroupDetail(): JSX.Element {
                       onClick={() => setShowUnpaidOnly(prev => !prev)}
                       aria-pressed={showUnpaidOnly}
                     >
-                      {showUnpaidOnly ? t('group.showAllExpenses') : t('group.showUnpaidOnly')}
+                      {showUnpaidOnly ? t('common.showAll') : t('common.showUnpaidOnly')}
                     </button>
                   </div>
                 )}
                 {showUnpaidOnly && visibleExpenses.length === 0 && (
                   <div className="empty-state">
                     <div className="empty-state-icon">🎉</div>
-                    <h3>{t('group.allPaidBack')}</h3>
+                    <h3>{t('common.allPaidBack')}</h3>
                   </div>
                 )}
                 {visibleExpenses.map((expense) => (

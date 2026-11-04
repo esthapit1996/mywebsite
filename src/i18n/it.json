@@ -1,6 +1,9 @@
 {
   "common": {
     "backToDashboard": "← Torna alla Dashboard",
+    "showUnpaidOnly": "Mostra solo non pagate",
+    "showAll": "Mostra tutte",
+    "allPaidBack": "È stato tutto rimborsato",
     "cancel": "Annulla",
     "optional": "facoltativo",
     "save": "Salva",
@@ -120,9 +123,6 @@
     "noExpensesDesc": "Aggiungi la tua prima spesa per iniziare.",
     "settlementsWereMade": "✅ Sono stati effettuati dei pagamenti",
     "freeFormPayments": "🤝 Pagamenti Liberi",
-    "showUnpaidOnly": "Mostra solo non pagate",
-    "showAllExpenses": "Mostra tutte",
-    "allPaidBack": "È stato tutto rimborsato",
     "leftToPayBack": "{{amount}} ancora da rimborsare",
     "freeFormPayment": "Pagamento libero",
     "allSettled": "Tutto saldato!",

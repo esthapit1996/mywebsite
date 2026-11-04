@@ -1,6 +1,9 @@
 {
   "common": {
     "backToDashboard": "← Back to Dashboard",
+    "showUnpaidOnly": "Show unpaid only",
+    "showAll": "Show all",
+    "allPaidBack": "Everything has been paid back",
     "cancel": "Cancel",
     "optional": "optional",
     "save": "Save",
@@ -120,9 +123,6 @@
     "noExpensesDesc": "Add your first expense to get started.",
     "settlementsWereMade": "✅ Settlements were made",
     "freeFormPayments": "🤝 Free-form Payments",
-    "showUnpaidOnly": "Show unpaid only",
-    "showAllExpenses": "Show all",
-    "allPaidBack": "Everything has been paid back",
     "leftToPayBack": "{{amount}} left to pay back",
     "freeFormPayment": "Free-form payment",
     "allSettled": "All settled up!",

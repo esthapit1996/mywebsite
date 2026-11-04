@@ -30,6 +30,10 @@ export default function Dashboard() {
   const [debtDetails, setDebtDetails] = useState<Record<number, DebtDetailItem[]>>({});
   const [loadingDetails, setLoadingDetails] = useState<number | null>(null);
 
+  // Only 'expense' items are still open; 'settled' and 'settlement' are already paid
+  const openDebtDetails = (userId: number): DebtDetailItem[] =>
+    (debtDetails[userId] || []).filter(d => d.type === 'expense');
+
   // Available emojis for groups
   const availableEmojis = [
     '💰', '🍕', '🍔', '🍽️', '🍻', '☕',
@@ -231,7 +235,12 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
-                        {debtDetails[item.user.id].map((detail, idx) => (
+                        {openDebtDetails(item.user.id).length === 0 && (
+                          <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                            🎉 {t('common.allPaidBack')}
+                          </div>
+                        )}
+                        {openDebtDetails(item.user.id).map((detail, idx) => (
                           <div key={idx} onClick={() => navigate(detail.expense_id ? `/groups/${detail.group_id}?expense=${detail.expense_id}` : `/groups/${detail.group_id}`)} style={{
                             display: 'flex',
                             justifyContent: 'space-between',

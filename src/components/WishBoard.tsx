@@ -1,7 +1,6 @@
 import { useState, FormEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '../context/CurrencyContext';
-import Avatar from './Avatar';
 import type { WishItem } from '../types';
 
 // Matches backend limits (models.WishItemRequest)
@@ -18,11 +17,12 @@ export interface WishInput {
 interface WishBoardProps {
   title: ReactNode;
   items: WishItem[];
-  onCreate: (input: WishInput) => Promise<void>;
+  // Omit to hide the add button (e.g. another member's section in a group)
+  onCreate?: (input: WishInput) => Promise<void>;
   onUpdate: (id: number, input: WishInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
-  // Shared lists show who added each wish
-  showAddedBy?: boolean;
+  // Single card with a one-line total, used for member sections in a shared group
+  compact?: boolean;
 }
 
 export function CharCount({ value, max }: { value: string; max: number }) {
@@ -46,8 +46,8 @@ function linkHost(link: string): string {
   }
 }
 
-// Total + item list + add/edit modal, shared by personal GoWish and shared wish groups
-export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, showAddedBy }: WishBoardProps) {
+// Total + item list + add/edit modal, shared by personal GoWish and shared wish group sections
+export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, compact }: WishBoardProps) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [error, setError] = useState('');
@@ -99,7 +99,7 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
     try {
       if (editingId) {
         await onUpdate(editingId, input);
-      } else {
+      } else if (onCreate) {
         await onCreate(input);
       }
       closeModal();
@@ -123,15 +123,210 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
   const total_cost = items.reduce((sum, it) => sum + (it.cost ?? 0), 0);
   const unpriced_count = items.filter(it => it.cost == null).length;
 
+  const rows = (
+    <div>
+      {items.map(item => {
+        const href = safeLink(item.link);
+        return (
+          <div key={item.id} style={{
+            padding: '12px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'var(--card-bg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              flexShrink: 0,
+              border: '1px solid var(--border)',
+            }}>
+              ⭐
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: '500', overflowWrap: 'anywhere' }}>{item.name}</div>
+              {item.why && (
+                <div style={{
+                  fontSize: '0.85rem',
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic',
+                  marginTop: '2px',
+                  overflowWrap: 'anywhere',
+                }}>
+                  {item.why}
+                </div>
+              )}
+              {href && (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--primary)',
+                    display: 'block',
+                    marginTop: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  🔗 {linkHost(href)}
+                </a>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              {item.cost != null ? (
+                <span style={{ fontWeight: '600' }}>{formatAmount(item.cost)}</span>
+              ) : (
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('wish.noPrice')}</span>
+              )}
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => openEdit(item)}
+                title={t('wish.editWish')}
+                style={{ fontSize: '0.9rem' }}
+              >
+                ✎
+              </button>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => handleDelete(item.id)}
+                title={t('common.delete')}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Add / Edit Modal
+  const modal = showModal && (
+    <div className="modal-overlay" onClick={closeModal}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">{editingId ? t('wish.editWish') : t('wish.addWish')}</h3>
+          <button className="modal-close" onClick={closeModal}>×</button>
+        </div>
+        <form onSubmit={handleSave}>
+          <div className="modal-body">
+            <div style={{ marginBottom: '12px' }}>
+              <label className="form-label">{t('wish.name')}</label>
+              <input
+                type="text"
+                className="form-input"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder={t('wish.namePlaceholder')}
+                maxLength={WISH_NAME_MAX}
+                required
+                autoFocus
+              />
+              <CharCount value={name} max={WISH_NAME_MAX} />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label className="form-label">
+                {t('wish.why')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={why}
+                onChange={e => setWhy(e.target.value)}
+                placeholder={t('wish.whyPlaceholder')}
+                maxLength={WHY_MAX}
+              />
+              <CharCount value={why} max={WHY_MAX} />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label className="form-label">
+                {t('wish.link')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+              </label>
+              <input
+                type="url"
+                className="form-input"
+                value={link}
+                onChange={e => setLink(e.target.value)}
+                placeholder="https://..."
+                pattern="https?://.+"
+                title={t('wish.linkHint')}
+                maxLength={2048}
+              />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label className="form-label">
+                {t('wish.cost')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+              </label>
+              <input
+                type="number"
+                className="form-input"
+                value={cost}
+                onChange={e => setCost(e.target.value)}
+                placeholder="0.00"
+                step="0.01"
+                min="0.01"
+              />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={closeModal}>
+              {t('common.cancel')}
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? t('wish.saving') : editingId ? t('wish.editWish') : t('wish.addWish')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  const addButton = onCreate && (
+    <button className={compact ? 'btn btn-primary btn-sm' : 'btn btn-primary'} onClick={openAdd}>
+      + {t('wish.addWish')}
+    </button>
+  );
+
+  if (compact) {
+    return (
+      <>
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="card-header">
+            <h3 className="card-title">{title}</h3>
+            {addButton}
+          </div>
+          <div style={{ padding: '0 16px 12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--primary)' }}>{formatAmount(total_cost)}</strong> · {t('wish.itemCount', { count: items.length })}
+            {unpriced_count > 0 && <> · {t('wish.unpricedCount', { count: unpriced_count })}</>}
+          </div>
+          {error && <div className="alert alert-error" style={{ margin: '0 16px 12px' }}>{error}</div>}
+          {items.length === 0 ? (
+            <p style={{ padding: '0 16px 16px', margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              {t('wish.sectionEmpty')}
+            </p>
+          ) : rows}
+        </div>
+        {modal}
+      </>
+    );
+  }
+
   return (
     <>
       {/* Summary Card */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div className="card-header">
           <h2 className="card-title">{title}</h2>
-          <button className="btn btn-primary" onClick={openAdd}>
-            + {t('wish.addWish')}
-          </button>
+          {addButton}
         </div>
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
@@ -160,186 +355,10 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
             <h3>{t('wish.empty')}</h3>
             <p>{t('wish.emptyDesc')}</p>
           </div>
-        ) : (
-          <div>
-            {items.map(item => {
-              const href = safeLink(item.link);
-              return (
-                <div key={item.id} style={{
-                  padding: '12px',
-                  borderBottom: '1px solid var(--border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: 'var(--card-bg)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '16px',
-                    flexShrink: 0,
-                    border: '1px solid var(--border)',
-                  }}>
-                    ⭐
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: '500', overflowWrap: 'anywhere' }}>{item.name}</div>
-                    {item.why && (
-                      <div style={{
-                        fontSize: '0.85rem',
-                        color: 'var(--text-muted)',
-                        fontStyle: 'italic',
-                        marginTop: '2px',
-                        overflowWrap: 'anywhere',
-                      }}>
-                        {item.why}
-                      </div>
-                    )}
-                    {href && (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: '0.8rem',
-                          color: 'var(--primary)',
-                          display: 'block',
-                          marginTop: '2px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        🔗 {linkHost(href)}
-                      </a>
-                    )}
-                    {showAddedBy && item.added_by && (
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-muted)',
-                        marginTop: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}>
-                        <Avatar name={item.added_by.name} avatar={item.added_by.avatar} size={16} />
-                        {t('wish.addedBy', { name: item.added_by.name })}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    {item.cost != null ? (
-                      <span style={{ fontWeight: '600' }}>{formatAmount(item.cost)}</span>
-                    ) : (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('wish.noPrice')}</span>
-                    )}
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => openEdit(item)}
-                      title={t('wish.editWish')}
-                      style={{ fontSize: '0.9rem' }}
-                    >
-                      ✎
-                    </button>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => handleDelete(item.id)}
-                      title={t('common.delete')}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        ) : rows}
       </div>
 
-      {/* Add / Edit Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">{editingId ? t('wish.editWish') : t('wish.addWish')}</h3>
-              <button className="modal-close" onClick={closeModal}>×</button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('wish.name')}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder={t('wish.namePlaceholder')}
-                    maxLength={WISH_NAME_MAX}
-                    required
-                    autoFocus
-                  />
-                  <CharCount value={name} max={WISH_NAME_MAX} />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">
-                    {t('wish.why')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={why}
-                    onChange={e => setWhy(e.target.value)}
-                    placeholder={t('wish.whyPlaceholder')}
-                    maxLength={WHY_MAX}
-                  />
-                  <CharCount value={why} max={WHY_MAX} />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">
-                    {t('wish.link')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
-                  </label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    value={link}
-                    onChange={e => setLink(e.target.value)}
-                    placeholder="https://..."
-                    pattern="https?://.+"
-                    title={t('wish.linkHint')}
-                    maxLength={2048}
-                  />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">
-                    {t('wish.cost')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
-                  </label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={cost}
-                    onChange={e => setCost(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0.01"
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={closeModal}>
-                  {t('common.cancel')}
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? t('wish.saving') : editingId ? t('wish.editWish') : t('wish.addWish')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {modal}
     </>
   );
 }

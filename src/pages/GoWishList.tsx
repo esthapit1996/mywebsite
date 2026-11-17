@@ -3,16 +3,19 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Avatar from '../components/Avatar';
 import WishBoard, { CharCount, WISH_NAME_MAX, WishInput } from '../components/WishBoard';
 import type { User, WishItem, WishList, WishMember } from '../types';
 
-// A shared GoWish group: every member can manage wishes and members
+// A shared GoWish group: one section of wishes per member. You add to your own section;
+// any member can edit or delete any wish and manage members.
 export default function GoWishList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatAmount } = useCurrency();
   const { id } = useParams();
   const list_id = Number(id);
 
@@ -103,7 +106,9 @@ export default function GoWishList() {
         navigate('/wish');
         return;
       }
+      // Their section goes with them (the backend deletes their wishes in this group)
       setList(prev => prev ? { ...prev, members: prev.members.filter(m => m.id !== member.id) } : prev);
+      setItems(prev => prev.filter(it => it.user_id !== member.id));
     } catch (err) {
       setMemberError(err instanceof Error ? err.message : String(err));
     }
@@ -144,6 +149,9 @@ export default function GoWishList() {
   }
 
   const members = list.members || [];
+  // Your own section first, then everyone else in join order
+  const sections = [...members].sort((x, y) => Number(y.id === user?.id) - Number(x.id === user?.id));
+  const group_total = items.reduce((sum, it) => sum + (it.cost ?? 0), 0);
 
   return (
     <div className="container">
@@ -182,18 +190,34 @@ export default function GoWishList() {
             </div>
           ))}
         </div>
+        <div style={{ padding: '0 16px 16px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          {t('wish.groupTotal')}: <strong style={{ color: 'var(--primary)' }}>{formatAmount(group_total)}</strong>
+          {' · '}{t('wish.itemCount', { count: items.length })}
+        </div>
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
 
-      <WishBoard
-        title={<>⭐ {t('wish.groupWishes')}</>}
-        items={items}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-        showAddedBy
-      />
+      {/* One section per member */}
+      {sections.map(m => {
+        const mine = m.id === user?.id;
+        return (
+          <WishBoard
+            key={m.id}
+            compact
+            title={
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Avatar name={m.name} avatar={m.avatar} size={24} />
+                {mine ? t('wish.yourWishes') : t('wish.memberWishes', { name: m.name })}
+              </span>
+            }
+            items={items.filter(it => it.user_id === m.id)}
+            onCreate={mine ? handleCreate : undefined}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+          />
+        );
+      })}
 
       {/* Members Modal */}
       {showMembers && (

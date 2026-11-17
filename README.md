@@ -74,7 +74,7 @@ src/
 │   ├── GroupDetail.tsx   # Group expenses, balances, settlements, activity
 │   ├── GopherStash.tsx   # Personal expense tracker with charts
 │   ├── GoWish.tsx        # Shared wish groups + personal wishlist
-│   ├── GoWishList.tsx    # One shared wish group (wishes + members)
+│   ├── GoWishList.tsx    # One shared wish group (a wish section per member)
 │   ├── PaymentHistory.tsx # Payment history log
 │   ├── Suggestions.tsx   # Suggestion box with voting & comments
 │   ├── CurrencyConverter.tsx # Currency converter + trend chart

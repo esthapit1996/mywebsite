@@ -29,7 +29,7 @@ Pages are the main **route components** - each represents a full screen in the a
 | `GroupDetail.tsx` | `/groups/:id` | ✅ | Single group - expenses, balances, settle |
 | `GopherStash.tsx` | `/stash` | ✅ | Personal expense tracker with charts |
 | `GoWish.tsx` | `/wish` | ✅ | Shared wish groups + personal wishlist |
-| `GoWishList.tsx` | `/wish/lists/:id` | ✅ | One shared wish group: wishes and members |
+| `GoWishList.tsx` | `/wish/lists/:id` | ✅ | One shared wish group: a wish section per member |
 | `PaymentHistory.tsx` | `/payment-history` | ✅ | User's payment history |
 | `Suggestions.tsx` | `/suggestions` | ✅ | Feature suggestion box with voting & comments |
 | `CurrencyConverter.tsx` | `/currency` | ✅ | Currency converter tool with trend chart |
@@ -398,25 +398,25 @@ Opened from the user dropdown menu (⭐ GoWish). Two sections:
 
 ## 🔧 GoWishList.tsx
 
-One shared wish group (`/wish/lists/:id`). Every member has full access.
+One shared wish group (`/wish/lists/:id`). Each member has their own section of wishes.
 
 | Feature | Description |
 |---------|-------------|
+| **Sections** | One compact `WishBoard` per member (yours first). You add wishes only to your own section; any member can edit or delete any wish |
+| **Group total** | Sum of priced wishes across all sections + wish count, under the member chips |
 | **Members** | Chips under the title; the members modal adds users (from `getAllUsers`), removes members, or leaves |
-| **Leave** | If you're the last member, the group and its wishes are deleted (confirmation warns about this) |
+| **Leave / Remove** | The member's wishes in this group are deleted with them; if the last member leaves, the group is deleted (confirmations warn about this) |
 | **Rename** | ✎ button next to the title (max 64) |
-| **Wishes** | `WishBoard` with `showAddedBy`; any member can add, edit or delete any wish |
 
 ## 🔧 WishBoard.tsx (component)
 
-Shared by both pages: total cost card, wish list and add/edit modal. The parent owns the items and passes `onCreate` / `onUpdate` / `onDelete`.
+Shared by both pages: total, wish list and add/edit modal. The parent owns the items and passes `onCreate` / `onUpdate` / `onDelete`. Without `onCreate` there is no add button (another member's section). With `compact`, it renders as a single card with a one-line total (member sections).
 
 | Feature | Description |
 |---------|-------------|
 | **Total Cost** | Sum of priced items + item count (and how many have no price) |
 | **Add / Edit Wish** | Modal with Name (required, max 64), Why (max 128), Link and Cost (all optional); character counters for Name and Why |
 | **Links** | Shown as the hostname, open in a new tab; only `http(s)` links are rendered (also enforced by the backend) |
-| **Added by** | With `showAddedBy`, each wish shows who added it |
 | **Delete** | Remove an item with confirmation |
 
 ---

@@ -545,8 +545,7 @@
     "unpricedCount_other": "{{count}} senza prezzo",
     "link": "Link",
     "linkHint": "Deve iniziare con http:// o https://",
-    "cost": "Costo"
- ,
+    "cost": "Costo",
     "myWishes": "I Miei Desideri",
     "sharedTitle": "Desideri Condivisi",
     "sharedEmpty": "Nessun gruppo condiviso. Creane uno per raccogliere desideri con altre persone.",
@@ -559,7 +558,6 @@
     "createGroupFailed": "Creazione gruppo fallita",
     "groupNotFound": "Gruppo condiviso non trovato",
     "backToGoWish": "← Torna a GoWish",
-    "groupWishes": "Desideri",
     "members_one": "👥 {{count}} membro",
     "members_other": "👥 {{count}} membri",
     "renameGroup": "Rinomina gruppo",
@@ -567,9 +565,12 @@
     "addMember": "Aggiungi un membro",
     "selectUser": "Seleziona un utente",
     "add": "Aggiungi",
-    "removeMemberConfirm": "Rimuovere {{name}} da questo gruppo?",
-    "leaveConfirm": "Lasciare questo gruppo?",
+    "removeMemberConfirm": "Rimuovere {{name}} da questo gruppo? I suoi desideri in questo gruppo verranno eliminati.",
+    "leaveConfirm": "Lasciare questo gruppo? I tuoi desideri in questo gruppo verranno eliminati.",
     "leaveLastConfirm": "Sei l'ultimo membro. Uscendo elimini il gruppo e tutti i suoi desideri. Continuare?",
-    "addedBy": "Aggiunto da {{name}}"
+    "yourWishes": "I tuoi desideri",
+    "memberWishes": "Desideri di {{name}}",
+    "sectionEmpty": "Ancora nessun desiderio",
+    "groupTotal": "Totale del gruppo"
   }
 }

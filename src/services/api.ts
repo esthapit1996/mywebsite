@@ -24,6 +24,7 @@ import type {
   BlacklistEntry,
   StashExpense,
   StashSummary,
+  WishItem,
 } from '../types';
 
 // API Configuration
@@ -512,6 +513,29 @@ class ApiService {
 
   async clearStashExpenses(): Promise<ApiResponse> {
     return this.request('/stash', { method: 'DELETE' });
+  }
+
+  // GoWish (personal wishlist)
+  async getWishItems(): Promise<ApiResponse<WishItem[]>> {
+    return this.request<WishItem[]>('/wish');
+  }
+
+  async createWishItem(name: string, link: string, cost: number): Promise<ApiResponse<WishItem>> {
+    return this.request<WishItem>('/wish', {
+      method: 'POST',
+      body: JSON.stringify({ name, link, cost }),
+    });
+  }
+
+  async updateWishItem(id: number, name: string, link: string, cost: number): Promise<ApiResponse<WishItem>> {
+    return this.request<WishItem>(`/wish/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, link, cost }),
+    });
+  }
+
+  async deleteWishItem(id: number): Promise<ApiResponse> {
+    return this.request(`/wish/${id}`, { method: 'DELETE' });
   }
 }
 

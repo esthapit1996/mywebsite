@@ -28,7 +28,8 @@ Pages are the main **route components** - each represents a full screen in the a
 | `Dashboard.tsx` | `/` | ✅ | Home - groups list, debt overview, GopherStash card |
 | `GroupDetail.tsx` | `/groups/:id` | ✅ | Single group - expenses, balances, settle |
 | `GopherStash.tsx` | `/stash` | ✅ | Personal expense tracker with charts |
-| `GoWish.tsx` | `/wish` | ✅ | Wishlist of things to buy |
+| `GoWish.tsx` | `/wish` | ✅ | Shared wish groups + personal wishlist |
+| `GoWishList.tsx` | `/wish/lists/:id` | ✅ | One shared wish group: wishes and members |
 | `PaymentHistory.tsx` | `/payment-history` | ✅ | User's payment history |
 | `Suggestions.tsx` | `/suggestions` | ✅ | Feature suggestion box with voting & comments |
 | `CurrencyConverter.tsx` | `/currency` | ✅ | Currency converter tool with trend chart |
@@ -390,26 +391,32 @@ Personal expense tracker with category breakdown and chart views.
 
 ## 🔧 GoWish.tsx
 
-Wishlist of things the user wants to buy in the future. Opened from the user dropdown menu (⭐ GoWish).
+Opened from the user dropdown menu (⭐ GoWish). Two sections:
 
-### State (key)
+1. **👥 Shared Wishes** (top): the shared wish groups you belong to, each with member avatars, wish count and total. Click one to open `GoWishList`. **+ New Group** creates one and opens it. These are separate from debt groups.
+2. **⭐ My Wishes**: your personal wishlist, rendered by `WishBoard`.
 
-| State | Type | Purpose |
-|-------|------|---------|
-| `items` | `WishItem[]` | All wishlist items (newest first) |
-| `editingId` | `number \| null` | Item being edited, `null` when adding |
-| `name` | `string` | Name input (max 64) |
-| `why` | `string` | Why input, optional (max 128) |
-| `link` | `string` | Link input (optional) |
-| `cost` | `string` | Cost input, optional (empty = no price) |
+## 🔧 GoWishList.tsx
 
-### Features
+One shared wish group (`/wish/lists/:id`). Every member has full access.
+
+| Feature | Description |
+|---------|-------------|
+| **Members** | Chips under the title; the members modal adds users (from `getAllUsers`), removes members, or leaves |
+| **Leave** | If you're the last member, the group and its wishes are deleted (confirmation warns about this) |
+| **Rename** | ✎ button next to the title (max 64) |
+| **Wishes** | `WishBoard` with `showAddedBy`; any member can add, edit or delete any wish |
+
+## 🔧 WishBoard.tsx (component)
+
+Shared by both pages: total cost card, wish list and add/edit modal. The parent owns the items and passes `onCreate` / `onUpdate` / `onDelete`.
 
 | Feature | Description |
 |---------|-------------|
 | **Total Cost** | Sum of priced items + item count (and how many have no price) |
-| **Add / Edit Wish** | Modal with Name (required), Why, Link and Cost (all optional); character counters for Name and Why |
+| **Add / Edit Wish** | Modal with Name (required, max 64), Why (max 128), Link and Cost (all optional); character counters for Name and Why |
 | **Links** | Shown as the hostname, open in a new tab; only `http(s)` links are rendered (also enforced by the backend) |
+| **Added by** | With `showAddedBy`, each wish shows who added it |
 | **Delete** | Remove an item with confirmation |
 
 ---

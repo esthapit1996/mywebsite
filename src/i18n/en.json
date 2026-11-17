@@ -522,7 +522,6 @@
     "suggestionBox": "Suggestion Box"
   },
   "wish": {
-    "title": "GoWish",
     "loading": "Loading your wishlist...",
     "loadFailed": "Failed to load wishlist",
     "addWish": "Add Wish",
@@ -547,5 +546,30 @@
     "link": "Link",
     "linkHint": "Must start with http:// or https://",
     "cost": "Cost"
+ ,
+    "myWishes": "My Wishes",
+    "sharedTitle": "Shared Wishes",
+    "sharedEmpty": "No shared groups yet. Create one to collect wishes with other people.",
+    "newGroup": "New Group",
+    "newGroupHint": "You can add members once the group is created.",
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Our flat",
+    "create": "Create",
+    "creating": "Creating...",
+    "createGroupFailed": "Failed to create group",
+    "groupNotFound": "Shared group not found",
+    "backToGoWish": "← Back to GoWish",
+    "groupWishes": "Wishes",
+    "members_one": "👥 {{count}} member",
+    "members_other": "👥 {{count}} members",
+    "renameGroup": "Rename group",
+    "save": "Save",
+    "addMember": "Add a member",
+    "selectUser": "Select a user",
+    "add": "Add",
+    "removeMemberConfirm": "Remove {{name}} from this group?",
+    "leaveConfirm": "Leave this group?",
+    "leaveLastConfirm": "You're the last member. Leaving deletes this group and all its wishes. Continue?",
+    "addedBy": "Added by {{name}}"
   }
 }

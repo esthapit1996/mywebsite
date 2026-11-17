@@ -7,7 +7,7 @@ A React + TypeScript frontend for the GopherDebt expense sharing and personal fi
 - **Group Expenses** — Create groups, add members, split expenses (equal/exact/percentage)
 - **Balances & Settlements** — View who owes whom, record payments
 - **GopherStash** — Personal expense tracker with categories, receipt scanning, and chart views (pie/bar/pills)
-- **GoWish** — Wishlist of things you want to buy (name, optional why, link and cost) with a running total
+- **GoWish** — Wishlist of things you want to buy (name, optional why, link and cost) with a running total, personal or in shared wish groups with other members
 - **Receipt Scanning** — AI-powered receipt parsing via Google Gemini (upload photo → auto-fill expenses)
 - **Currency Conversion** — View amounts in 25 currencies, historical trend charts
 - **14 Themes** — 9 dark + 5 light themes, synced to user profile
@@ -73,7 +73,8 @@ src/
 │   ├── Dashboard.tsx     # Home — groups, debt overview, GopherStash card
 │   ├── GroupDetail.tsx   # Group expenses, balances, settlements, activity
 │   ├── GopherStash.tsx   # Personal expense tracker with charts
-│   ├── GoWish.tsx        # Wishlist of things to buy
+│   ├── GoWish.tsx        # Shared wish groups + personal wishlist
+│   ├── GoWishList.tsx    # One shared wish group (wishes + members)
 │   ├── PaymentHistory.tsx # Payment history log
 │   ├── Suggestions.tsx   # Suggestion box with voting & comments
 │   ├── CurrencyConverter.tsx # Currency converter + trend chart
@@ -86,6 +87,7 @@ src/
 │   ├── Avatar.tsx        # Avatar display component
 │   ├── AvatarPicker.tsx  # Avatar selection modal
 │   ├── LoadingSpinner.tsx # Loading indicator
+│   ├── WishBoard.tsx     # GoWish total, list and add/edit modal (personal + shared)
 │   └── ReceiptScanner.tsx # AI receipt scanning component
 ├── context/
 │   ├── AuthContext.tsx   # Authentication state (user, login, logout)

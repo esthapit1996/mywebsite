@@ -522,7 +522,6 @@
     "suggestionBox": "Cassetta dei Suggerimenti"
   },
   "wish": {
-    "title": "GoWish",
     "loading": "Caricamento della tua lista dei desideri...",
     "loadFailed": "Caricamento lista dei desideri fallito",
     "addWish": "Aggiungi Desiderio",
@@ -547,5 +546,30 @@
     "link": "Link",
     "linkHint": "Deve iniziare con http:// o https://",
     "cost": "Costo"
+ ,
+    "myWishes": "I Miei Desideri",
+    "sharedTitle": "Desideri Condivisi",
+    "sharedEmpty": "Nessun gruppo condiviso. Creane uno per raccogliere desideri con altre persone.",
+    "newGroup": "Nuovo Gruppo",
+    "newGroupHint": "Potrai aggiungere membri dopo aver creato il gruppo.",
+    "groupName": "Nome del gruppo",
+    "groupNamePlaceholder": "es. Il nostro appartamento",
+    "create": "Crea",
+    "creating": "Creazione...",
+    "createGroupFailed": "Creazione gruppo fallita",
+    "groupNotFound": "Gruppo condiviso non trovato",
+    "backToGoWish": "← Torna a GoWish",
+    "groupWishes": "Desideri",
+    "members_one": "👥 {{count}} membro",
+    "members_other": "👥 {{count}} membri",
+    "renameGroup": "Rinomina gruppo",
+    "save": "Salva",
+    "addMember": "Aggiungi un membro",
+    "selectUser": "Seleziona un utente",
+    "add": "Aggiungi",
+    "removeMemberConfirm": "Rimuovere {{name}} da questo gruppo?",
+    "leaveConfirm": "Lasciare questo gruppo?",
+    "leaveLastConfirm": "Sei l'ultimo membro. Uscendo elimini il gruppo e tutti i suoi desideri. Continuare?",
+    "addedBy": "Aggiunto da {{name}}"
   }
 }

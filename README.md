@@ -15,7 +15,7 @@ A React + TypeScript frontend for the GopherDebt expense sharing and personal fi
 - **Suggestion Box** — Feature suggestions with voting, comments, and status tracking
 - **Community** — Member list with special titles (Founder, Trailblazer, Mafia Boss)
 - **Access Control** — Email whitelist/blacklist management (founder only)
-- **Debt Overview** — Cross-group debt summary with per-user drilldown
+- **Debt Overview** — Cross-group debt summary with per-user drilldown and your net total in the title
 - **Payment History** — Full payment log with clear option
 - **Avatar & Profile** — Custom avatars, password change, language preference
 

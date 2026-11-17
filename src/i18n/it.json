@@ -32,6 +32,7 @@
     "themeLabel": "Tema",
     "paymentHistory": "📜 Storico Pagamenti",
     "gopherStash": "🐿️ Gopher Stash",
+    "goWish": "⭐ GoWish",
     "suggestionBox": "💡 Cassetta Suggerimenti",
     "currencyConverter": "💱 Convertitore Valute",
     "community": "🐹 Comunità GopherDebt",
@@ -519,5 +520,27 @@
     },
     "categoryHint": "Vuoi più categorie? Richiedile nella",
     "suggestionBox": "Cassetta dei Suggerimenti"
+  },
+  "wish": {
+    "title": "GoWish",
+    "loading": "Caricamento della tua lista dei desideri...",
+    "loadFailed": "Caricamento lista dei desideri fallito",
+    "addWish": "Aggiungi Desiderio",
+    "editWish": "Modifica Desiderio",
+    "saving": "Salvataggio...",
+    "saveFailed": "Salvataggio desiderio fallito",
+    "deleteConfirm": "Eliminare questo desiderio?",
+    "deleteFailed": "Eliminazione desiderio fallita",
+    "totalCost": "Costo Totale",
+    "itemCount_one": "{{count}} desiderio",
+    "itemCount_other": "{{count}} desideri",
+    "list": "Lista dei Desideri",
+    "empty": "La tua lista dei desideri è vuota",
+    "emptyDesc": "Aggiungi qualcosa che vorresti comprare!",
+    "name": "Nome",
+    "namePlaceholder": "Cosa desideri?",
+    "link": "Link",
+    "linkHint": "Deve iniziare con http:// o https://",
+    "cost": "Costo"
   }
 }

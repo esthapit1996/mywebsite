@@ -7,6 +7,7 @@ A React + TypeScript frontend for the GopherDebt expense sharing and personal fi
 - **Group Expenses** — Create groups, add members, split expenses (equal/exact/percentage)
 - **Balances & Settlements** — View who owes whom, record payments
 - **GopherStash** — Personal expense tracker with categories, receipt scanning, and chart views (pie/bar/pills)
+- **GoWish** — Wishlist of things you want to buy (name, optional link, cost) with a running total
 - **Receipt Scanning** — AI-powered receipt parsing via Google Gemini (upload photo → auto-fill expenses)
 - **Currency Conversion** — View amounts in 25 currencies, historical trend charts
 - **14 Themes** — 9 dark + 5 light themes, synced to user profile
@@ -72,6 +73,7 @@ src/
 │   ├── Dashboard.tsx     # Home — groups, debt overview, GopherStash card
 │   ├── GroupDetail.tsx   # Group expenses, balances, settlements, activity
 │   ├── GopherStash.tsx   # Personal expense tracker with charts
+│   ├── GoWish.tsx        # Wishlist of things to buy
 │   ├── PaymentHistory.tsx # Payment history log
 │   ├── Suggestions.tsx   # Suggestion box with voting & comments
 │   ├── CurrencyConverter.tsx # Currency converter + trend chart

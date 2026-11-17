@@ -23,6 +23,7 @@ const Members = lazy(() => import('./pages/Members'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Community = lazy(() => import('./pages/Community'));
 const GopherStash = lazy(() => import('./pages/GopherStash'));
+const GoWish = lazy(() => import('./pages/GoWish'));
 
 interface RouteProps {
   children: ReactNode;
@@ -206,6 +207,12 @@ function Header(): JSX.Element | null {
                 </button>
                 <button 
                   className="user-menu-item"
+                  onClick={() => handleNavigation('/wish')}
+                >
+                  {t('header.goWish')}
+                </button>
+                <button 
+                  className="user-menu-item"
                   onClick={() => handleNavigation('/suggestions')}
                 >
                   {t('header.suggestionBox')}
@@ -335,6 +342,14 @@ function AppRoutes(): JSX.Element {
             element={
               <ProtectedRoute>
                 <GopherStash />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wish"
+            element={
+              <ProtectedRoute>
+                <GoWish />
               </ProtectedRoute>
             }
           />

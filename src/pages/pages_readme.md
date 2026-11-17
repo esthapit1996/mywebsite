@@ -28,6 +28,7 @@ Pages are the main **route components** - each represents a full screen in the a
 | `Dashboard.tsx` | `/` | ✅ | Home - groups list, debt overview, GopherStash card |
 | `GroupDetail.tsx` | `/groups/:id` | ✅ | Single group - expenses, balances, settle |
 | `GopherStash.tsx` | `/stash` | ✅ | Personal expense tracker with charts |
+| `GoWish.tsx` | `/wish` | ✅ | Wishlist of things to buy |
 | `PaymentHistory.tsx` | `/payment-history` | ✅ | User's payment history |
 | `Suggestions.tsx` | `/suggestions` | ✅ | Feature suggestion box with voting & comments |
 | `CurrencyConverter.tsx` | `/currency` | ✅ | Currency converter tool with trend chart |
@@ -353,7 +354,7 @@ Personal expense tracker with category breakdown and chart views.
 | `chartView` | `'pills' \| 'pie' \| 'bar'` | Category breakdown view mode (default: pie) |
 | `showReceiptScanner` | `boolean` | Toggle receipt scanner modal |
 
-### Categories (11)
+### Categories (13)
 
 | Key | Icon | Key | Icon |
 |-----|------|-----|------|
@@ -362,6 +363,7 @@ Personal expense tracker with category breakdown and chart views.
 | drinks | 🍻 | bills | 💡 |
 | transport | 🚗 | gas | ⛽ |
 | shopping | 🛒 | travel | ✈️ |
+| restaurant | 🍽️ | online_shopping | 🛍️ |
 | other | 📦 | | |
 
 ### Chart Views
@@ -377,11 +379,37 @@ Personal expense tracker with category breakdown and chart views.
 | Feature | Description |
 |---------|-------------|
 | **Add Expense** | Amount + description + category + currency picker |
+| **Edit Expense** | ✎ button on each history row reopens the modal pre-filled |
 | **Receipt Scanner** | Upload photo → AI extracts items → auto-fill |
 | **Category Breakdown** | Three chart views (pills/pie/bar, default: pie) |
 | **Currency Conversion** | Enter amount in any currency, auto-convert to EUR |
 | **Clear All** | Delete all personal expenses with confirmation |
 | **Default Description** | If empty, backend defaults to capitalized category name |
+
+---
+
+## 🔧 GoWish.tsx
+
+Wishlist of things the user wants to buy in the future. Opened from the user dropdown menu (⭐ GoWish).
+
+### State (key)
+
+| State | Type | Purpose |
+|-------|------|---------|
+| `items` | `WishItem[]` | All wishlist items (newest first) |
+| `editingId` | `number \| null` | Item being edited, `null` when adding |
+| `name` | `string` | Name input |
+| `link` | `string` | Link input (optional) |
+| `cost` | `string` | Cost input |
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Total Cost** | Sum of all wishlist items + item count |
+| **Add / Edit Wish** | Modal with Name, Link (optional) and Cost |
+| **Links** | Shown as the hostname, open in a new tab; only `http(s)` links are rendered (also enforced by the backend) |
+| **Delete** | Remove an item with confirmation |
 
 ---
 

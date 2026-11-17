@@ -209,9 +209,19 @@ async request(endpoint, options = {}) {
 |--------|------------|------|----------|-------------|
 | `getStashExpenses` | - | GET | `/stash` | Get all personal expenses |
 | `createStashExpense` | `amount, description, category` | POST | `/stash` | Add personal expense |
+| `updateStashExpense` | `id, amount, description, category` | PUT | `/stash/:id` | Edit personal expense |
 | `deleteStashExpense` | `id` | DELETE | `/stash/:id` | Delete personal expense |
 | `getStashSummary` | - | GET | `/stash/summary` | Total spent + category breakdown |
 | `clearStashExpenses` | - | DELETE | `/stash` | Clear all personal expenses |
+
+### GoWish Methods
+
+| Method | Parameters | HTTP | Endpoint | Description |
+|--------|------------|------|----------|-------------|
+| `getWishItems` | - | GET | `/wish` | Get all wishlist items |
+| `createWishItem` | `name, link, cost` | POST | `/wish` | Add wishlist item |
+| `updateWishItem` | `id, name, link, cost` | PUT | `/wish/:id` | Edit wishlist item |
+| `deleteWishItem` | `id` | DELETE | `/wish/:id` | Delete wishlist item |
 
 ---
 

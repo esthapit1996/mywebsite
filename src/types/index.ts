@@ -334,3 +334,16 @@ export interface StashSummary {
   expense_count: number;
   by_category: Record<string, number>;
 }
+
+// ============================================
+// GoWish Types
+// ============================================
+
+export interface WishItem {
+  id: number;
+  user_id: number;
+  name: string;
+  link: string;
+  cost: number;
+  created_at: string;
+}

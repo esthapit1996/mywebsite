@@ -223,6 +223,21 @@ async request(endpoint, options = {}) {
 | `updateWishItem` | `id, name, why, link, cost` | PUT | `/wish/:id` | Edit wishlist item |
 | `deleteWishItem` | `id` | DELETE | `/wish/:id` | Delete wishlist item |
 
+### GoWish Shared Group Methods
+
+| Method | Parameters | HTTP | Endpoint | Description |
+|--------|------------|------|----------|-------------|
+| `getWishLists` | - | GET | `/wish-lists` | Groups I'm a member of |
+| `createWishList` | `name` | POST | `/wish-lists` | Create a group |
+| `getWishList` | `id` | GET | `/wish-lists/:id` | Group with members |
+| `renameWishList` | `id, name` | PUT | `/wish-lists/:id` | Rename a group |
+| `addWishListMember` | `id, userId` | POST | `/wish-lists/:id/members` | Add a member |
+| `removeWishListMember` | `id, userId` | DELETE | `/wish-lists/:id/members/:userId` | Remove a member or leave; returns `list_deleted` |
+| `getWishListItems` | `id` | GET | `/wish-lists/:id/items` | Wishes in a group |
+| `createWishListItem` | `id, name, why, link, cost` | POST | `/wish-lists/:id/items` | Add a wish |
+| `updateWishListItem` | `id, itemId, name, why, link, cost` | PUT | `/wish-lists/:id/items/:itemId` | Edit a wish |
+| `deleteWishListItem` | `id, itemId` | DELETE | `/wish-lists/:id/items/:itemId` | Delete a wish |
+
 ---
 
 ### Access Control Methods (Founder Only)

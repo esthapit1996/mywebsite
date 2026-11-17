@@ -24,6 +24,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Community = lazy(() => import('./pages/Community'));
 const GopherStash = lazy(() => import('./pages/GopherStash'));
 const GoWish = lazy(() => import('./pages/GoWish'));
+const GoWishList = lazy(() => import('./pages/GoWishList'));
 
 interface RouteProps {
   children: ReactNode;
@@ -350,6 +351,14 @@ function AppRoutes(): JSX.Element {
             element={
               <ProtectedRoute>
                 <GoWish />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wish/lists/:id"
+            element={
+              <ProtectedRoute>
+                <GoWishList />
               </ProtectedRoute>
             }
           />

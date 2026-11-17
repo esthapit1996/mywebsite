@@ -347,4 +347,22 @@ export interface WishItem {
   link: string;
   cost: number | null;
   created_at: string;
+  // Set only for items in a shared wish group
+  list_id?: number;
+  added_by?: WishMember;
+}
+
+export interface WishMember {
+  id: number;
+  name: string;
+  avatar: string;
+}
+
+export interface WishList {
+  id: number;
+  name: string;
+  created_at: string;
+  members: WishMember[];
+  item_count: number;
+  total_cost: number;
 }

@@ -1,0 +1,289 @@
+import { useState, useEffect, FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Avatar from '../components/Avatar';
+import WishBoard, { CharCount, WISH_NAME_MAX, WishInput } from '../components/WishBoard';
+import type { User, WishItem, WishList, WishMember } from '../types';
+
+// A shared GoWish group: every member can manage wishes and members
+export default function GoWishList() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { id } = useParams();
+  const list_id = Number(id);
+
+  const [list, setList] = useState<WishList | null>(null);
+  const [items, setItems] = useState<WishItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Members modal
+  const [showMembers, setShowMembers] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [memberError, setMemberError] = useState('');
+
+  // Rename modal
+  const [showRename, setShowRename] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [list_res, items_res] = await Promise.all([
+          api.getWishList(list_id),
+          api.getWishListItems(list_id),
+        ]);
+        setList(list_res.data || null);
+        setItems(items_res.data || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('wish.groupNotFound'));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [list_id]);
+
+  const handleCreate = async (input: WishInput) => {
+    const res = await api.createWishListItem(list_id, input.name, input.why, input.link, input.cost);
+    if (res.data) setItems(prev => [res.data!, ...prev]);
+  };
+
+  const handleUpdate = async (item_id: number, input: WishInput) => {
+    const res = await api.updateWishListItem(list_id, item_id, input.name, input.why, input.link, input.cost);
+    if (res.data) setItems(prev => prev.map(it => it.id === item_id ? res.data! : it));
+  };
+
+  const handleDelete = async (item_id: number) => {
+    await api.deleteWishListItem(list_id, item_id);
+    setItems(prev => prev.filter(it => it.id !== item_id));
+  };
+
+  const openMembers = async () => {
+    setMemberError('');
+    setSelectedUser('');
+    setShowMembers(true);
+    try {
+      const res = await api.getAllUsers();
+      setAllUsers(res.data || []);
+    } catch (err) {
+      setMemberError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleAddMember = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setMemberError('');
+    try {
+      const res = await api.addWishListMember(list_id, parseInt(selectedUser));
+      if (res.data) setList(res.data);
+      setSelectedUser('');
+    } catch (err) {
+      setMemberError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleRemoveMember = async (member: WishMember) => {
+    const is_self = member.id === user?.id;
+    const is_last = (list?.members.length || 0) <= 1;
+    const message = is_self
+      ? (is_last ? t('wish.leaveLastConfirm') : t('wish.leaveConfirm'))
+      : t('wish.removeMemberConfirm', { name: member.name });
+    if (!confirm(message)) return;
+
+    setMemberError('');
+    try {
+      const res = await api.removeWishListMember(list_id, member.id);
+      if (is_self || res.data?.list_deleted) {
+        navigate('/wish');
+        return;
+      }
+      setList(prev => prev ? { ...prev, members: prev.members.filter(m => m.id !== member.id) } : prev);
+    } catch (err) {
+      setMemberError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleRename = async (e: FormEvent) => {
+    e.preventDefault();
+    const name = renameValue.trim();
+    if (!name) return;
+    try {
+      const res = await api.renameWishList(list_id, name);
+      if (res.data) setList(res.data);
+      setShowRename(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const backLink = (
+    <div style={{ marginBottom: '16px' }}>
+      <Link to="/wish" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+        {t('wish.backToGoWish')}
+      </Link>
+    </div>
+  );
+
+  if (loading) {
+    return <LoadingSpinner message={t('wish.loading')} />;
+  }
+
+  if (!list) {
+    return (
+      <div className="container">
+        {backLink}
+        <div className="alert alert-error">{error || t('wish.groupNotFound')}</div>
+      </div>
+    );
+  }
+
+  const members = list.members || [];
+
+  return (
+    <div className="container">
+      {backLink}
+
+      {/* Group header */}
+      <div className="card" style={{ marginBottom: '16px' }}>
+        <div className="card-header">
+          <h2 className="card-title" style={{ overflowWrap: 'anywhere' }}>👥 {list.name}</h2>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => { setRenameValue(list.name); setShowRename(true); }}
+              title={t('wish.renameGroup')}
+            >
+              ✎
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={openMembers}>
+              {t('wish.members', { count: members.length })}
+            </button>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px 16px' }}>
+          {members.map(m => (
+            <div key={m.id} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px 4px 4px',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              fontSize: '0.85rem',
+            }}>
+              <Avatar name={m.name} avatar={m.avatar} size={22} />
+              {m.name}{m.id === user?.id ? ` (${t('common.you')})` : ''}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
+
+      <WishBoard
+        title={<>⭐ {t('wish.groupWishes')}</>}
+        items={items}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        showAddedBy
+      />
+
+      {/* Members Modal */}
+      {showMembers && (
+        <div className="modal-overlay" onClick={() => setShowMembers(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">👥 {t('wish.members', { count: members.length })}</h3>
+              <button className="modal-close" onClick={() => setShowMembers(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: 0 }}>
+              {memberError && (
+                <div style={{ padding: '10px 16px', background: 'var(--danger)', color: 'white', fontSize: '0.85rem' }}>
+                  {memberError}
+                </div>
+              )}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {members.map(m => (
+                  <li key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                    <Avatar name={m.name} avatar={m.avatar} size={36} />
+                    <div style={{ flex: 1, minWidth: 0, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.name}{m.id === user?.id ? ` (${t('common.you')})` : ''}
+                    </div>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      style={{ color: 'var(--danger)', borderColor: 'var(--danger)', flexShrink: 0 }}
+                      onClick={() => handleRemoveMember(m)}
+                    >
+                      {m.id === user?.id ? t('common.leave') : t('common.remove')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              <form onSubmit={handleAddMember} style={{ padding: '16px' }}>
+                <label className="form-label" style={{ marginBottom: '6px' }}>{t('wish.addMember')}</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select
+                    className="form-select"
+                    style={{ flex: 1 }}
+                    value={selectedUser}
+                    onChange={e => setSelectedUser(e.target.value)}
+                    required
+                  >
+                    <option value="">{t('wish.selectUser')}</option>
+                    {allUsers
+                      .filter(u => !members.some(m => m.id === u.id))
+                      .map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                      ))}
+                  </select>
+                  <button type="submit" className="btn btn-primary" disabled={!selectedUser}>{t('wish.add')}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Modal */}
+      {showRename && (
+        <div className="modal-overlay" onClick={() => setShowRename(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">{t('wish.renameGroup')}</h3>
+              <button className="modal-close" onClick={() => setShowRename(false)}>×</button>
+            </div>
+            <form onSubmit={handleRename}>
+              <div className="modal-body">
+                <label className="form-label">{t('wish.groupName')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  maxLength={WISH_NAME_MAX}
+                  required
+                  autoFocus
+                />
+                <CharCount value={renameValue} max={WISH_NAME_MAX} />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setShowRename(false)}>
+                  {t('common.cancel')}
+                </button>
+                <button type="submit" className="btn btn-primary">{t('wish.save')}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

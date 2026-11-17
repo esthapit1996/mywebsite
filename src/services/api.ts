@@ -25,6 +25,7 @@ import type {
   StashExpense,
   StashSummary,
   WishItem,
+  WishList,
 } from '../types';
 
 // API Configuration
@@ -536,6 +537,48 @@ class ApiService {
 
   async deleteWishItem(id: number): Promise<ApiResponse> {
     return this.request(`/wish/${id}`, { method: 'DELETE' });
+  }
+
+  // GoWish shared groups (every member can manage wishes and members)
+  async getWishLists(): Promise<ApiResponse<WishList[]>> {
+    return this.request<WishList[]>('/wish-lists');
+  }
+
+  async createWishList(name: string): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>('/wish-lists', { method: 'POST', body: JSON.stringify({ name }) });
+  }
+
+  async getWishList(id: number): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>(`/wish-lists/${id}`);
+  }
+
+  async renameWishList(id: number, name: string): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>(`/wish-lists/${id}`, { method: 'PUT', body: JSON.stringify({ name }) });
+  }
+
+  async addWishListMember(id: number, userId: number): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>(`/wish-lists/${id}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+  }
+
+  // Removing yourself = leave. list_deleted is true when the last member left.
+  async removeWishListMember(id: number, userId: number): Promise<ApiResponse<{ list_deleted: boolean }>> {
+    return this.request<{ list_deleted: boolean }>(`/wish-lists/${id}/members/${userId}`, { method: 'DELETE' });
+  }
+
+  async getWishListItems(id: number): Promise<ApiResponse<WishItem[]>> {
+    return this.request<WishItem[]>(`/wish-lists/${id}/items`);
+  }
+
+  async createWishListItem(id: number, name: string, why: string, link: string, cost: number | null): Promise<ApiResponse<WishItem>> {
+    return this.request<WishItem>(`/wish-lists/${id}/items`, { method: 'POST', body: JSON.stringify({ name, why, link, cost }) });
+  }
+
+  async updateWishListItem(id: number, itemId: number, name: string, why: string, link: string, cost: number | null): Promise<ApiResponse<WishItem>> {
+    return this.request<WishItem>(`/wish-lists/${id}/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ name, why, link, cost }) });
+  }
+
+  async deleteWishListItem(id: number, itemId: number): Promise<ApiResponse> {
+    return this.request(`/wish-lists/${id}/items/${itemId}`, { method: 'DELETE' });
   }
 }
 

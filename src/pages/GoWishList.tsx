@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Avatar from '../components/Avatar';
-import WishBoard, { CharCount, WISH_NAME_MAX, WishInput } from '../components/WishBoard';
+import GroupEmojiPicker from '../components/GroupEmojiPicker';
+import WishBoard, { CharCount, WISH_NAME_MAX, WISH_GROUP_DESC_MAX, WishInput } from '../components/WishBoard';
 import type { User, WishItem, WishList, WishMember } from '../types';
 
 // A shared GoWish group: one section of wishes per member. You add to your own section;
@@ -30,9 +31,11 @@ export default function GoWishList() {
   const [selectedUser, setSelectedUser] = useState('');
   const [memberError, setMemberError] = useState('');
 
-  // Rename modal
-  const [showRename, setShowRename] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
+  // Edit group modal: icon, name, description
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editEmoji, setEditEmoji] = useState('👥');
 
   useEffect(() => {
     (async () => {
@@ -114,14 +117,22 @@ export default function GoWishList() {
     }
   };
 
-  const handleRename = async (e: FormEvent) => {
+  const openEdit = () => {
+    if (!list) return;
+    setEditName(list.name);
+    setEditDesc(list.description || '');
+    setEditEmoji(list.emoji || '👥');
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e: FormEvent) => {
     e.preventDefault();
-    const name = renameValue.trim();
+    const name = editName.trim();
     if (!name) return;
     try {
-      const res = await api.renameWishList(list_id, name);
+      const res = await api.updateWishList(list_id, name, editDesc.trim(), editEmoji);
       if (res.data) setList(res.data);
-      setShowRename(false);
+      setShowEdit(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -160,12 +171,15 @@ export default function GoWishList() {
       {/* Group header */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div className="card-header">
-          <h2 className="card-title" style={{ overflowWrap: 'anywhere' }}>👥 {list.name}</h2>
+          <h2 className="card-title" style={{ overflowWrap: 'anywhere', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '2rem' }}>{list.emoji || '👥'}</span>
+            {list.name}
+          </h2>
           <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             <button
               className="btn btn-outline btn-sm"
-              onClick={() => { setRenameValue(list.name); setShowRename(true); }}
-              title={t('wish.renameGroup')}
+              onClick={openEdit}
+              title={t('wish.editGroup')}
             >
               ✎
             </button>
@@ -174,6 +188,11 @@ export default function GoWishList() {
             </button>
           </div>
         </div>
+        {list.description && (
+          <p style={{ margin: 0, padding: '0 16px 12px', color: 'var(--text-muted)', fontSize: '0.9rem', overflowWrap: 'anywhere' }}>
+            {list.description}
+          </p>
+        )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px 16px' }}>
           {members.map(m => (
             <div key={m.id} style={{
@@ -276,30 +295,53 @@ export default function GoWishList() {
         </div>
       )}
 
-      {/* Rename Modal */}
-      {showRename && (
-        <div className="modal-overlay" onClick={() => setShowRename(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+      {/* Edit Group Modal */}
+      {showEdit && (
+        <div className="modal-overlay" onClick={() => setShowEdit(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">{t('wish.renameGroup')}</h3>
-              <button className="modal-close" onClick={() => setShowRename(false)}>×</button>
+              <h3 className="modal-title">{t('wish.editGroup')}</h3>
+              <button className="modal-close" onClick={() => setShowEdit(false)}>×</button>
             </div>
-            <form onSubmit={handleRename}>
+            <form onSubmit={handleEdit}>
               <div className="modal-body">
-                <label className="form-label">{t('wish.groupName')}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={renameValue}
-                  onChange={e => setRenameValue(e.target.value)}
-                  maxLength={WISH_NAME_MAX}
-                  required
-                  autoFocus
-                />
-                <CharCount value={renameValue} max={WISH_NAME_MAX} />
+                <div className="form-group">
+                  <label className="form-label">{t('dashboard.groupIcon')}</label>
+                  <GroupEmojiPicker value={editEmoji} onChange={setEditEmoji} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t('wish.groupName')}</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.5rem' }}>{editEmoji}</span>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      maxLength={WISH_NAME_MAX}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <CharCount value={editName} max={WISH_NAME_MAX} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t('dashboard.description')}</label>
+                  <textarea
+                    className="form-input"
+                    value={editDesc}
+                    onChange={e => setEditDesc(e.target.value)}
+                    placeholder={t('wish.groupDescPlaceholder')}
+                    maxLength={WISH_GROUP_DESC_MAX}
+                    rows={3}
+                    style={{ resize: 'vertical' }}
+                  />
+                  <CharCount value={editDesc} max={WISH_GROUP_DESC_MAX} />
+                </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowRename(false)}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowEdit(false)}>
                   {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">{t('wish.save')}</button>

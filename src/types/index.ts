@@ -361,6 +361,8 @@ export interface WishMember {
 export interface WishList {
   id: number;
   name: string;
+  description: string;
+  emoji: string;
   created_at: string;
   members: WishMember[];
   item_count: number;

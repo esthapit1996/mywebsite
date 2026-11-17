@@ -5,6 +5,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
+import GroupEmojiPicker from '../components/GroupEmojiPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
 import type { Group, User, DebtOverviewItem, DebtDetailItem } from '../types';
 
@@ -33,18 +34,6 @@ export default function Dashboard() {
   // Only 'expense' items are still open; 'settled' and 'settlement' are already paid
   const openDebtDetails = (userId: number): DebtDetailItem[] =>
     (debtDetails[userId] || []).filter(d => d.type === 'expense');
-
-  // Available emojis for groups
-  const availableEmojis = [
-    '💰', '🍕', '🍔', '🍽️', '🍻', '☕',
-    '✈️', '🚗', '🏨', '🏖️',
-    '🏠', '🛒', '💡',
-    '👨‍👩‍👧‍👦', '👥', '🎉', '💑',
-    '🎬', '🎮', '🎵',
-    '🏥', '🏋️',
-    '🐵', '🐶', '🐱', '🐷',
-    '💼', '🎓', '⚽', '🏆'
-  ];
 
   useEffect(() => {
     loadGroups();
@@ -371,35 +360,7 @@ export default function Dashboard() {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">{t('dashboard.groupIcon')}</label>
-                  <div style={{ 
-                    display: 'flex', 
-                    flexWrap: 'wrap', 
-                    gap: '8px', 
-                    padding: '12px', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '8px',
-                    maxHeight: '120px',
-                    overflowY: 'auto'
-                  }}>
-                    {availableEmojis.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setNewGroupEmoji(emoji)}
-                        style={{
-                          fontSize: '1.5rem',
-                          padding: '8px',
-                          border: newGroupEmoji === emoji ? '2px solid var(--primary)' : '2px solid transparent',
-                          borderRadius: '8px',
-                          background: newGroupEmoji === emoji ? '#e8f5e9' : 'transparent',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+                  <GroupEmojiPicker value={newGroupEmoji} onChange={setNewGroupEmoji} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">{t('dashboard.groupName')}</label>

@@ -228,9 +228,9 @@ async request(endpoint, options = {}) {
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
 | `getWishLists` | - | GET | `/wish-lists` | Groups I'm a member of |
-| `createWishList` | `name` | POST | `/wish-lists` | Create a group |
+| `createWishList` | `name, description, emoji, memberIds` | POST | `/wish-lists` | Create a group (same options as a debt group) |
 | `getWishList` | `id` | GET | `/wish-lists/:id` | Group with members |
-| `renameWishList` | `id, name` | PUT | `/wish-lists/:id` | Rename a group |
+| `updateWishList` | `id, name, description, emoji` | PUT | `/wish-lists/:id` | Edit a group |
 | `addWishListMember` | `id, userId` | POST | `/wish-lists/:id/members` | Add a member |
 | `removeWishListMember` | `id, userId` | DELETE | `/wish-lists/:id/members/:userId` | Remove a member or leave; returns `list_deleted` |
 | `getWishListItems` | `id` | GET | `/wish-lists/:id/items` | Wishes in a group |

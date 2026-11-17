@@ -88,7 +88,8 @@ src/
 │   ├── AvatarPicker.tsx  # Avatar selection modal
 │   ├── LoadingSpinner.tsx # Loading indicator
 │   ├── WishBoard.tsx     # GoWish total, list and add/edit modal (personal + shared)
-│   └── ReceiptScanner.tsx # AI receipt scanning component
+│   ├── ReceiptScanner.tsx # AI receipt scanning component
+│   └── GroupEmojiPicker.tsx # Group icon picker (debt groups + GoWish groups)
 ├── context/
 │   ├── AuthContext.tsx   # Authentication state (user, login, logout)
 │   ├── ThemeContext.tsx  # Theme management (14 themes)

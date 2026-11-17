@@ -544,16 +544,20 @@ class ApiService {
     return this.request<WishList[]>('/wish-lists');
   }
 
-  async createWishList(name: string): Promise<ApiResponse<WishList>> {
-    return this.request<WishList>('/wish-lists', { method: 'POST', body: JSON.stringify({ name }) });
+  // Same options as a debt group; memberIds are added alongside the creator
+  async createWishList(name: string, description: string, emoji: string, memberIds: number[]): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>('/wish-lists', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, emoji, member_ids: memberIds }),
+    });
   }
 
   async getWishList(id: number): Promise<ApiResponse<WishList>> {
     return this.request<WishList>(`/wish-lists/${id}`);
   }
 
-  async renameWishList(id: number, name: string): Promise<ApiResponse<WishList>> {
-    return this.request<WishList>(`/wish-lists/${id}`, { method: 'PUT', body: JSON.stringify({ name }) });
+  async updateWishList(id: number, name: string, description: string, emoji: string): Promise<ApiResponse<WishList>> {
+    return this.request<WishList>(`/wish-lists/${id}`, { method: 'PUT', body: JSON.stringify({ name, description, emoji }) });
   }
 
   async addWishListMember(id: number, userId: number): Promise<ApiResponse<WishList>> {

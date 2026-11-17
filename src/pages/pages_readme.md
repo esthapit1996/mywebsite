@@ -393,7 +393,7 @@ Personal expense tracker with category breakdown and chart views.
 
 Opened from the user dropdown menu (⭐ GoWish). Two sections:
 
-1. **👥 Shared Wishes** (top): the shared wish groups you belong to, each with member avatars, wish count and total. Click one to open `GoWishList`. **+ New Group** creates one and opens it. These are separate from debt groups.
+1. **👥 Shared Wishes** (top): the shared wish groups you belong to, each with member avatars, wish count and total. Click one to open `GoWishList`. **+ New Group** has the same options as creating a debt group (icon, name, description, members), then opens the new group. Each group shows its icon and description. These are separate from debt groups.
 2. **⭐ My Wishes**: your personal wishlist, rendered by `WishBoard`.
 
 ## 🔧 GoWishList.tsx
@@ -406,7 +406,7 @@ One shared wish group (`/wish/lists/:id`). Each member has their own section of 
 | **Group total** | Sum of priced wishes across all sections + wish count, under the member chips |
 | **Members** | Chips under the title; the members modal adds users (from `getAllUsers`), removes members, or leaves |
 | **Leave / Remove** | The member's wishes in this group are deleted with them; if the last member leaves, the group is deleted (confirmations warn about this) |
-| **Rename** | ✎ button next to the title (max 64) |
+| **Edit group** | ✎ button next to the title: icon, name (max 64) and description (max 128); the description shows under the title |
 
 ## 🔧 WishBoard.tsx (component)
 

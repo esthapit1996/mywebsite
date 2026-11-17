@@ -106,7 +106,7 @@ Main landing page after login.
 
 | Feature | Description |
 |---------|-------------|
-| **Debt Overview** | Shows total debts across all groups |
+| **Debt Overview** | Per-person net debts across all groups; the title shows your net total: (You owe X in total) in red, (You are owed X in total) in green, or (All debts settled) |
 | **Groups List** | All groups user belongs to with balance indicator |
 | **Create Group** | Modal with name, description, emoji picker, member selection |
 

@@ -77,6 +77,9 @@
   "dashboard": {
     "updateHint": "Tocca il logo <strong>GopherDebt</strong> per aggiornare e ottenere l'ultima versione dell'app.",
     "debtOverview": "Panoramica Debiti",
+    "youOweTotal": "Devi {{amount}} in totale",
+    "youAreOwedTotal": "Ti devono {{amount}} in totale",
+    "allDebtsSettled": "Tutti i debiti saldati",
     "allBalanced": "Tutto in pari!",
     "noDebts": "Non hai debiti in sospeso.",
     "loadingDetails": "Caricamento dettagli...",

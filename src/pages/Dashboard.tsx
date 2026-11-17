@@ -156,7 +156,30 @@ export default function Dashboard() {
       {/* Debt Overview Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
-          <h2 className="card-title">{t('dashboard.debtOverview')}</h2>
+          <h2 className="card-title">
+            {t('dashboard.debtOverview')}
+            {!loadingDebt && !debtError && (() => {
+              // Net across everyone: positive = you are owed, negative = you owe
+              const net_total = debtOverview.reduce((sum, item) => sum + item.amount, 0);
+              const settled = Math.abs(net_total) < 0.005;
+              return (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '0.85em',
+                  fontWeight: 500,
+                  color: settled
+                    ? 'var(--text-muted)'
+                    : net_total > 0 ? 'var(--success-color, #22c55e)' : 'var(--error-color, #ef4444)',
+                }}>
+                  ({settled
+                    ? t('dashboard.allDebtsSettled')
+                    : net_total > 0
+                      ? t('dashboard.youAreOwedTotal', { amount: formatAmount(net_total) })
+                      : t('dashboard.youOweTotal', { amount: formatAmount(Math.abs(net_total)) })})
+                </span>
+              );
+            })()}
+          </h2>
         </div>
         
         {loadingDebt ? (

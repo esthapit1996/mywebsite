@@ -539,6 +539,11 @@
     "emptyDesc": "Add something you'd like to buy!",
     "name": "Name",
     "namePlaceholder": "What do you want?",
+    "why": "Why",
+    "whyPlaceholder": "Why do you want it?",
+    "noPrice": "No price",
+    "unpricedCount_one": "{{count}} without a price",
+    "unpricedCount_other": "{{count}} without a price",
     "link": "Link",
     "linkHint": "Must start with http:// or https://",
     "cost": "Cost"

@@ -343,7 +343,8 @@ export interface WishItem {
   id: number;
   user_id: number;
   name: string;
+  why: string;
   link: string;
-  cost: number;
+  cost: number | null;
   created_at: string;
 }

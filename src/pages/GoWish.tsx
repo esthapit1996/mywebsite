@@ -6,6 +6,18 @@ import { useCurrency } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import type { WishItem } from '../types';
 
+// Matches backend limits (models.WishItemRequest)
+const NAME_MAX = 64;
+const WHY_MAX = 128;
+
+function CharCount({ value, max }: { value: string; max: number }) {
+  return (
+    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '4px' }}>
+      {value.length}/{max}
+    </div>
+  );
+}
+
 // Only render http(s) links as anchors; the backend enforces this too
 function safeLink(link: string): string | null {
   return /^https?:\/\//i.test(link) ? link : null;
@@ -30,6 +42,7 @@ export default function GoWish() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
+  const [why, setWhy] = useState('');
   const [link, setLink] = useState('');
   const [cost, setCost] = useState('');
   const [saving, setSaving] = useState(false);
@@ -52,6 +65,7 @@ export default function GoWish() {
   const openAdd = () => {
     setEditingId(null);
     setName('');
+    setWhy('');
     setLink('');
     setCost('');
     setShowModal(true);
@@ -60,8 +74,9 @@ export default function GoWish() {
   const openEdit = (item: WishItem) => {
     setEditingId(item.id);
     setName(item.name);
+    setWhy(item.why || '');
     setLink(item.link || '');
-    setCost(item.cost.toFixed(2));
+    setCost(item.cost != null ? item.cost.toFixed(2) : '');
     setShowModal(true);
   };
 
@@ -72,21 +87,23 @@ export default function GoWish() {
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    const num_cost = parseFloat(cost);
     const trimmed_name = name.trim();
+    const trimmed_why = why.trim();
     const trimmed_link = link.trim();
-    if (!trimmed_name || !num_cost || num_cost <= 0) return;
+    const num_cost = cost.trim() === '' ? null : parseFloat(cost);
+    if (!trimmed_name) return;
+    if (num_cost !== null && !(num_cost > 0)) return;
 
     setSaving(true);
     setError('');
     try {
       if (editingId) {
-        const res = await api.updateWishItem(editingId, trimmed_name, trimmed_link, num_cost);
+        const res = await api.updateWishItem(editingId, trimmed_name, trimmed_why, trimmed_link, num_cost);
         if (res.data) {
           setItems(prev => prev.map(it => it.id === editingId ? res.data! : it));
         }
       } else {
-        const res = await api.createWishItem(trimmed_name, trimmed_link, num_cost);
+        const res = await api.createWishItem(trimmed_name, trimmed_why, trimmed_link, num_cost);
         if (res.data) {
           setItems(prev => [res.data!, ...prev]);
         }
@@ -113,7 +130,8 @@ export default function GoWish() {
     return <LoadingSpinner message={t('wish.loading')} />;
   }
 
-  const total_cost = items.reduce((sum, it) => sum + it.cost, 0);
+  const total_cost = items.reduce((sum, it) => sum + (it.cost ?? 0), 0);
+  const unpriced_count = items.filter(it => it.cost == null).length;
 
   return (
     <div className="container">
@@ -140,6 +158,7 @@ export default function GoWish() {
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             {t('wish.itemCount', { count: items.length })}
+            {unpriced_count > 0 && <> · {t('wish.unpricedCount', { count: unpriced_count })}</>}
           </div>
         </div>
       </div>
@@ -185,6 +204,17 @@ export default function GoWish() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: '500', overflowWrap: 'anywhere' }}>{item.name}</div>
+                    {item.why && (
+                      <div style={{
+                        fontSize: '0.85rem',
+                        color: 'var(--text-muted)',
+                        fontStyle: 'italic',
+                        marginTop: '2px',
+                        overflowWrap: 'anywhere',
+                      }}>
+                        {item.why}
+                      </div>
+                    )}
                     {href && (
                       <a
                         href={href}
@@ -205,7 +235,11 @@ export default function GoWish() {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <span style={{ fontWeight: '600' }}>{formatAmount(item.cost)}</span>
+                    {item.cost != null ? (
+                      <span style={{ fontWeight: '600' }}>{formatAmount(item.cost)}</span>
+                    ) : (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('wish.noPrice')}</span>
+                    )}
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => openEdit(item)}
@@ -247,10 +281,25 @@ export default function GoWish() {
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder={t('wish.namePlaceholder')}
-                    maxLength={255}
+                    maxLength={NAME_MAX}
                     required
                     autoFocus
                   />
+                  <CharCount value={name} max={NAME_MAX} />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="form-label">
+                    {t('wish.why')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={why}
+                    onChange={e => setWhy(e.target.value)}
+                    placeholder={t('wish.whyPlaceholder')}
+                    maxLength={WHY_MAX}
+                  />
+                  <CharCount value={why} max={WHY_MAX} />
                 </div>
                 <div style={{ marginBottom: '12px' }}>
                   <label className="form-label">
@@ -268,7 +317,9 @@ export default function GoWish() {
                   />
                 </div>
                 <div style={{ marginBottom: '12px' }}>
-                  <label className="form-label">{t('wish.cost')}</label>
+                  <label className="form-label">
+                    {t('wish.cost')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+                  </label>
                   <input
                     type="number"
                     className="form-input"
@@ -277,7 +328,6 @@ export default function GoWish() {
                     placeholder="0.00"
                     step="0.01"
                     min="0.01"
-                    required
                   />
                 </div>
               </div>

@@ -398,16 +398,17 @@ Wishlist of things the user wants to buy in the future. Opened from the user dro
 |-------|------|---------|
 | `items` | `WishItem[]` | All wishlist items (newest first) |
 | `editingId` | `number \| null` | Item being edited, `null` when adding |
-| `name` | `string` | Name input |
+| `name` | `string` | Name input (max 64) |
+| `why` | `string` | Why input, optional (max 128) |
 | `link` | `string` | Link input (optional) |
-| `cost` | `string` | Cost input |
+| `cost` | `string` | Cost input, optional (empty = no price) |
 
 ### Features
 
 | Feature | Description |
 |---------|-------------|
-| **Total Cost** | Sum of all wishlist items + item count |
-| **Add / Edit Wish** | Modal with Name, Link (optional) and Cost |
+| **Total Cost** | Sum of priced items + item count (and how many have no price) |
+| **Add / Edit Wish** | Modal with Name (required), Why, Link and Cost (all optional); character counters for Name and Why |
 | **Links** | Shown as the hostname, open in a new tab; only `http(s)` links are rendered (also enforced by the backend) |
 | **Delete** | Remove an item with confirmation |
 

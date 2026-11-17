@@ -550,7 +550,6 @@
     "sharedTitle": "Shared Wishes",
     "sharedEmpty": "No shared groups yet. Create one to collect wishes with other people.",
     "newGroup": "New Group",
-    "newGroupHint": "You can add members once the group is created.",
     "groupName": "Group name",
     "groupNamePlaceholder": "e.g. Our flat",
     "create": "Create",
@@ -560,7 +559,6 @@
     "backToGoWish": "← Back to GoWish",
     "members_one": "👥 {{count}} member",
     "members_other": "👥 {{count}} members",
-    "renameGroup": "Rename group",
     "save": "Save",
     "addMember": "Add a member",
     "selectUser": "Select a user",
@@ -571,6 +569,8 @@
     "yourWishes": "Your wishes",
     "memberWishes": "{{name}}'s wishes",
     "sectionEmpty": "No wishes yet",
-    "groupTotal": "Group total"
+    "groupTotal": "Group total",
+    "editGroup": "Edit group",
+    "groupDescPlaceholder": "e.g. Things we want for the flat"
   }
 }

@@ -5,6 +5,7 @@ import type { WishItem } from '../types';
 
 // Matches backend limits (models.WishItemRequest)
 export const WISH_NAME_MAX = 64;
+export const WISH_GROUP_DESC_MAX = 128;
 const WHY_MAX = 128;
 
 export interface WishInput {

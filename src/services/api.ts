@@ -520,17 +520,17 @@ class ApiService {
     return this.request<WishItem[]>('/wish');
   }
 
-  async createWishItem(name: string, link: string, cost: number): Promise<ApiResponse<WishItem>> {
+  async createWishItem(name: string, why: string, link: string, cost: number | null): Promise<ApiResponse<WishItem>> {
     return this.request<WishItem>('/wish', {
       method: 'POST',
-      body: JSON.stringify({ name, link, cost }),
+      body: JSON.stringify({ name, why, link, cost }),
     });
   }
 
-  async updateWishItem(id: number, name: string, link: string, cost: number): Promise<ApiResponse<WishItem>> {
+  async updateWishItem(id: number, name: string, why: string, link: string, cost: number | null): Promise<ApiResponse<WishItem>> {
     return this.request<WishItem>(`/wish/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ name, link, cost }),
+      body: JSON.stringify({ name, why, link, cost }),
     });
   }
 

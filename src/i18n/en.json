@@ -450,10 +450,10 @@
   },
   "receipt": {
     "tooLarge": "This photo is too large to scan (max 14 MB). Try a smaller photo.",
-    "notImage": "That file isn't an image. Please choose a photo of the receipt.",
+    "notImage": "This file can't be read. Please use a JPEG or PNG photo of the receipt.",
     "unreachable": "Can't reach the AI scanner, reading the receipt on this device instead.",
     "ocrButton": "🔍 OCR (Tesseract)",
-    "aiButton": "🤖 AI (Gemini)",
+    "aiButton": "🤖 AI",
     "scanOrUpload": "Scan or upload a receipt",
     "takePhoto": "Take a photo or drag & drop an image",
     "scanning": "Scanning receipt ({{method}})... {{progress}}%",

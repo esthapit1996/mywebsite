@@ -50,12 +50,16 @@ class ScanError extends Error {
   }
 }
 
+// Formats the AI (OpenAI) can read. Anything else, e.g. iPhone HEIC, is converted to JPEG first.
+const AI_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 /**
- * Re-encode big photos as a smaller JPEG before upload. Falls back to the original file when the
- * browser can't decode it (e.g. HEIC outside Safari) — the backend accepts those up to 14 MB.
+ * Re-encode big photos, and formats the AI can't read (HEIC), as a JPEG before upload. Falls back
+ * to the original file when the browser can't decode it (e.g. HEIC outside Safari); the backend
+ * then answers 415 with a clear message.
  */
 function shrinkForUpload(file: File): Promise<Blob> {
-  if (file.size <= SHRINK_ABOVE_BYTES) return Promise.resolve(file);
+  if (file.size <= SHRINK_ABOVE_BYTES && AI_IMAGE_TYPES.includes(file.type)) return Promise.resolve(file);
   return new Promise((resolve) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -83,10 +87,9 @@ interface ReceiptScannerProps {
 }
 
 /**
- * Use backend Gemini proxy to extract receipt items from an image.
- * API key stays server-side — no leak risk.
+ * Read the receipt with the backend's AI (OpenAI). The API key stays server-side.
  */
-async function scanWithGemini(file: File, signal: AbortSignal): Promise<ReceiptResult> {
+async function scanWithAI(file: File, signal: AbortSignal): Promise<ReceiptResult> {
   const t = i18n.t.bind(i18n);
   const upload = await shrinkForUpload(file);
   if (upload.size > MAX_UPLOAD_BYTES) {
@@ -497,7 +500,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
         setScanMethod('AI');
         setProgress(30);
         try {
-          result = await scanWithGemini(file, controller.signal);
+          result = await scanWithAI(file, controller.signal);
         } catch (err) {
           if (!(err instanceof ScanError && err.fallbackToOcr) || !aliveRef.current) throw err;
           result = await scanWithOcr();

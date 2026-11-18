@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, JSX } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
+import api from '../services/api';
 
 const API_BASE = import.meta.env.PROD
   ? 'https://gopherdebt-api.fly.dev/api'
@@ -15,6 +17,65 @@ interface ReceiptResult {
   total: number | null;
   rawText: string;
   storeName: string | null;
+  // 'ai' totals are reliable; on-device OCR often picks the wrong "total" line
+  source: 'ai' | 'ocr';
+}
+
+// Backend limit (handlers/receipt.go MaxReceiptBytes)
+const MAX_UPLOAD_BYTES = 14 * 1024 * 1024;
+// Photos above this are shrunk in the browser first (saves mobile data, stays far below the limit)
+const SHRINK_ABOVE_BYTES = 4 * 1024 * 1024;
+const SHRINK_MAX_SIDE = 2400;
+
+/**
+ * Amount to prefill from a scan. The AI is told to leave discounts/coupons out of the items, so a
+ * total *below* the item sum means a discount: use the total and report the difference (negative).
+ * A total above the item sum (e.g. tax added on top) keeps the item sum, as before.
+ */
+export function receiptAmount(result: ReceiptResult): { amount: number | null; discount: number } {
+  const item_sum = Math.round(result.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
+  if (result.items.length === 0) return { amount: result.total, discount: 0 };
+  if (result.source === 'ai' && result.total !== null && result.total > 0 && result.total < item_sum - 0.005) {
+    return { amount: result.total, discount: Math.round((result.total - item_sum) * 100) / 100 };
+  }
+  return { amount: item_sum, discount: 0 };
+}
+
+class ScanError extends Error {
+  // true when on-device OCR should be tried instead (AI busy, down or unreachable)
+  fallbackToOcr: boolean;
+  constructor(message: string, fallbackToOcr: boolean) {
+    super(message);
+    this.fallbackToOcr = fallbackToOcr;
+  }
+}
+
+/**
+ * Re-encode big photos as a smaller JPEG before upload. Falls back to the original file when the
+ * browser can't decode it (e.g. HEIC outside Safari) — the backend accepts those up to 14 MB.
+ */
+function shrinkForUpload(file: File): Promise<Blob> {
+  if (file.size <= SHRINK_ABOVE_BYTES) return Promise.resolve(file);
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, SHRINK_MAX_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(file);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => resolve(blob && blob.size < file.size ? blob : file), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
 }
 
 interface ReceiptScannerProps {
@@ -25,22 +86,51 @@ interface ReceiptScannerProps {
  * Use backend Gemini proxy to extract receipt items from an image.
  * API key stays server-side — no leak risk.
  */
-async function scanWithGemini(file: File): Promise<ReceiptResult> {
+async function scanWithGemini(file: File, signal: AbortSignal): Promise<ReceiptResult> {
+  const t = i18n.t.bind(i18n);
+  const upload = await shrinkForUpload(file);
+  if (upload.size > MAX_UPLOAD_BYTES) {
+    throw new ScanError(t('receipt.tooLarge'), false);
+  }
+
   const token = localStorage.getItem('token');
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', upload, upload === file ? file.name : 'receipt.jpg');
 
-  const response = await fetch(`${API_BASE}/receipt/scan`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/receipt/scan`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+      signal,
+    });
+  } catch (err) {
+    if (signal.aborted) throw err;
+    throw new ScanError(t('receipt.unreachable'), true);
+  }
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Receipt scan error: ${response.status} ${errText}`);
+    if (response.status === 401) {
+      // Same as every other API call: an expired session logs out
+      api.clearToken();
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new ScanError(t('receipt.failedScan'), false);
+    }
+    if (response.status === 413) throw new ScanError(t('receipt.tooLarge'), false);
+    if (response.status === 415) throw new ScanError(t('receipt.notImage'), false);
+    // Busy (429) or AI/server trouble (5xx): the on-device scanner can still read it
+    const fallback = response.status === 429 || response.status >= 500;
+    let message = t('receipt.failedScan');
+    try {
+      const body = await response.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // non-JSON error page
+    }
+    throw new ScanError(message, fallback);
   }
 
   const result = await response.json();
@@ -75,6 +165,7 @@ async function scanWithGemini(file: File): Promise<ReceiptResult> {
     total,
     rawText: text,
     storeName: parsed.store_name || null,
+    source: 'ai',
   };
 }
 
@@ -171,7 +262,7 @@ function parseReceiptText(text: string): ReceiptResult {
     total = Math.round(total * 100) / 100;
   }
 
-  return { items, total, rawText: text, storeName };
+  return { items, total, rawText: text, storeName, source: 'ocr' };
 }
 
 /**
@@ -310,8 +401,19 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // A scan can outlive the form (user presses Cancel mid-scan). Its result must not land in a
+  // later, unrelated form, so it's dropped once this scanner is unmounted, and the upload aborted.
+  const aliveRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Clean up preview data URL on unmount
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
+
   useEffect(() => {
     // Query backend to see whether AI receipt scanning is enabled
     (async () => {
@@ -346,44 +448,63 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
+    const scanWithOcr = async (): Promise<ReceiptResult> => {
+      setScanMethod('OCR');
+      setProgress(0);
+      const processed = await preprocessImage(file);
+      const Tesseract = await import('tesseract.js');
+      const result = await Tesseract.default.recognize(processed, 'eng+nld+deu+fra', {
+        logger: (m) => {
+          if (m.status === 'recognizing text' && aliveRef.current) {
+            setProgress(Math.round(m.progress * 100));
+          }
+        },
+      });
+      return parseReceiptText(result.data.text);
+    };
+
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      // Choose AI when backend reports it's available; otherwise fallback to OCR
+      let result: ReceiptResult;
+      // Use AI when the backend has it; fall back to on-device OCR if it's busy, down or unreachable
       if (backendAiAvailable !== false) {
         setScanMethod('AI');
         setProgress(30);
-        const result = await scanWithGemini(file);
-        setProgress(100);
-        onResult(result);
+        try {
+          result = await scanWithGemini(file, controller.signal);
+        } catch (err) {
+          if (!(err instanceof ScanError && err.fallbackToOcr) || !aliveRef.current) throw err;
+          result = await scanWithOcr();
+        }
       } else {
-        setScanMethod('OCR');
-        const processed = await preprocessImage(file);
-
-        const Tesseract = await import('tesseract.js');
-        const result = await Tesseract.default.recognize(processed, 'eng+nld+deu+fra', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              setProgress(Math.round(m.progress * 100));
-            }
-          },
-        });
-
-        const parsed = parseReceiptText(result.data.text);
-        onResult(parsed);
+        result = await scanWithOcr();
       }
+      if (!aliveRef.current) return;
+      setProgress(100);
+      onResult(result);
     } catch (err: any) {
+      if (!aliveRef.current) return;
       setError(err.message || t('receipt.failedScan'));
     } finally {
-      setScanning(false);
-      setProgress(0);
-      setScanMethod('');
+      if (abortRef.current === controller) abortRef.current = null;
+      if (aliveRef.current) {
+        setScanning(false);
+        setProgress(0);
+        setScanMethod('');
+      }
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      processImage(file);
+    if (!file) return;
+    if (file.type && !file.type.startsWith('image/')) {
+      setPreview(null);
+      setError(t('receipt.notImage'));
+      return;
     }
+    processImage(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -412,7 +533,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
         style={{ display: 'none' }}
       />
 
-      {!preview && !scanning ? (
+      {!preview && !scanning && !error ? (
         <div>
           {/* Single scan area — method chosen automatically (AI if available, otherwise OCR) */}
           <div

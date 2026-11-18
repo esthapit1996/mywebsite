@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import Avatar from '../components/Avatar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ReceiptScanner from '../components/ReceiptScanner';
+import ReceiptScanner, { receiptAmount } from '../components/ReceiptScanner';
 import type { 
   Group, 
   GroupMember, 
@@ -1149,13 +1149,10 @@ export default function GroupDetail(): JSX.Element {
                   } else if (result.items.length > 0) {
                     setExpenseDesc(result.items.map(i => i.name).join(', ').slice(0, 420));
                   }
-                  // Fill total amount from sum of items (not receipt total which may include tax etc.)
-                  if (result.items.length > 0) {
-                    const itemSum = Math.round(result.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
-                    setExpenseAmount(itemSum.toFixed(2));
-                  } else if (result.total) {
-                    setExpenseAmount(result.total.toFixed(2));
-                  }
+                  // Item sum, or the receipt total when it's lower (a discount/coupon the AI left out of the items)
+                  const { amount, discount } = receiptAmount(result);
+                  if (amount) setExpenseAmount(amount.toFixed(2));
+                  setReceiptDiscount(discount !== 0 ? discount.toFixed(2) : '');
                   // Store items and enter interactive mode
                   setReceiptItems(result.items);
                   if (result.items.length > 0) {

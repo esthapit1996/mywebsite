@@ -142,7 +142,8 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
           }
         }
       } else {
-        text += ' ' + t('wish.lookup.noPrice');
+        // No price: either the page has none, or the AI was needed for it and today's allowance is used up
+        text += ' ' + t(r.ai_limit ? 'wish.lookup.limitPrice' : 'wish.lookup.noPrice');
       }
       if (r.source === 'ai') text += ' ' + t('wish.lookup.byAi');
       setLookupMsg({ ok: true, text });

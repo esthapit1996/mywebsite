@@ -357,11 +357,12 @@ export interface WishItem {
 
 // POST /api/wish/lookup: product info read from a pasted link
 export interface WishLookupResult {
-  status: 'ok' | 'blocked' | 'not_found' | 'unreachable';
+  status: 'ok' | 'blocked' | 'not_found' | 'unreachable' | 'limit';
   name?: string;
   price?: number;
   currency?: string; // ISO 4217
   source?: 'page' | 'ai';
+  ai_limit?: boolean; // the AI was needed (e.g. for the price) but today's AI allowance is used up
 }
 
 export interface WishMember {

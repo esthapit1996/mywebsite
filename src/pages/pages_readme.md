@@ -75,13 +75,16 @@ Registration form with name, email, password.
 | `name` | `string` | Name input |
 | `email` | `string` | Email input |
 | `password` | `string` | Password input |
-| `confirmPassword` | `string` | Confirm password input |
 | `error` | `string` | Error message |
-| `success` | `string` | Success message |
+| `loading` | `boolean` | Submitting |
+
+### Flow
+
+1. Register, then log in automatically
+2. The language and theme picked on this page are saved to the new account (it starts with the defaults, which login applies)
 
 ### Validation
 
-- Passwords must match
 - Email must be whitelisted (backend check)
 
 ---

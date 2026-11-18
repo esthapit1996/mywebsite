@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -21,23 +21,34 @@ export default function CurrencyConverter() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPeriod, setHistoryPeriod] = useState(7);
 
+  // Only the latest conversion may update the screen (a slow older one could show the wrong rate)
+  const convertSeq = useRef(0);
+
   const convert = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       setError(t('currencyConverter.enterValid'));
       return;
     }
 
+    const seq = ++convertSeq.current;
     setLoading(true);
     setError(null);
     try {
       const data = await api.convertCurrency(fromCurrency, toCurrency, amount);
+      if (seq !== convertSeq.current) return;
       setResult(data);
     } catch (err) {
+      if (seq !== convertSeq.current) return;
       setError(err instanceof Error ? err.message : t('currencyConverter.failedConvert'));
     } finally {
-      setLoading(false);
+      if (seq === convertSeq.current) setLoading(false);
     }
   };
+
+  // A result for the previous currency pair must not show under the new labels while waiting
+  useEffect(() => {
+    setResult(null);
+  }, [fromCurrency, toCurrency]);
 
   const swapCurrencies = () => {
     setFromCurrency(toCurrency);
@@ -59,6 +70,7 @@ export default function CurrencyConverter() {
 
   // Fetch history when currencies or period change
   useEffect(() => {
+    let cancelled = false; // a newer pair/period was picked: drop this response
     const fetchHistory = async () => {
       if (fromCurrency === toCurrency) {
         setHistoryData([]);
@@ -69,17 +81,20 @@ export default function CurrencyConverter() {
       setHistoryError('');
       try {
         const data = await api.getCurrencyHistory(fromCurrency, toCurrency, historyPeriod);
+        if (cancelled) return;
         setHistoryData(data.history || []);
         setHistoryError((data as any).error || '');
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to fetch history:', err);
         setHistoryData([]);
         setHistoryError('');
       } finally {
-        setHistoryLoading(false);
+        if (!cancelled) setHistoryLoading(false);
       }
     };
     fetchHistory();
+    return () => { cancelled = true; };
   }, [fromCurrency, toCurrency, historyPeriod]);
 
   const getCurrencySymbol = (code: string): string => {

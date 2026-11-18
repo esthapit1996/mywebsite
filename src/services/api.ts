@@ -160,11 +160,16 @@ class ApiService {
     });
   }
 
-  async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<ApiResponse> {
-    return this.request('/profile/password', {
+  // Changing the password logs out every other device; the server returns a new token for this one
+  async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<ApiResponse<{ token?: string }>> {
+    const response = await this.request<{ token?: string }>('/profile/password', {
       method: 'PUT',
       body: JSON.stringify({ old_password: oldPassword, new_password: newPassword, confirm_password: confirmPassword }),
     });
+    if (response.data?.token) {
+      this.setToken(response.data.token);
+    }
+    return response;
   }
 
   async getAllUsers(): Promise<ApiResponse<User[]>> {

@@ -87,7 +87,7 @@ async request(endpoint, options = {}) {
 | `updateTheme` | `theme` | PUT | `/profile/theme` | Update theme preference |
 | `updateAvatar` | `avatar` | PUT | `/profile/avatar` | Update avatar |
 | `updateLanguage` | `language` | PUT | `/profile/language` | Update language preference |
-| `changePassword` | `oldPassword, newPassword, confirmPassword` | PUT | `/profile/password` | Change password |
+| `changePassword` | `oldPassword, newPassword, confirmPassword` | PUT | `/profile/password` | Change password; stores the new token the server returns (other devices are logged out) |
 
 ---
 

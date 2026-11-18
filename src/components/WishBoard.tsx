@@ -363,9 +363,8 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
                 onChange={e => setName(e.target.value)}
                 placeholder={t('wish.namePlaceholder')}
                 maxLength={WISH_NAME_MAX}
-                autoFocus={!WISH_LOOKUP_ENABLED}
                 required
-                autoFocus={!!editingId}
+                autoFocus={!!editingId || !WISH_LOOKUP_ENABLED}
               />
               <CharCount value={name} max={WISH_NAME_MAX} />
             </div>

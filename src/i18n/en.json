@@ -77,6 +77,8 @@
     "registrationFailed": "Registration failed"
   },
   "dashboard": {
+    "someMembersNotAdded_one": "Group created, but {{count}} member couldn't be added. Add them from the group page.",
+    "someMembersNotAdded_other": "Group created, but {{count}} members couldn't be added. Add them from the group page.",
     "updateHint": "Tap the <strong>GopherDebt</strong> logo to hard-refresh and get the latest app version.",
     "debtOverview": "Debt Overview",
     "youOweTotal": "You owe {{amount}} in total",
@@ -107,6 +109,7 @@
     "failedLoadDebt": "Failed to load debt overview"
   },
   "group": {
+    "percentsRange": "Each percentage must be between 0 and 100.",
     "groupNotFound": "Group not found",
     "createdBy": "Created by",
     "on": "on",
@@ -208,6 +211,7 @@
     "waitConversion": "Please wait for currency conversion",
     "percentsMust100": "Percentages must add up to 100%",
     "receipt": {
+      "partialFailure": "Some expenses were added, but then this failed: {{error}}. The added items were unticked, so pressing the button again only adds the rest.",
       "items": "🧾 Receipt Items",
       "selected": "{{count}}/{{total}} selected",
       "skipManual": "Skip — fill form manually",

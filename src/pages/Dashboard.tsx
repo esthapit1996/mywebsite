@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupEmoji, setNewGroupEmoji] = useState('💰');
   const [creating, setCreating] = useState(false);
+  // Shown inside the create-group modal (the page banner is hidden behind it)
+  const [createError, setCreateError] = useState('');
   const [error, setError] = useState('');
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
@@ -94,6 +96,7 @@ export default function Dashboard() {
   };
 
   const openCreateModal = () => {
+    setCreateError('');
     setNewGroupName('');
     setNewGroupDesc('');
     setNewGroupEmoji('💰');
@@ -112,27 +115,35 @@ export default function Dashboard() {
 
   const handleCreateGroup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (creating) return;
     setCreating(true);
+    setCreateError('');
+    let groupId: number | undefined;
     try {
       const response = await api.createGroup(newGroupName, newGroupDesc, newGroupEmoji);
-      const groupId = response.data?.id;
-      
-      if (groupId && selectedMembers.length > 0) {
-        // Add selected members in parallel
-        await Promise.all(selectedMembers.map(userId => api.addMember(groupId, userId)));
-      }
-      
-      setShowModal(false);
-      setNewGroupName('');
-      setNewGroupDesc('');
-      setNewGroupEmoji('💰');
-      setSelectedMembers([]);
-      loadGroups();
+      groupId = response.data?.id;
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('dashboard.failedCreateGroup'));
-    } finally {
+      // Nothing was created: keep the modal open with the error so the user can retry
+      setCreateError(err instanceof Error ? err.message : t('dashboard.failedCreateGroup'));
       setCreating(false);
+      return;
     }
+
+    // The group exists now. Always close and reload, so pressing Create again can't make a second group;
+    // members that couldn't be added are reported and can be added from the group page.
+    let failedMembers = 0;
+    if (groupId && selectedMembers.length > 0) {
+      const results = await Promise.allSettled(selectedMembers.map(userId => api.addMember(groupId!, userId)));
+      failedMembers = results.filter(r => r.status === 'rejected').length;
+    }
+    setError(failedMembers > 0 ? t('dashboard.someMembersNotAdded', { count: failedMembers }) : '');
+    setShowModal(false);
+    setNewGroupName('');
+    setNewGroupDesc('');
+    setNewGroupEmoji('💰');
+    setSelectedMembers([]);
+    setCreating(false);
+    loadGroups();
   };
 
   if (loading) {
@@ -381,6 +392,7 @@ export default function Dashboard() {
             </div>
             <form onSubmit={handleCreateGroup}>
               <div className="modal-body">
+                {createError && <div className="alert alert-error" style={{ marginBottom: '12px' }}>{createError}</div>}
                 <div className="form-group">
                   <label className="form-label">{t('dashboard.groupIcon')}</label>
                   <GroupEmojiPicker value={newGroupEmoji} onChange={setNewGroupEmoji} />

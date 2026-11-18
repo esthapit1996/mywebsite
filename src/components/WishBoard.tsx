@@ -8,6 +8,8 @@ import type { WishItem } from '../types';
 export const WISH_NAME_MAX = 64;
 export const WISH_GROUP_DESC_MAX = 128;
 const WHY_MAX = 128;
+// Paste-a-link lookup box in the add form; off while the backend wish AI is off (AI_DAILY_WISH_LOOKUPS=0)
+const WISH_LOOKUP_ENABLED = false;
 
 export interface WishInput {
   name: string;
@@ -309,7 +311,7 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
           <div className="modal-body">
             {formError && <div className="alert alert-error" style={{ marginBottom: '12px' }}>{formError}</div>}
 
-            {!editingId && (
+            {!editingId && WISH_LOOKUP_ENABLED && (
               <>
                 {/* First option: let AI read the product page */}
                 <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '12px', background: 'var(--bg)' }}>
@@ -361,6 +363,7 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
                 onChange={e => setName(e.target.value)}
                 placeholder={t('wish.namePlaceholder')}
                 maxLength={WISH_NAME_MAX}
+                autoFocus={!WISH_LOOKUP_ENABLED}
                 required
                 autoFocus={!!editingId}
               />

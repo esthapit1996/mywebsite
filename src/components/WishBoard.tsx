@@ -1,6 +1,7 @@
-import { useState, FormEvent, ReactNode } from 'react';
+import { useState, useRef, FormEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '../context/CurrencyContext';
+import api from '../services/api';
 import type { WishItem } from '../types';
 
 // Matches backend limits (models.WishItemRequest)
@@ -50,8 +51,21 @@ function linkHost(link: string): string {
 // Total + item list + add/edit modal, shared by personal GoWish and shared wish group sections
 export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, compact }: WishBoardProps) {
   const { t } = useTranslation();
-  const { formatAmount, displayCurrency } = useCurrency();
+  const { formatAmount, displayCurrency, currentCurrency, convertAmount, hasRate } = useCurrency();
   const [error, setError] = useState('');
+  // Shown inside the modal (the board's error banner sits behind it)
+  const [formError, setFormError] = useState('');
+
+  // Costs are stored in EUR but entered in the user's display currency (EUR if its rate isn't loaded)
+  const cost_currency = displayCurrency === 'EUR' || hasRate ? displayCurrency : 'EUR';
+  const cost_symbol = cost_currency === displayCurrency ? currentCurrency.symbol : '€';
+  // When editing, an untouched cost is saved as the original EUR value (no conversion drift)
+  const originalCost = useRef<{ shown: string; eur: number | null } | null>(null);
+
+  // "Use AI to get info on your wish"
+  const [lookupUrl, setLookupUrl] = useState('');
+  const [looking, setLooking] = useState(false);
+  const [lookupMsg, setLookupMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -61,12 +75,21 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
   const [cost, setCost] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const resetLookup = () => {
+    setLookupUrl('');
+    setLookupMsg(null);
+    setLooking(false);
+  };
+
   const openAdd = () => {
     setEditingId(null);
     setName('');
     setWhy('');
     setLink('');
     setCost('');
+    originalCost.current = null;
+    setFormError('');
+    resetLookup();
     setShowModal(true);
   };
 
@@ -75,29 +98,92 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
     setName(item.name);
     setWhy(item.why || '');
     setLink(item.link || '');
-    setCost(item.cost != null ? item.cost.toFixed(2) : '');
+    const shown = item.cost != null ? (cost_currency === 'EUR' ? item.cost : convertAmount(item.cost)).toFixed(2) : '';
+    setCost(shown);
+    originalCost.current = { shown, eur: item.cost };
+    setFormError('');
+    resetLookup();
     setShowModal(true);
+  };
+
+  // Reads the pasted product link and fills in name, link and cost (converted to the user's currency)
+  const handleLookup = async () => {
+    const url = lookupUrl.trim();
+    if (!url || looking) return;
+    if (!/^https?:\/\/\S+$/i.test(url)) {
+      setLookupMsg({ ok: false, text: t('wish.lookup.invalidUrl') });
+      return;
+    }
+    setLooking(true);
+    setLookupMsg(null);
+    try {
+      const res = await api.lookupWish(url);
+      const r = res.data;
+      if (!r || r.status !== 'ok') {
+        setLookupMsg({ ok: false, text: t(`wish.lookup.${r?.status || 'not_found'}`) });
+        return;
+      }
+      if (r.name) setName(r.name.slice(0, WISH_NAME_MAX));
+      setLink(url);
+      let text = t('wish.lookup.filled');
+      if (r.price != null) {
+        // A page without a currency is taken to be in the user's own currency
+        const from = r.currency || cost_currency;
+        if (from === cost_currency) {
+          setCost(r.price.toFixed(2));
+        } else {
+          try {
+            const conv = await api.convertCurrency(from, cost_currency, r.price);
+            setCost(conv.converted.toFixed(2));
+            text += ' ' + t('wish.lookup.converted', { price: `${r.price.toFixed(2)} ${from}` });
+          } catch {
+            setCost('');
+            text += ' ' + t('wish.lookup.convertFailed', { price: `${r.price.toFixed(2)} ${from}` });
+          }
+        }
+      } else {
+        text += ' ' + t('wish.lookup.noPrice');
+      }
+      if (r.source === 'ai') text += ' ' + t('wish.lookup.byAi');
+      setLookupMsg({ ok: true, text });
+    } catch (err) {
+      setLookupMsg({ ok: false, text: err instanceof Error ? err.message : t('wish.lookup.unreachable') });
+    } finally {
+      setLooking(false);
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setFormError('');
   };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    const input: WishInput = {
-      name: name.trim(),
-      why: why.trim(),
-      link: link.trim(),
-      cost: cost.trim() === '' ? null : parseFloat(cost),
-    };
-    if (!input.name) return;
-    if (input.cost !== null && !(input.cost > 0)) return;
+    if (saving) return;
+    const entered = cost.trim();
+    const amount = entered === '' ? null : parseFloat(entered);
+    if (!name.trim()) return;
+    if (amount !== null && !(amount > 0)) return;
 
     setSaving(true);
     setError('');
+    setFormError('');
     try {
+      // Stored in EUR: convert what the user typed in their currency
+      let eur_cost: number | null = null;
+      if (amount !== null) {
+        if (originalCost.current && entered === originalCost.current.shown) {
+          eur_cost = originalCost.current.eur;
+        } else if (cost_currency === 'EUR') {
+          eur_cost = amount;
+        } else {
+          const conv = await api.convertCurrency(cost_currency, 'EUR', amount);
+          eur_cost = Math.round(conv.converted * 100) / 100;
+        }
+      }
+      const input: WishInput = { name: name.trim(), why: why.trim(), link: link.trim(), cost: eur_cost };
       if (editingId) {
         await onUpdate(editingId, input);
       } else if (onCreate) {
@@ -105,7 +191,7 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
       }
       closeModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('wish.saveFailed'));
+      setFormError(err instanceof Error ? err.message : t('wish.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -220,6 +306,51 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
         </div>
         <form onSubmit={handleSave}>
           <div className="modal-body">
+            {formError && <div className="alert alert-error" style={{ marginBottom: '12px' }}>{formError}</div>}
+
+            {!editingId && (
+              <>
+                {/* First option: let AI read the product page */}
+                <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '12px', background: 'var(--bg)' }}>
+                  <div style={{ fontWeight: 600, marginBottom: '4px' }}>✨ {t('wish.lookup.title')}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>{t('wish.lookup.hint')}</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="url"
+                      className="form-input"
+                      style={{ flex: 1, minWidth: 0 }}
+                      value={lookupUrl}
+                      onChange={e => setLookupUrl(e.target.value)}
+                      onKeyDown={e => {
+                        // Enter here means "Get info", not "Add wish"
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleLookup();
+                        }
+                      }}
+                      placeholder="https://..."
+                      maxLength={2048}
+                      autoFocus
+                    />
+                    <button type="button" className="btn btn-primary" onClick={handleLookup} disabled={looking || !lookupUrl.trim()}>
+                      {looking ? t('wish.lookup.loading') : t('wish.lookup.button')}
+                    </button>
+                  </div>
+                  {lookupMsg && (
+                    <div style={{ marginTop: '8px', fontSize: '0.85rem', color: lookupMsg.ok ? 'var(--primary)' : 'var(--danger)' }}>
+                      {lookupMsg.text}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 12px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                  {t('wish.lookup.or')}
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                </div>
+              </>
+            )}
+
             <div style={{ marginBottom: '12px' }}>
               <label className="form-label">{t('wish.name')}</label>
               <input
@@ -230,7 +361,7 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
                 placeholder={t('wish.namePlaceholder')}
                 maxLength={WISH_NAME_MAX}
                 required
-                autoFocus
+                autoFocus={!!editingId}
               />
               <CharCount value={name} max={WISH_NAME_MAX} />
             </div>
@@ -265,11 +396,11 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label className="form-label">
-                {t('wish.cost')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
+                {t('wish.cost')} ({cost_currency}) <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
               </label>
-              {/* Costs are stored in EUR (like GopherStash) and shown in the display currency */}
+              {/* Entered in the user's currency, stored in EUR (converted on save) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontWeight: 600 }}>€</span>
+                <span style={{ fontWeight: 600 }}>{cost_symbol}</span>
                 <input
                   type="number"
                   className="form-input"
@@ -281,11 +412,6 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
                   min="0.01"
                 />
               </div>
-              {displayCurrency !== 'EUR' && parseFloat(cost) > 0 && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  ≈ {formatAmount(parseFloat(cost))}
-                </div>
-              )}
             </div>
           </div>
           <div className="modal-footer">

@@ -535,6 +535,22 @@
     "suggestionBox": "Suggestion Box"
   },
   "wish": {
+    "lookup": {
+      "title": "Use AI to get info on your wish",
+      "hint": "Paste the link to the product and we'll fill in the name and price.",
+      "button": "Get info",
+      "loading": "Reading…",
+      "filled": "Filled in from the page. Check the details below, then press Add Wish.",
+      "byAi": "(read by AI)",
+      "converted": "Converted from {{price}}.",
+      "convertFailed": "The price ({{price}}) couldn't be converted, please add the cost yourself.",
+      "noPrice": "No price found on the page, please add it yourself.",
+      "blocked": "This page doesn't allow AI to read it. Please fill in the details yourself.",
+      "not_found": "Couldn't find product details on this page. Please fill in the details yourself.",
+      "unreachable": "Couldn't open this page. Check the link, or fill in the details yourself.",
+      "invalidUrl": "Please paste a full web address (starting with https://).",
+      "or": "OR write the information yourself"
+    },
     "loading": "Loading your wishlist...",
     "loadFailed": "Failed to load wishlist",
     "addWish": "Add Wish",

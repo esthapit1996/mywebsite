@@ -535,6 +535,22 @@
     "suggestionBox": "Cassetta dei Suggerimenti"
   },
   "wish": {
+    "lookup": {
+      "title": "Usa l'IA per ottenere le info del tuo desiderio",
+      "hint": "Incolla il link del prodotto e compileremo nome e prezzo.",
+      "button": "Ottieni info",
+      "loading": "Lettura…",
+      "filled": "Compilato dalla pagina. Controlla i dettagli qui sotto, poi premi Aggiungi Desiderio.",
+      "byAi": "(letto dall'IA)",
+      "converted": "Convertito da {{price}}.",
+      "convertFailed": "Non è stato possibile convertire il prezzo ({{price}}), inserisci il costo tu.",
+      "noPrice": "Nessun prezzo trovato nella pagina, inseriscilo tu.",
+      "blocked": "Questa pagina non permette all'IA di leggerla. Inserisci i dettagli tu.",
+      "not_found": "Nessun dettaglio del prodotto trovato in questa pagina. Inserisci i dettagli tu.",
+      "unreachable": "Impossibile aprire questa pagina. Controlla il link o inserisci i dettagli tu.",
+      "invalidUrl": "Incolla un indirizzo web completo (che inizia con https://).",
+      "or": "OPPURE scrivi le informazioni tu"
+    },
     "loading": "Caricamento della tua lista dei desideri...",
     "loadFailed": "Caricamento lista dei desideri fallito",
     "addWish": "Aggiungi Desiderio",

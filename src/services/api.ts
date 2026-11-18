@@ -25,6 +25,7 @@ import type {
   StashExpense,
   StashSummary,
   WishItem,
+  WishLookupResult,
   WishList,
 } from '../types';
 
@@ -526,6 +527,11 @@ class ApiService {
   }
 
   // GoWish (personal wishlist)
+  // Read a product page (shop data first, AI fallback) to fill in the Add wish form
+  async lookupWish(url: string): Promise<ApiResponse<WishLookupResult>> {
+    return this.request<WishLookupResult>('/wish/lookup', { method: 'POST', body: JSON.stringify({ url }) });
+  }
+
   async getWishItems(): Promise<ApiResponse<WishItem[]>> {
     return this.request<WishItem[]>('/wish');
   }

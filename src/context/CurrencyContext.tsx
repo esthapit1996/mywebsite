@@ -60,39 +60,47 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
   // Fetch rates when display currency changes (if not EUR)
   useEffect(() => {
+    // If the user switches currency again before this answer arrives, it must not overwrite the new one
+    let cancelled = false;
     const fetchRates = async () => {
       if (displayCurrency === 'EUR') {
-        setRates({});
+        setRatesLoading(false);
         return;
       }
 
       // Cache rates for 1 hour
       const cacheKey = `gopherdebt-rates-EUR-${displayCurrency}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const { rate, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < 3600000) { // 1 hour
-          setRates({ [displayCurrency]: rate });
-          return;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { rate, timestamp } = JSON.parse(cached);
+          if (typeof rate === 'number' && Date.now() - timestamp < 3600000) { // 1 hour
+            setRates(prev => ({ ...prev, [displayCurrency]: rate }));
+            return;
+          }
         }
+      } catch {
+        localStorage.removeItem(cacheKey); // corrupted entry: refetch below
       }
 
       setRatesLoading(true);
       try {
         const result = await api.convertCurrency('EUR', displayCurrency, 1);
-        setRates({ [displayCurrency]: result.rate });
+        if (cancelled) return;
+        setRates(prev => ({ ...prev, [displayCurrency]: result.rate }));
         localStorage.setItem(cacheKey, JSON.stringify({
           rate: result.rate,
           timestamp: Date.now()
         }));
       } catch (err) {
-        console.error('Failed to fetch rates:', err);
+        if (!cancelled) console.error('Failed to fetch rates:', err);
       } finally {
-        setRatesLoading(false);
+        if (!cancelled) setRatesLoading(false);
       }
     };
 
     fetchRates();
+    return () => { cancelled = true; };
   }, [displayCurrency]);
 
   const setDisplayCurrency = useCallback((currency: string): void => {

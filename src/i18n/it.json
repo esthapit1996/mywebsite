@@ -109,6 +109,7 @@
     "failedLoadDebt": "Caricamento panoramica debiti fallito"
   },
   "group": {
+    "editExpense": "Modifica spesa",
     "percentsRange": "Ogni percentuale deve essere tra 0 e 100.",
     "groupNotFound": "Gruppo non trovato",
     "createdBy": "Creato da",
@@ -203,7 +204,7 @@
     "deleteExpense": "Eliminare questa spesa?",
     "deleteSettlement": "Eliminare questo pagamento libero?",
     "deletePayment": "Eliminare questo pagamento?",
-    "clearExpensesConfirm": "Cancellare TUTTE le spese del gruppo? Non è possibile annullare.",
+    "clearExpensesConfirm": "Cancellare TUTTE le spese e i saldi registrati del gruppo? Tutti i bilanci tornano a 0. Non è possibile annullare.",
     "deleteGroupConfirm": "Eliminare questo gruppo? Non è possibile annullare.",
     "balanceNotSettled": "Birichino birichino, mi stai prendendo in giro. Il saldo non è ancora stato pareggiato!",
     "removeMemberConfirm": "Rimuovere {{name}} dal gruppo?",

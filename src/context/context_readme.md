@@ -230,8 +230,8 @@ Manages currency display - view amounts in any of 25 currencies.
 
 ```
 1. On load: reads currency from localStorage (default: 'EUR')
-2. If not EUR, fetches exchange rate from API
-3. Rates cached in localStorage for 1 hour
+2. If not EUR, fetches exchange rate from API (a reply for a currency that's no longer selected is ignored)
+3. Rates cached in localStorage for 1 hour (a corrupted cache entry is dropped and refetched)
 4. formatAmount() converts EUR amounts to display currency
 5. All amounts in DB are EUR - conversion is display-only
 ```

@@ -109,6 +109,7 @@
     "failedLoadDebt": "Failed to load debt overview"
   },
   "group": {
+    "editExpense": "Edit expense",
     "percentsRange": "Each percentage must be between 0 and 100.",
     "groupNotFound": "Group not found",
     "createdBy": "Created by",
@@ -203,7 +204,7 @@
     "deleteExpense": "Delete this expense?",
     "deleteSettlement": "Delete this free-form payment?",
     "deletePayment": "Delete this payment?",
-    "clearExpensesConfirm": "Clear ALL expenses in this group? This cannot be undone.",
+    "clearExpensesConfirm": "Clear ALL expenses and settlements in this group? Every balance goes back to 0. This cannot be undone.",
     "deleteGroupConfirm": "Delete this group? This cannot be undone.",
     "balanceNotSettled": "You naughty naughty, you teasing me. Balance has not been settled yet!",
     "removeMemberConfirm": "Remove {{name}} from the group?",

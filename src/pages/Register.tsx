@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from '../i18n/i18n';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import api from '../services/api';
 import logo from '../images/GopherDebt_Mascot.png';
 
 export default function Register() {
@@ -22,9 +23,19 @@ export default function Register() {
     setError('');
     setLoading(true);
 
+    // The new account starts with default preferences, which login() applies. Remember what was
+    // picked on this page and save it to the account right after logging in.
+    const chosen_language = LANGUAGES.some(l => l.code === i18n.resolvedLanguage) ? i18n.resolvedLanguage! : 'en';
+    const chosen_theme = theme;
+
     try {
       await register(email, password, name);
       await login(email, password);
+      await i18n.changeLanguage(chosen_language);
+      await Promise.allSettled([
+        api.updateLanguage(chosen_language),
+        setTheme(chosen_theme), // applies it and saves it to the account (logged in now)
+      ]);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('register.registrationFailed'));

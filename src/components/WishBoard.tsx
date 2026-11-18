@@ -50,7 +50,7 @@ function linkHost(link: string): string {
 // Total + item list + add/edit modal, shared by personal GoWish and shared wish group sections
 export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, compact }: WishBoardProps) {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, displayCurrency } = useCurrency();
   const [error, setError] = useState('');
 
   const [showModal, setShowModal] = useState(false);
@@ -267,15 +267,25 @@ export default function WishBoard({ title, items, onCreate, onUpdate, onDelete, 
               <label className="form-label">
                 {t('wish.cost')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({t('common.optional')})</span>
               </label>
-              <input
-                type="number"
-                className="form-input"
-                value={cost}
-                onChange={e => setCost(e.target.value)}
-                placeholder="0.00"
-                step="0.01"
-                min="0.01"
-              />
+              {/* Costs are stored in EUR (like GopherStash) and shown in the display currency */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: 600 }}>€</span>
+                <input
+                  type="number"
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  value={cost}
+                  onChange={e => setCost(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                />
+              </div>
+              {displayCurrency !== 'EUR' && parseFloat(cost) > 0 && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  ≈ {formatAmount(parseFloat(cost))}
+                </div>
+              )}
             </div>
           </div>
           <div className="modal-footer">

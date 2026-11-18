@@ -30,8 +30,24 @@ interface RouteProps {
   children: ReactNode;
 }
 
+// Shown instead of logging out when the saved login couldn't be checked (offline, deploy, server error)
+function ConnectionErrorCard(): JSX.Element {
+  const { t } = useTranslation();
+  const { retryAuth } = useAuth();
+  return (
+    <div className="auth-container">
+      <div className="card text-center">
+        <p style={{ marginBottom: '16px' }}>{t('common.serverUnreachable')}</p>
+        <button className="btn btn-primary" onClick={() => retryAuth()}>
+          {t('common.retry')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: RouteProps): JSX.Element {
-  const { user, loading } = useAuth();
+  const { user, loading, connectionError } = useAuth();
 
   if (loading) {
     return (
@@ -39,6 +55,10 @@ function ProtectedRoute({ children }: RouteProps): JSX.Element {
         <div className="card text-center">Loading...</div>
       </div>
     );
+  }
+
+  if (!user && connectionError) {
+    return <ConnectionErrorCard />;
   }
 
   if (!user) {
@@ -49,7 +69,7 @@ function ProtectedRoute({ children }: RouteProps): JSX.Element {
 }
 
 function PublicRoute({ children }: RouteProps): JSX.Element {
-  const { user, loading } = useAuth();
+  const { user, loading, connectionError } = useAuth();
 
   if (loading) {
     return (
@@ -61,6 +81,10 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
 
   if (user) {
     return <Navigate to="/" />;
+  }
+
+  if (connectionError) {
+    return <ConnectionErrorCard />;
   }
 
   return <>{children}</>;

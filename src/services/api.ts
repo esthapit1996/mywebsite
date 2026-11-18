@@ -38,6 +38,9 @@ interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
 }
 
+// Endpoints that answer 401 for wrong credentials rather than an expired session
+const CREDENTIAL_ENDPOINTS = new Set(['/login', '/register', '/profile/password']);
+
 class ApiService {
   private baseUrl: string;
 
@@ -82,8 +85,9 @@ class ApiService {
       throw new Error('Unable to reach the server. Please check your connection and try again.');
     }
 
-    // Handle 401 — token expired or invalid
-    if (response.status === 401) {
+    // 401 means the session is gone, except on endpoints where it means "wrong email/password":
+    // those fall through so the server's message ("Current password is incorrect") is shown
+    if (response.status === 401 && token && !CREDENTIAL_ENDPOINTS.has(endpoint)) {
       this.clearToken();
       window.dispatchEvent(new CustomEvent('auth:expired'));
       throw new Error('Session expired. Please log in again.');

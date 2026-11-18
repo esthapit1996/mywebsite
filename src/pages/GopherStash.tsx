@@ -97,28 +97,39 @@ export default function GopherStash() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Convert currency when amount or currency changes
+  // Convert currency when amount or currency changes. The old result is dropped immediately (so it can
+  // never be saved for the new input) and responses for superseded inputs are ignored.
   useEffect(() => {
-    const doConvert = async () => {
-      if (!amount || expenseCurrency === 'EUR') {
-        setConvertedAmount(null);
-        setConversionRate(null);
-        return;
-      }
-      setConverting(true);
+    if (!amount || expenseCurrency === 'EUR') {
+      setConvertedAmount(null);
+      setConversionRate(null);
+      setConverting(false);
+      return;
+    }
+
+    let cancelled = false;
+    setConvertedAmount(null);
+    setConversionRate(null);
+    setConverting(true);
+
+    const timeoutId = setTimeout(async () => {
       try {
         const result = await api.convertCurrency(expenseCurrency, 'EUR', amount);
+        if (cancelled) return;
         setConvertedAmount(result.converted);
         setConversionRate(result.rate);
       } catch {
+        if (cancelled) return;
         setConvertedAmount(null);
         setConversionRate(null);
       } finally {
-        setConverting(false);
+        if (!cancelled) setConverting(false);
       }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
     };
-    const timeoutId = setTimeout(doConvert, 300);
-    return () => clearTimeout(timeoutId);
   }, [amount, expenseCurrency]);
 
   const loadSummary = async () => {
@@ -762,7 +773,7 @@ export default function GopherStash() {
                 <button type="button" className="btn btn-outline" onClick={closeExpenseModal}>
                   {t('common.cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={adding || (expenseCurrency !== 'EUR' && !convertedAmount)}>
+                <button type="submit" className="btn btn-primary" disabled={adding || (expenseCurrency !== 'EUR' && (converting || !convertedAmount))}>
                   {adding ? t('stash.adding') : isEditing ? t('stash.editExpense') : t('stash.addExpense')}
                 </button>
               </div>

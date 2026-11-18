@@ -424,6 +424,8 @@ Shared by both pages: total, wish list and add/edit modal. The parent owns the i
 |---------|-------------|
 | **Total Cost** | Sum of priced items + item count (and how many have no price) |
 | **Add / Edit Wish** | Modal with Name (required, max 64), Why (max 128), Link and Cost (all optional); character counters for Name and Why |
+| **AI autofill (add only)** | Top of the Add modal: paste a product link → **Get info** fills name, link and cost (shop data first, AI fallback). Clear messages when a shop blocks reading, has no product data, or can't be opened. Below it: "OR write the information yourself" |
+| **Cost currency** | Entered in the user's display currency (EUR if its rate isn't loaded), converted to EUR on save. When editing, an untouched cost keeps its exact EUR value |
 | **Links** | Shown as the hostname, open in a new tab; only `http(s)` links are rendered (also enforced by the backend) |
 | **Delete** | Remove an item with confirmation |
 

@@ -355,6 +355,15 @@ export interface WishItem {
   added_by?: WishMember;
 }
 
+// POST /api/wish/lookup: product info read from a pasted link
+export interface WishLookupResult {
+  status: 'ok' | 'blocked' | 'not_found' | 'unreachable';
+  name?: string;
+  price?: number;
+  currency?: string; // ISO 4217
+  source?: 'page' | 'ai';
+}
+
 export interface WishMember {
   id: number;
   name: string;

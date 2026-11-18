@@ -224,6 +224,7 @@ async request(endpoint, options = {}) {
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
 | `getWishItems` | - | GET | `/wish` | Get all wishlist items |
+| `lookupWish` | `url` | POST | `/wish/lookup` | Read a product link → `{status, name, price, currency, source}` |
 | `createWishItem` | `name, why, link, cost` | POST | `/wish` | Add wishlist item |
 | `updateWishItem` | `id, name, why, link, cost` | PUT | `/wish/:id` | Edit wishlist item |
 | `deleteWishItem` | `id` | DELETE | `/wish/:id` | Delete wishlist item |

@@ -40,6 +40,7 @@ Manages user authentication state across the app.
 |-------|------|---------|-------------|
 | `user` | `object \| null` | `null` | Current logged-in user |
 | `loading` | `boolean` | `true` | Whether checking auth on startup |
+| `connectionError` | `boolean` | `false` | The saved login couldn't be checked (offline, deploy, server error). The token is kept and the routes show a Retry screen instead of logging out |
 
 ### Functions (from useAuth)
 
@@ -48,6 +49,7 @@ Manages user authentication state across the app.
 | `login` | `email, password` | `Promise<response>` | Logs in user, stores token, sets user state |
 | `register` | `email, password, name` | `Promise<response>` | Creates new account |
 | `logout` | - | `void` | Clears token and user state |
+| `retryAuth` | - | `Promise<void>` | Re-runs the startup login check (used by the Retry screen) |
 
 ### How It Works
 
@@ -55,8 +57,10 @@ Manages user authentication state across the app.
 1. On app load: checkAuth() runs
 2. Checks if token exists in localStorage
 3. If yes, calls /api/profile to validate token
-4. If valid, sets user state + loads saved theme
-5. Components can use: const { user, login, logout } = useAuth()
+4. If valid, sets user state + loads saved theme and language
+5. If the token is rejected (401), api.request() clears it → login page
+6. Any other failure (offline, deploy, 5xx) keeps the token and sets connectionError → Retry screen
+7. Components can use: const { user, login, logout } = useAuth()
 ```
 
 ### Usage Example

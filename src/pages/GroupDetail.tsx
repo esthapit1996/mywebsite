@@ -169,31 +169,40 @@ export default function GroupDetail(): JSX.Element {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Convert currency when amount or currency changes
+  // Convert currency when amount or currency changes. The old result is dropped immediately (so it can
+  // never be saved for the new input) and responses for superseded inputs are ignored.
   useEffect(() => {
-    const convertCurrency = async () => {
-      if (!expenseAmount || expenseCurrency === 'EUR') {
-        setConvertedAmount(null);
-        setConversionRate(null);
-        return;
-      }
-      
-      setConverting(true);
+    if (!expenseAmount || expenseCurrency === 'EUR') {
+      setConvertedAmount(null);
+      setConversionRate(null);
+      setConverting(false);
+      return;
+    }
+
+    let cancelled = false;
+    setConvertedAmount(null);
+    setConversionRate(null);
+    setConverting(true);
+
+    const timeoutId = setTimeout(async () => {
       try {
         const result = await api.convertCurrency(expenseCurrency, 'EUR', expenseAmount);
+        if (cancelled) return;
         setConvertedAmount(result.converted);
         setConversionRate(result.rate);
       } catch (err) {
+        if (cancelled) return;
         console.error('Conversion error:', err);
         setConvertedAmount(null);
         setConversionRate(null);
       } finally {
-        setConverting(false);
+        if (!cancelled) setConverting(false);
       }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
     };
-
-    const timeoutId = setTimeout(convertCurrency, 300);
-    return () => clearTimeout(timeoutId);
   }, [expenseAmount, expenseCurrency]);
 
   const loadData = async () => {
@@ -242,6 +251,9 @@ export default function GroupDetail(): JSX.Element {
 
   const closeExpenseModal = () => {
     setShowExpenseModal(false);
+    // Leave edit mode too, or the next "Add expense" would overwrite the expense that was being edited
+    setIsEditingExpense(false);
+    setEditingExpenseId(null);
     setExpenseAmount('');
     setExpenseDesc('');
     setSplitType('equal');
@@ -783,7 +795,11 @@ export default function GroupDetail(): JSX.Element {
 
       {/* Action Buttons */}
       <div className="flex gap-2 mb-4">
-        <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setShowExpenseModal(true)}>
+        <button
+          className="btn btn-primary"
+          style={{ flex: 1 }}
+          onClick={() => { setIsEditingExpense(false); setEditingExpenseId(null); setShowExpenseModal(true); }}
+        >
           {t('group.addExpense')}
         </button>
         <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setGoPayMode('select'); setShowSettleModal(true); }}>
@@ -1898,7 +1914,13 @@ export default function GroupDetail(): JSX.Element {
                 <button type="button" className="btn btn-outline" onClick={closeExpenseModal}>
                   {t('common.cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary">{t('group.addExpenseBtn')}</button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={expenseCurrency !== 'EUR' && (converting || !convertedAmount)}
+                >
+                  {t('group.addExpenseBtn')}
+                </button>
               </div>
               )}
             </form>

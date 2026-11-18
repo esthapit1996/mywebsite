@@ -9,6 +9,8 @@
     "save": "Salva",
     "delete": "Elimina",
     "loading": "Caricamento...",
+    "serverUnreachable": "Impossibile raggiungere il server al momento. Sei ancora connesso.",
+    "retry": "Riprova",
     "add": "Aggiungi",
     "remove": "Rimuovi",
     "leave": "Esci",

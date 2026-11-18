@@ -9,6 +9,8 @@
     "save": "Save",
     "delete": "Delete",
     "loading": "Loading...",
+    "serverUnreachable": "Can't reach the server right now. You're still logged in.",
+    "retry": "Retry",
     "add": "Add",
     "remove": "Remove",
     "leave": "Leave",

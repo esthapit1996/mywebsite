@@ -267,6 +267,9 @@ export interface Theme {
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
+  // Couldn't reach the server to check the saved login (still logged in, can retry)
+  connectionError: boolean;
+  retryAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<ApiResponse<LoginResponse>>;
   register: (email: string, password: string, name: string) => Promise<ApiResponse>;
   logout: () => void;

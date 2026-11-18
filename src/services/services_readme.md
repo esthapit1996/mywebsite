@@ -59,10 +59,15 @@ async request(endpoint, options = {}) {
   // 3. Make fetch request
   const response = await fetch(url, { ...options, headers });
   
-  // 4. Parse JSON response
+  // 4. 401 = session expired → clear token, fire 'auth:expired', throw "Session expired"
+  //    ...except on /login, /register and /profile/password (CREDENTIAL_ENDPOINTS), where 401
+  //    means wrong email/password: those fall through so the server's message is shown
+  if (response.status === 401 && token && !CREDENTIAL_ENDPOINTS.has(endpoint)) { ... }
+
+  // 5. Parse JSON response (non-JSON, e.g. a proxy's HTML 502, becomes a friendly error)
   const data = await response.json();
   
-  // 5. Throw error if not OK
+  // 6. Throw error if not OK
   if (!response.ok) throw new Error(data.error);
   
   return data;

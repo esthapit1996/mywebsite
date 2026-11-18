@@ -13,6 +13,8 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  // Profile check failed for a non-auth reason (offline, deploy, 5xx): token kept, user can retry
+  const [connectionError, setConnectionError] = useState<boolean>(false);
   const { loadUserTheme } = useTheme();
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const checkAuth = async (): Promise<void> => {
+    setConnectionError(false);
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -45,11 +48,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
       } catch {
-        localStorage.removeItem('token');
+        // A real 401 has already cleared the token in api.request(). Anything else is transient,
+        // so keep the token (don't log the user out) and let them retry.
+        if (localStorage.getItem('token')) {
+          setConnectionError(true);
+        }
       }
     }
     setLoading(false);
   };
+
+  const retryAuth = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    await checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<ApiResponse<LoginResponse>> => {
     const response = await api.login(email, password);
@@ -89,8 +102,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, login, register, logout, refreshUser
-  }), [user, loading, login, register, logout, refreshUser]);
+    user, loading, connectionError, login, register, logout, refreshUser, retryAuth
+  }), [user, loading, connectionError, login, register, logout, refreshUser, retryAuth]);
 
   return (
     <AuthContext.Provider value={value}>

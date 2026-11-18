@@ -450,10 +450,10 @@
   },
   "receipt": {
     "tooLarge": "Questa foto è troppo grande da scansionare (max 14 MB). Prova con una foto più piccola.",
-    "notImage": "Questo file non è un'immagine. Scegli una foto dello scontrino.",
+    "notImage": "Questo file non può essere letto. Usa una foto JPEG o PNG dello scontrino.",
     "unreachable": "Impossibile raggiungere lo scanner IA, lettura dello scontrino su questo dispositivo.",
     "ocrButton": "🔍 OCR (Tesseract)",
-    "aiButton": "🤖 AI (Gemini)",
+    "aiButton": "🤖 IA",
     "scanOrUpload": "Scansiona o carica uno scontrino",
     "takePhoto": "Scatta una foto o trascina un'immagine",
     "scanning": "Scansione scontrino ({{method}})... {{progress}}%",

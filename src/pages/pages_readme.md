@@ -157,6 +157,11 @@ The most complex page - manages a single group's expenses.
 | `splitType` | `string` | 'equal' \| 'percentage' |
 | `expenseCurrency` | `string` | Input currency (converted to EUR) |
 | `memberSplits` | `object` | Custom split percentages |
+| `isEditingExpense` / `editingExpenseId` | `boolean` / `number` | Edit mode; reset whenever the modal closes |
+| `formError` | `string` | Errors from the expense / settle modals, shown inside them |
+| `saving` | `boolean` | A save is in flight; save buttons are disabled so double clicks can't create duplicates |
+
+Percentage presets use `evenPercentShares()` / `othersPayShares()`, which always add up to exactly 100 (3 people → 33.4 / 33.3 / 33.3); totals are compared with `isHundred()` (±0.01).
 
 ### Tab Content
 
@@ -171,9 +176,10 @@ The most complex page - manages a single group's expenses.
 | Function | Description |
 |----------|-------------|
 | `loadData()` | Parallel fetch: group, expenses, balances, activities |
-| `handleAddExpense()` | Creates expense with splits |
-| `handleSettlement()` | Records direct payment |
-| `handlePayment()` | Records partial expense payment |
+| `handleAddExpense()` | Creates or edits an expense with splits |
+| `handleSettle()` | Records direct payment |
+| `handleMakePayment()` / `handlePayMyShare()` | Records a partial expense payment / pays the rest of my share |
+| Receipt "Add as expenses" | Validates every item group, converts amounts to EUR if another currency is selected, then creates the expenses. If one fails midway, the items already added are unticked so a retry can't duplicate them |
 
 ---
 

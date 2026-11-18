@@ -65,6 +65,32 @@ interface ExpenseDebt {
 
 const CURRENCIES: CurrencyInfo[] = DISPLAY_CURRENCIES;
 
+// Splits 100% into one-decimal shares that add up to exactly 100 (3 people → 33.4, 33.3, 33.3)
+function evenPercentShares(ids: number[]): Record<number, string> {
+  const shares: Record<number, string> = {};
+  if (ids.length === 0) return shares;
+  const tenths = Math.floor(1000 / ids.length);
+  let extra = 1000 - tenths * ids.length;
+  ids.forEach(uid => {
+    shares[uid] = ((tenths + (extra > 0 ? 1 : 0)) / 10).toFixed(1);
+    extra--;
+  });
+  return shares;
+}
+
+// "Others pay": the payer gets 0%, everyone else splits 100% evenly
+function othersPayShares(memberIds: number[], payerId: number | undefined): Record<number, string> {
+  const shares: Record<number, string> = {};
+  memberIds.forEach(uid => { shares[uid] = '0'; });
+  return { ...shares, ...evenPercentShares(memberIds.filter(uid => uid !== payerId)) };
+}
+
+const percentTotal = (splits: Record<number, string>): number =>
+  Object.values(splits).reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+
+// Float sums like 33.4 + 33.3 + 33.3 aren't exactly 100
+const isHundred = (total: number): boolean => Math.abs(total - 100) < 0.01;
+
 export default function GroupDetail(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -109,6 +135,10 @@ export default function GroupDetail(): JSX.Element {
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentNote, setPaymentNote] = useState<string>('');
   const [paymentError, setPaymentError] = useState<string>('');
+  // Errors from the expense / settle modals are shown inside them (the page banner is hidden behind the overlay)
+  const [formError, setFormError] = useState<string>('');
+  // One request at a time: stops double clicks creating duplicate expenses, settlements or payments
+  const [saving, setSaving] = useState<boolean>(false);
 
   // Expense form
   const [expenseAmount, setExpenseAmount] = useState<string>('');
@@ -251,6 +281,7 @@ export default function GroupDetail(): JSX.Element {
 
   const closeExpenseModal = () => {
     setShowExpenseModal(false);
+    setFormError('');
     // Leave edit mode too, or the next "Add expense" would overwrite the expense that was being edited
     setIsEditingExpense(false);
     setEditingExpenseId(null);
@@ -271,10 +302,13 @@ export default function GroupDetail(): JSX.Element {
 
   const handleAddExpense = async (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setFormError('');
+    setSaving(true);
     try {
       const finalAmount = expenseCurrency === 'EUR' ? expenseAmount : convertedAmount;
       if (!finalAmount) {
-        setError(t('group.waitConversion'));
+        setFormError(t('group.waitConversion'));
         return;
       }
 
@@ -287,9 +321,12 @@ export default function GroupDetail(): JSX.Element {
       let splitWith: Array<{ user_id: number; amount: number }> = [];
 
       if (splitType === 'percentage') {
-        const totalPercent = Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-        if (Math.abs(totalPercent - 100) > 0.01) {
-          setError(t('group.percentsMust100'));
+        if (!isHundred(percentTotal(memberSplits))) {
+          setFormError(t('group.percentsMust100'));
+          return;
+        }
+        if (Object.values(memberSplits).some(v => { const n = parseFloat(v); return isNaN(n) || n < 0 || n > 100; })) {
+          setFormError(t('group.percentsRange'));
           return;
         }
         splitWith = Object.entries(memberSplits).map(([userId, percent]) => ({
@@ -314,11 +351,14 @@ export default function GroupDetail(): JSX.Element {
       setEditingExpenseId(null);
       await loadData();
     } catch (err: any) {
-      setError(err.message);
+      setFormError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const openEditExpense = (expense: ExpenseDetail) => {
+    setFormError('');
     setIsEditingExpense(true);
     setEditingExpenseId(expense.id);
     setShowExpenseModal(true);
@@ -345,6 +385,9 @@ export default function GroupDetail(): JSX.Element {
 
   const handleSettle = async (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setFormError('');
+    setSaving(true);
     try {
       await api.createSettlement(id!, parseInt(settleUser), settleAmount);
       setShowSettleModal(false);
@@ -352,19 +395,26 @@ export default function GroupDetail(): JSX.Element {
       setSettleAmount('');
       await loadData();
     } catch (err: any) {
-      setError(err.message);
+      setFormError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAddMember = async (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setMemberError('');
+    setSaving(true);
     try {
       await api.addMember(id!, parseInt(selectedUser));
       setShowMemberModal(false);
       setSelectedUser('');
       await loadData();
     } catch (err: any) {
-      setError(err.message);
+      setMemberError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -382,6 +432,7 @@ export default function GroupDetail(): JSX.Element {
   const handleDeleteExpense = async (expenseId: number) => {
     if (!confirm(t('group.deleteExpense'))) return;
     try {
+      setError('');
       await api.deleteExpense(id!, expenseId);
       await loadData();
     } catch (err: any) {
@@ -390,9 +441,11 @@ export default function GroupDetail(): JSX.Element {
   };
 
   const handlePayMyShare = async (expense: ExpenseWithUser) => {
-    if (!user || !expense.splits) return;
+    if (!user || !expense.splits || saving) return;
     const userSplit = expense.splits.find(s => s.user_id === user.id);
     if (!userSplit) return;
+    setError('');
+    setSaving(true);
     try {
       // Fetch existing payments to calculate remaining amount
       const res = await api.getExpensePayments(expense.id);
@@ -404,12 +457,15 @@ export default function GroupDetail(): JSX.Element {
       await loadData();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteSettlement = async (settlementId: number) => {
     if (!confirm(t('group.deleteSettlement'))) return;
     try {
+      setError('');
       await api.deleteSettlement(id!, settlementId);
       await loadData();
     } catch (err: any) {
@@ -434,6 +490,7 @@ export default function GroupDetail(): JSX.Element {
   const handleClearAllExpenses = async () => {
     if (!confirm(t('group.clearExpensesConfirm'))) return;
     try {
+      setError('');
       await api.clearAllExpenses(id!);
       await loadData();
     } catch (err: any) {
@@ -461,8 +518,9 @@ export default function GroupDetail(): JSX.Element {
 
   const handleMakePayment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedExpense) return;
+    if (!selectedExpense || saving) return;
     setPaymentError('');
+    setSaving(true);
     try {
       await api.createExpensePayment(selectedExpense.id, paymentAmount, paymentNote);
       setPaymentAmount('');
@@ -472,18 +530,21 @@ export default function GroupDetail(): JSX.Element {
       setExpensePayments(res.data || []);
     } catch (err: any) {
       setPaymentError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeletePayment = async (paymentId: number) => {
     if (!confirm(t('group.deletePayment'))) return;
     try {
+      setPaymentError('');
       await api.deleteExpensePayment(paymentId);
       await loadData();
       const res = await api.getExpensePayments(selectedExpense!.id);
       setExpensePayments(res.data || []);
     } catch (err: any) {
-      setError(err.message);
+      setPaymentError(err.message);
     }
   };
 
@@ -612,6 +673,9 @@ export default function GroupDetail(): JSX.Element {
       </div>
     );
   }
+
+  // Receipt prices are in the currency selected in the expense form
+  const receiptSymbol = CURRENCIES.find(c => c.code === expenseCurrency)?.symbol || expenseCurrency;
 
   return (
     <div className="container">
@@ -798,11 +862,11 @@ export default function GroupDetail(): JSX.Element {
         <button
           className="btn btn-primary"
           style={{ flex: 1 }}
-          onClick={() => { setIsEditingExpense(false); setEditingExpenseId(null); setShowExpenseModal(true); }}
+          onClick={() => { setIsEditingExpense(false); setEditingExpenseId(null); setFormError(''); setShowExpenseModal(true); }}
         >
           {t('group.addExpense')}
         </button>
-        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setGoPayMode('select'); setShowSettleModal(true); }}>
+        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setGoPayMode('select'); setFormError(''); setShowSettleModal(true); }}>
           {t('group.goPay')}
         </button>
       </div>
@@ -895,6 +959,7 @@ export default function GroupDetail(): JSX.Element {
                           }}
                           title={t('group.markAsPaid')}
                           style={{ fontSize: '0.8rem' }}
+                          disabled={saving}
                         >
                           {t('group.paidStatus')}
                         </button>
@@ -1076,6 +1141,7 @@ export default function GroupDetail(): JSX.Element {
             </div>
             <form onSubmit={handleAddExpense}>
               <div className="modal-body">
+                {formError && <div className="alert alert-error" style={{ marginBottom: '12px' }}>{formError}</div>}
                 <ReceiptScanner onResult={(result) => {
                   // Fill description with store name or item summary
                   if (result.storeName) {
@@ -1221,7 +1287,7 @@ export default function GroupDetail(): JSX.Element {
                                 }}
                               />
                               <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-                                <span style={{ fontSize: '0.85rem' }}>€</span>
+                                <span style={{ fontSize: '0.85rem' }}>{receiptSymbol}</span>
                                 <input
                                   type="number"
                                   className="form-input"
@@ -1290,9 +1356,7 @@ export default function GroupDetail(): JSX.Element {
                                         const updated = [...prev];
                                         updated[i] = { ...updated[i], splitType: newSplitType };
                                         if (newSplitType === 'percentage' && group?.members) {
-                                          const share = (100 / group.members.length).toFixed(1);
-                                          const splits: Record<number, string> = {};
-                                          group.members.forEach(m => { splits[m.id] = share; });
+                                          const splits = evenPercentShares(group.members.map(m => m.id));
                                           updated[i] = { ...updated[i], splitType: newSplitType, memberSplits: splits };
                                         }
                                         return updated;
@@ -1315,9 +1379,7 @@ export default function GroupDetail(): JSX.Element {
                                         className="btn btn-outline btn-sm"
                                         style={{ fontSize: '0.7rem', padding: '2px 6px' }}
                                         onClick={() => {
-                                          const share = (100 / group.members!.length).toFixed(1);
-                                          const splits: Record<number, string> = {};
-                                          group.members!.forEach(m => { splits[m.id] = share; });
+                                          const splits = evenPercentShares(group.members!.map(m => m.id));
                                           setReceiptItemConfigs(prev => {
                                             const updated = [...prev];
                                             updated[i] = { ...updated[i], memberSplits: splits };
@@ -1332,11 +1394,7 @@ export default function GroupDetail(): JSX.Element {
                                         className="btn btn-outline btn-sm"
                                         style={{ fontSize: '0.7rem', padding: '2px 6px' }}
                                         onClick={() => {
-                                          const payerId = config.paidBy || user?.id;
-                                          const splits: Record<number, string> = {};
-                                          const others = group.members!.filter(m => m.id !== payerId);
-                                          const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
-                                          group.members!.forEach(m => { splits[m.id] = m.id === payerId ? '0' : share; });
+                                          const splits = othersPayShares(group.members!.map(m => m.id), config.paidBy || user?.id);
                                           setReceiptItemConfigs(prev => {
                                             const updated = [...prev];
                                             updated[i] = { ...updated[i], memberSplits: splits };
@@ -1403,11 +1461,10 @@ export default function GroupDetail(): JSX.Element {
                                     ))}
                                     <div style={{
                                       fontSize: '0.75rem',
-                                      color: Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0) === 100
-                                        ? 'var(--primary)' : 'var(--danger)'
+                                      color: isHundred(percentTotal(config.memberSplits)) ? 'var(--primary)' : 'var(--danger)'
                                     }}>
-                                      Total: {Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0).toFixed(1)}%
-                                      {Object.values(config.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0) === 100 ? ' ✓' : ''}
+                                      {t('common.total')}: {percentTotal(config.memberSplits).toFixed(1)}%
+                                      {isHundred(percentTotal(config.memberSplits)) ? ' ✓' : ''}
                                     </div>
                                   </div>
                                 )}
@@ -1453,7 +1510,7 @@ export default function GroupDetail(): JSX.Element {
                           color: 'var(--text-muted)',
                         }}>
                           <span>{t('group.receipt.itemsSubtotal')}</span>
-                          <span>€{(Math.round(receiptItems.reduce((sum, item, i) => 
+                          <span>{receiptSymbol}{(Math.round(receiptItems.reduce((sum, item, i) => 
                             receiptItemConfigs[i]?.included ? sum + item.price : sum, 0
                           ) * 100) / 100).toFixed(2)}</span>
                         </div>
@@ -1462,7 +1519,7 @@ export default function GroupDetail(): JSX.Element {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
                           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('group.receipt.discountAdjustment')}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1, justifyContent: 'flex-end' }}>
-                            <span style={{ fontSize: '0.85rem' }}>€</span>
+                            <span style={{ fontSize: '0.85rem' }}>{receiptSymbol}</span>
                             <input
                               type="number"
                               className="form-input"
@@ -1501,7 +1558,7 @@ export default function GroupDetail(): JSX.Element {
                               ) + (parseFloat(receiptDiscount) || 0)
                             ) * 100) / 100;
                             return <span style={{ color: total <= 0 ? 'var(--danger)' : undefined }}>
-                              €{Math.max(0, total).toFixed(2)}
+                              {receiptSymbol}{Math.max(0, total).toFixed(2)}
                             </span>;
                           })()}
                         </div>
@@ -1524,69 +1581,80 @@ export default function GroupDetail(): JSX.Element {
                             return false;
                           })()}
                           onClick={async () => {
-                            setAddingReceipt(true);
-                            try {
-                              const groups: Record<string, { items: Array<{name: string; price: number; idx: number}>, config: typeof receiptItemConfigs[0] }> = {};
-                              for (let i = 0; i < receiptItems.length; i++) {
-                                const config = receiptItemConfigs[i];
-                                if (!config?.included) continue;
-                                const splitsKey = config.splitType === 'percentage'
-                                  ? Object.entries(config.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
-                                  : 'equal';
-                                const key = `${config.paidBy}-${config.splitType}-${splitsKey}`;
-                                if (!groups[key]) groups[key] = { items: [], config };
-                                groups[key].items.push({ ...receiptItems[i], idx: i });
-                              }
-                              console.log('[Receipt] All item configs:', receiptItemConfigs.map((c, idx) => ({
-                                idx,
-                                item: receiptItems[idx]?.name,
-                                included: c.included,
-                                splitType: c.splitType,
-                                memberSplits: c.memberSplits,
-                                paidBy: c.paidBy,
-                              })));
-                              console.log('[Receipt] Groups:', Object.entries(groups).map(([key, g]) => ({
-                                key,
-                                items: g.items.map(it => it.name),
-                                splitType: g.config.splitType,
-                                memberSplits: g.config.memberSplits,
-                              })));
+                            if (addingReceipt) return;
+                            setFormError('');
 
+                            // 1. Group items by payer + split and validate every group before saving anything
+                            const groups: Record<string, { items: Array<{ name: string; price: number; idx: number }>; config: typeof receiptItemConfigs[0] }> = {};
+                            for (let i = 0; i < receiptItems.length; i++) {
+                              const config = receiptItemConfigs[i];
+                              if (!config?.included) continue;
+                              const splitsKey = config.splitType === 'percentage'
+                                ? Object.entries(config.memberSplits).sort(([a], [b]) => a.localeCompare(b)).map(([uid, pct]) => `${uid}:${pct}`).join(',')
+                                : 'equal';
+                              const key = `${config.paidBy}-${config.splitType}-${splitsKey}`;
+                              if (!groups[key]) groups[key] = { items: [], config };
+                              groups[key].items.push({ ...receiptItems[i], idx: i });
+                            }
+                            for (const group of Object.values(groups)) {
+                              if (group.config.splitType !== 'percentage') continue;
+                              if (!isHundred(percentTotal(group.config.memberSplits))) {
+                                setFormError(t('group.percentsMust100'));
+                                return;
+                              }
+                              if (Object.values(group.config.memberSplits).some(v => { const n = parseFloat(v); return isNaN(n) || n < 0 || n > 100; })) {
+                                setFormError(t('group.percentsRange'));
+                                return;
+                              }
+                            }
+
+                            setAddingReceipt(true);
+                            const created: number[] = []; // receipt item indexes already saved
+                            try {
+                              // 2. Work out every expense (amounts converted to EUR) before creating any
                               const allIncludedTotal = Math.round(receiptItems.reduce((s, it, idx) => receiptItemConfigs[idx]?.included ? s + it.price : s, 0) * 100) / 100;
                               const discount = parseFloat(receiptDiscount) || 0;
-                              for (const [gKey, group] of Object.entries(groups)) {
+                              const planned: Array<{ itemIdx: number[]; amount: number; desc: string; splitType: string; splitWith: Array<{ user_id: number; amount: number }>; paidBy: number }> = [];
+                              for (const group of Object.values(groups)) {
                                 const groupItemTotal = Math.round(group.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
                                 const groupDiscount = allIncludedTotal > 0 ? Math.round(discount * (groupItemTotal / allIncludedTotal) * 100) / 100 : 0;
                                 const totalAmount = Math.round((groupItemTotal + groupDiscount) * 100) / 100;
-                                const desc = group.items.map(it => it.name || 'Item').join(', ').slice(0, 420);
-                                const cfg = group.config;
-                                let splitWith: Array<{ user_id: number; amount: number }> = [];
-                                if (cfg.splitType === 'percentage') {
-                                  const pctTotal = Object.values(cfg.memberSplits).reduce((s, v) => s + (parseFloat(v) || 0), 0);
-                                  if (Math.abs(pctTotal - 100) > 0.01) {
-                                    setError('Percentages must total 100%');
-                                    setAddingReceipt(false);
-                                    return;
-                                  }
-                                  splitWith = Object.entries(cfg.memberSplits).map(([uid, pct]) => ({
-                                    user_id: parseInt(uid),
-                                    amount: parseFloat(pct) || 0,
-                                  }));
+                                let desc = group.items.map(it => it.name || 'Item').join(', ');
+                                let amount = totalAmount;
+                                if (expenseCurrency !== 'EUR') {
+                                  // Receipt prices are in the selected currency; expenses are stored in EUR
+                                  const res = await api.convertCurrency(expenseCurrency, 'EUR', totalAmount.toFixed(2));
+                                  amount = res.converted;
+                                  desc = `${desc} (${receiptSymbol}${totalAmount.toFixed(2)} ${expenseCurrency})`;
                                 }
-                                console.log(`[Receipt] Creating expense [${gKey}]:`, { desc, amount: totalAmount, splitType: cfg.splitType, splitWith, paidBy: cfg.paidBy });
-                                await api.createExpense(
-                                  id!,
-                                  totalAmount.toFixed(2),
-                                  desc,
-                                  cfg.splitType,
-                                  splitWith,
-                                  cfg.paidBy || undefined,
-                                );
+                                planned.push({
+                                  itemIdx: group.items.map(it => it.idx),
+                                  amount,
+                                  desc: desc.slice(0, 420),
+                                  splitType: group.config.splitType,
+                                  splitWith: group.config.splitType === 'percentage'
+                                    ? Object.entries(group.config.memberSplits).map(([uid, pct]) => ({ user_id: parseInt(uid), amount: parseFloat(pct) || 0 }))
+                                    : [],
+                                  paidBy: group.config.paidBy,
+                                });
+                              }
+
+                              // 3. Create them, remembering what was saved so a retry can't add it twice
+                              for (const plan of planned) {
+                                await api.createExpense(id!, plan.amount.toFixed(2), plan.desc, plan.splitType, plan.splitWith, plan.paidBy || undefined);
+                                created.push(...plan.itemIdx);
                               }
                               closeExpenseModal();
                               await loadData();
                             } catch (err: any) {
-                              setError(err.message);
+                              if (created.length > 0) {
+                                // Untick what was saved so pressing the button again only adds the rest
+                                setReceiptItemConfigs(prev => prev.map((c, idx) => created.includes(idx) ? { ...c, included: false } : c));
+                                setFormError(t('group.receipt.partialFailure', { error: err.message }));
+                                await loadData();
+                              } else {
+                                setFormError(err.message);
+                              }
                             } finally {
                               setAddingReceipt(false);
                             }
@@ -1640,7 +1708,7 @@ export default function GroupDetail(): JSX.Element {
                     {receiptItems.map((item, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                         <span>{item.name}</span>
-                        <span style={{ fontWeight: 500 }}>€{item.price.toFixed(2)}</span>
+                        <span style={{ fontWeight: 500 }}>{receiptSymbol}{item.price.toFixed(2)}</span>
                       </div>
                     ))}
                     <button
@@ -1785,12 +1853,7 @@ export default function GroupDetail(): JSX.Element {
                     onChange={(e) => {
                       setSplitType(e.target.value as 'equal' | 'percentage' | 'exact');
                       if (e.target.value === 'percentage' && group?.members) {
-                        const initialSplits: Record<number, string> = {};
-                        const share = (100 / group.members.length).toFixed(1);
-                        group.members.forEach(m => {
-                          initialSplits[m.id] = share;
-                        });
-                        setMemberSplits(initialSplits);
+                        setMemberSplits(evenPercentShares(group.members.map(m => m.id)));
                       }
                     }}
                   >
@@ -1826,10 +1889,7 @@ export default function GroupDetail(): JSX.Element {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => {
-                          const share = (100 / group.members!.length).toFixed(1);
-                          const splits: Record<number, string> = {};
-                          group.members!.forEach(m => { splits[m.id] = share; });
-                          setMemberSplits(splits);
+                          setMemberSplits(evenPercentShares(group.members!.map(m => m.id)));
                         }}
                       >
                         {t('common.splitEqually')}
@@ -1838,14 +1898,7 @@ export default function GroupDetail(): JSX.Element {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => {
-                          const payerId = expensePaidBy || user?.id;
-                          const others = group.members!.filter(m => m.id !== payerId);
-                          const share = others.length > 0 ? (100 / others.length).toFixed(1) : '0';
-                          const splits: Record<number, string> = {};
-                          group.members!.forEach(m => {
-                            splits[m.id] = m.id === payerId ? '0' : share;
-                          });
-                          setMemberSplits(splits);
+                          setMemberSplits(othersPayShares(group.members!.map(m => m.id), expensePaidBy || user?.id));
                         }}
                       >
                         {t('group.othersOwe', { name: expensePaidBy ? group.members?.find(m => m.id === expensePaidBy)?.name?.split(' ')[0] : t('common.you') })}
@@ -1902,8 +1955,8 @@ export default function GroupDetail(): JSX.Element {
                         </div>
                       ))}
                     </div>
-                    <div style={{ marginTop: '8px', fontSize: '0.9rem', color: Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) === 100 ? 'var(--primary)' : 'var(--danger)' }}>
-                      {t('common.total')}: {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(1)}% {Object.values(memberSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) === 100 ? '✓' : t('group.mustEqual100')}
+                    <div style={{ marginTop: '8px', fontSize: '0.9rem', color: isHundred(percentTotal(memberSplits)) ? 'var(--primary)' : 'var(--danger)' }}>
+                      {t('common.total')}: {percentTotal(memberSplits).toFixed(1)}% {isHundred(percentTotal(memberSplits)) ? '✓' : t('group.mustEqual100')}
                     </div>
                   </div>
                 )}
@@ -1917,7 +1970,7 @@ export default function GroupDetail(): JSX.Element {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={expenseCurrency !== 'EUR' && (converting || !convertedAmount)}
+                  disabled={saving || (expenseCurrency !== 'EUR' && (converting || !convertedAmount))}
                 >
                   {t('group.addExpenseBtn')}
                 </button>
@@ -2000,6 +2053,7 @@ export default function GroupDetail(): JSX.Element {
             ) : (
               <form onSubmit={handleSettle}>
                 <div className="modal-body">
+                  {formError && <div className="alert alert-error" style={{ marginBottom: '12px' }}>{formError}</div>}
                   <button 
                     type="button"
                     className="btn btn-outline btn-sm"
@@ -2040,7 +2094,7 @@ export default function GroupDetail(): JSX.Element {
                   <button type="button" className="btn btn-outline" onClick={() => setShowSettleModal(false)}>
                     {t('common.cancel')}
                   </button>
-                  <button type="submit" className="btn btn-secondary">{t('group.recordPayment')}</button>
+                  <button type="submit" className="btn btn-secondary" disabled={saving}>{t('group.recordPayment')}</button>
                 </div>
               </form>
             )}
@@ -2124,7 +2178,7 @@ export default function GroupDetail(): JSX.Element {
                         <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                       ))}
                   </select>
-                  <button type="submit" className="btn btn-primary" disabled={!selectedUser}>{t('group.addBtn')}</button>
+                  <button type="submit" className="btn btn-primary" disabled={!selectedUser || saving}>{t('group.addBtn')}</button>
                 </div>
               </form>
             </div>
@@ -2262,7 +2316,11 @@ export default function GroupDetail(): JSX.Element {
                       <button
                         className="btn btn-primary"
                         style={{ width: '100%', marginBottom: '16px' }}
+                        disabled={saving}
                         onClick={async () => {
+                          if (saving) return;
+                          setPaymentError('');
+                          setSaving(true);
                           try {
                             await api.createExpensePayment(selectedExpense.id, remaining, 'Paid my share');
                             await loadData();
@@ -2270,6 +2328,8 @@ export default function GroupDetail(): JSX.Element {
                             setExpensePayments(res.data || []);
                           } catch (err: any) {
                             setPaymentError(err.message);
+                          } finally {
+                            setSaving(false);
                           }
                         }}
                       >
@@ -2307,7 +2367,7 @@ export default function GroupDetail(): JSX.Element {
                         placeholder={t('group.notePlaceholder')}
                       />
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={saving}>
                       {t('group.recordPayment')}
                     </button>
                   </form>

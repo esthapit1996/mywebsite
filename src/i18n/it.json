@@ -77,6 +77,8 @@
     "registrationFailed": "Registrazione fallita"
   },
   "dashboard": {
+    "someMembersNotAdded_one": "Gruppo creato, ma {{count}} membro non è stato aggiunto. Aggiungilo dalla pagina del gruppo.",
+    "someMembersNotAdded_other": "Gruppo creato, ma {{count}} membri non sono stati aggiunti. Aggiungili dalla pagina del gruppo.",
     "updateHint": "Tocca il logo <strong>GopherDebt</strong> per aggiornare e ottenere l'ultima versione dell'app.",
     "debtOverview": "Panoramica Debiti",
     "youOweTotal": "Devi {{amount}} in totale",
@@ -107,6 +109,7 @@
     "failedLoadDebt": "Caricamento panoramica debiti fallito"
   },
   "group": {
+    "percentsRange": "Ogni percentuale deve essere tra 0 e 100.",
     "groupNotFound": "Gruppo non trovato",
     "createdBy": "Creato da",
     "on": "il",
@@ -208,6 +211,7 @@
     "waitConversion": "Attendi la conversione valuta",
     "percentsMust100": "Le percentuali devono totalizzare 100%",
     "receipt": {
+      "partialFailure": "Alcune spese sono state aggiunte, poi si è verificato un errore: {{error}}. Gli articoli aggiunti sono stati deselezionati, quindi premendo di nuovo il pulsante verranno aggiunti solo gli altri.",
       "items": "🧾 Articoli Scontrino",
       "selected": "{{count}}/{{total}} selezionati",
       "skipManual": "Salta — compila manualmente",

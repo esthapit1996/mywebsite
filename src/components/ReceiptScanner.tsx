@@ -169,6 +169,31 @@ async function scanWithGemini(file: File, signal: AbortSignal): Promise<ReceiptR
   };
 }
 
+// On-device OCR languages (Tesseract.js). Each is downloaded on first use, then cached by the browser.
+const OCR_LANGUAGES = 'eng+nld+deu+fra+ita';
+
+// Words that start a non-item line in English, Dutch, German, French and Italian: payment and change,
+// tax, discounts (OCR can't tell them from items; the AI path handles discounts), headers and footers.
+// Whole words only, so items like "Orata", "Barilla" or "Datteri" aren't caught by "ora", "bar", "data".
+const NON_ITEM_LINE = new RegExp('^\\s*(?:' + [
+  // payment / change
+  'cash', 'change', 'card', 'credit\\s*card', 'creditcard', 'debit', 'visa', 'mastercard', 'paid', 'payment',
+  'wissel', 'contant', 'pin', 'betaald?', 'betaling',
+  'bar', 'bargeld', 'wechselgeld', 'rückgeld', 'ec[\\s-]*karte', 'kartenzahlung', 'gegeben',
+  'monnaie', 'espèces', 'rendu',
+  'contant[ei]', 'resto', 'bancomat', 'pagamento', 'pagato', 'carta\\s+di\\s+credito', 'carta\\s+(?:credito|debito)',
+  // tax
+  'tax', 'vat', 'btw', 'tva', 'mwst', 'ust', 'iva', 'p\\.?\\s*iva',
+  // discounts
+  'discount', 'korting', 'rabatt', 'remise', 'sconto', 'coupon',
+  // headers / footers
+  'qty', 'quantity', 'aantal', 'date', 'datum', 'data', 'time', 'tijd', 'ora', 'receipt', 'bon', 'invoice', 'factuur',
+  'scontrino', 'documento', 'thank', 'dank', 'grazie', 'welcome', 'welkom', 'tel', 'phone', 'telefono', 'address', 'adres',
+].join('|') + ')\\b', 'i');
+
+// Total lines, incl. "TOTALE COMPLESSIVO 14,78", "TOTALE EURO 14,78", "SUMME EUR 3,18", "IMPORTO PAGATO 9,50"
+const TOTAL_LINE = /(?:grand\s*total|sub\s*total|subtotal|totale(?:\s*complessivo)?|total|totaal|t[o0]tal|gesamt(?:betrag)?|summe|sum|amount\s*due|te\s*betalen|net\s*amount|balance\s*due|you\s*(?:owe|pay)|importo(?:\s*pagato)?|da\s*pagare|[àa]\s*payer)\s*[:\s]*(?:eur(?:o)?\s*)?[€$£¥₹]?\s*([\d.,]+)/i;
+
 function parseReceiptText(text: string): ReceiptResult {
   // Clean up OCR artifacts common in phone photos
   const cleanedText = text
@@ -193,7 +218,7 @@ function parseReceiptText(text: string): ReceiptResult {
 
   for (const line of lines) {
     // Match total lines (expanded patterns for OCR misreads)
-    const totalMatch = line.match(/(?:total|totaal|gesamt|summe|sum|grand\s*total|subtotal|sub\s*total|amount\s*due|te\s*betalen|t[o0]tal|net\s*amount|balance\s*due|you\s*(?:owe|pay))\s*[:\s]*[€$£¥₹]?\s*([\d.,]+)/i);
+    const totalMatch = line.match(TOTAL_LINE);
     if (totalMatch) {
       const val = parseFloat(totalMatch[1].replace(',', '.'));
       if (!isNaN(val) && val > 0) {
@@ -203,7 +228,7 @@ function parseReceiptText(text: string): ReceiptResult {
     }
 
     // Skip non-item lines (payment method, change, headers, etc.)
-    if (/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal|date|datum|time|tijd|receipt|bon|invoice|factuur|thank|dank|welcome|welkom|tel|phone|address|adres)\b/i.test(line)) {
+    if (NON_ITEM_LINE.test(line)) {
       continue;
     }
 
@@ -215,7 +240,7 @@ function parseReceiptText(text: string): ReceiptResult {
     if (itemMatch) {
       const name = itemMatch[1].trim();
       const price = parseFloat(itemMatch[2].replace(',', '.'));
-      if (!isNaN(price) && price > 0 && name.length > 1 && !/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal)\b/i.test(name)) {
+      if (!isNaN(price) && price > 0 && name.length > 1 && !NON_ITEM_LINE.test(name)) {
         items.push({ name, price });
         continue;
       }
@@ -227,7 +252,7 @@ function parseReceiptText(text: string): ReceiptResult {
       const name = altMatch[1].trim();
       const price = parseFloat(altMatch[2].replace(',', '.'));
       if (!isNaN(price) && price > 0 && name.length > 1) {
-        if (!/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(name) && !/^\d{1,2}:\d{2}/.test(name) && !/^\s*(?:cash|change|wissel|wechselgeld|bargeld|monnaie|contant|pin|card|creditcard|debit|visa|mastercard|betaald?|paid|payment|betaling|tax|btw|vat|tva|mwst|qty|quantity|aantal)\b/i.test(name)) {
+        if (!/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(name) && !/^\d{1,2}:\d{2}/.test(name) && !NON_ITEM_LINE.test(name)) {
           items.push({ name, price });
           continue;
         }
@@ -453,7 +478,7 @@ export default function ReceiptScanner({ onResult }: ReceiptScannerProps): JSX.E
       setProgress(0);
       const processed = await preprocessImage(file);
       const Tesseract = await import('tesseract.js');
-      const result = await Tesseract.default.recognize(processed, 'eng+nld+deu+fra', {
+      const result = await Tesseract.default.recognize(processed, OCR_LANGUAGES, {
         logger: (m) => {
           if (m.status === 'recognizing text' && aliveRef.current) {
             setProgress(Math.round(m.progress * 100));

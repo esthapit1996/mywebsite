@@ -448,6 +448,9 @@
     "failedRemoveEmail": "Rimozione email fallita"
   },
   "receipt": {
+    "tooLarge": "Questa foto è troppo grande da scansionare (max 14 MB). Prova con una foto più piccola.",
+    "notImage": "Questo file non è un'immagine. Scegli una foto dello scontrino.",
+    "unreachable": "Impossibile raggiungere lo scanner IA, lettura dello scontrino su questo dispositivo.",
     "ocrButton": "🔍 OCR (Tesseract)",
     "aiButton": "🤖 AI (Gemini)",
     "scanOrUpload": "Scansiona o carica uno scontrino",

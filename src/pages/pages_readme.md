@@ -359,7 +359,6 @@ Personal expense tracker with category breakdown and chart views.
 | `description` | `string` | New expense description |
 | `category` | `string` | Selected category |
 | `chartView` | `'pills' \| 'pie' \| 'bar'` | Category breakdown view mode (default: pie) |
-| `showReceiptScanner` | `boolean` | Toggle receipt scanner modal |
 
 ### Categories (13)
 
@@ -387,7 +386,7 @@ Personal expense tracker with category breakdown and chart views.
 |---------|-------------|
 | **Add Expense** | Amount + description + category + currency picker |
 | **Edit Expense** | ✎ button on each history row reopens the modal pre-filled |
-| **Receipt Scanner** | Upload photo → AI extracts items → auto-fill |
+| **Receipt Scanner** | Upload photo → AI extracts items → auto-fill. Amount = item sum, or the receipt total when it's lower (a discount the AI left out of the items), via `receiptAmount()` |
 | **Category Breakdown** | Three chart views (pills/pie/bar, default: pie) |
 | **Currency Conversion** | Enter amount in any currency, auto-convert to EUR |
 | **Clear All** | Delete all personal expenses with confirmation |

@@ -8,7 +8,7 @@ A React + TypeScript frontend for the GopherDebt expense sharing and personal fi
 - **Balances & Settlements** — View who owes whom, record payments
 - **GopherStash** — Personal expense tracker with categories, receipt scanning, and chart views (pie/bar/pills)
 - **GoWish** — Wishlist of things you want to buy (name, optional why, link and cost) with a running total, personal or in shared wish groups with other members
-- **Receipt Scanning** — AI-powered receipt parsing via Google Gemini (upload photo → auto-fill expenses)
+- **Receipt Scanning** — AI-powered receipt parsing via Google Gemini (upload photo → auto-fill expenses). Photos over 4 MB are shrunk in the browser first (server limit 14 MB); if the AI is busy, down or unreachable, it falls back to on-device OCR (Tesseract). Discounts on the receipt are applied to the amount
 - **Currency Conversion** — View amounts in 25 currencies, historical trend charts
 - **14 Themes** — 9 dark + 5 light themes, synced to user profile
 - **i18n** — Full English and Italian translations
@@ -88,7 +88,7 @@ src/
 │   ├── AvatarPicker.tsx  # Avatar selection modal
 │   ├── LoadingSpinner.tsx # Loading indicator
 │   ├── WishBoard.tsx     # GoWish total, list and add/edit modal (personal + shared)
-│   ├── ReceiptScanner.tsx # AI receipt scanning component
+│   ├── ReceiptScanner.tsx # Receipt scanning (Gemini via backend, OCR fallback) + receiptAmount()
 │   └── GroupEmojiPicker.tsx # Group icon picker (debt groups + GoWish groups)
 ├── context/
 │   ├── AuthContext.tsx   # Authentication state (user, login, logout)

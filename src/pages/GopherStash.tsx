@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useCurrency, DISPLAY_CURRENCIES } from '../context/CurrencyContext';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ReceiptScanner from '../components/ReceiptScanner';
+import ReceiptScanner, { receiptAmount } from '../components/ReceiptScanner';
 import type { StashExpense, StashSummary } from '../types';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
@@ -647,12 +647,9 @@ export default function GopherStash() {
                   } else if (result.items.length > 0) {
                     setDescription(result.items.map(i => i.name).join(', ').slice(0, 420));
                   }
-                  if (result.items.length > 0) {
-                    const itemSum = Math.round(result.items.reduce((s, it) => s + it.price, 0) * 100) / 100;
-                    setAmount(itemSum.toFixed(2));
-                  } else if (result.total) {
-                    setAmount(result.total.toFixed(2));
-                  }
+                  // Item sum, or the receipt total when it's lower (a discount/coupon the AI left out of the items)
+                  const { amount: scanned } = receiptAmount(result);
+                  if (scanned) setAmount(scanned.toFixed(2));
                 }} />
 
                 {/* Category picker */}

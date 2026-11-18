@@ -448,6 +448,9 @@
     "failedRemoveEmail": "Failed to remove email"
   },
   "receipt": {
+    "tooLarge": "This photo is too large to scan (max 14 MB). Try a smaller photo.",
+    "notImage": "That file isn't an image. Please choose a photo of the receipt.",
+    "unreachable": "Can't reach the AI scanner, reading the receipt on this device instead.",
     "ocrButton": "🔍 OCR (Tesseract)",
     "aiButton": "🤖 AI (Gemini)",
     "scanOrUpload": "Scan or upload a receipt",

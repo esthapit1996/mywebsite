@@ -536,6 +536,7 @@
   },
   "wish": {
     "lookup": {
+      "priceInCart": "This shop only shows the price in the cart, please add it yourself.",
       "limit": "You've reached today's AI limit. Please fill in the details yourself, or try again tomorrow.",
       "limitPrice": "Today's AI limit is reached, so the price couldn't be read. Please add it yourself.",
       "title": "Use AI to get info on your wish",

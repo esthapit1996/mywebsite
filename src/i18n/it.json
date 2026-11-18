@@ -536,6 +536,7 @@
   },
   "wish": {
     "lookup": {
+      "priceInCart": "Questo negozio mostra il prezzo solo nel carrello, inseriscilo tu.",
       "limit": "Hai raggiunto il limite IA di oggi. Inserisci i dettagli tu o riprova domani.",
       "limitPrice": "Il limite IA di oggi è stato raggiunto, quindi non è stato possibile leggere il prezzo. Inseriscilo tu.",
       "title": "Usa l'IA per ottenere le info del tuo desiderio",

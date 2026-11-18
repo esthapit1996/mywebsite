@@ -363,6 +363,7 @@ export interface WishLookupResult {
   currency?: string; // ISO 4217
   source?: 'page' | 'ai';
   ai_limit?: boolean; // the AI was needed (e.g. for the price) but today's AI allowance is used up
+  price_in_cart?: boolean; // the shop only shows the price in the cart (Amazon for some brands)
 }
 
 export interface WishMember {

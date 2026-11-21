@@ -215,9 +215,24 @@ const sameSelect = (a: StableSelectProps, b: StableSelectProps) =>
 // current option of a controlled select on every render, and the page re-renders on every keystroke
 // and twice per calculation; on an iPhone that closes a picker the user has just opened, so it
 // needed 2-3 taps. onChange is left out of the comparison: callers must use functional state updates.
+// Touch screens only: there the picker closes on a choice and nothing needs the focus afterwards.
+// Desktop keyboards change a select step by step with the arrow keys, so it keeps its focus there.
+const isTouchScreen = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 const StableSelect = memo(function StableSelect({ id, ariaLabel, value, options, onChange }: StableSelectProps) {
   return (
-    <select id={id} className="form-select" aria-label={ariaLabel} value={value} onChange={e => onChange(e.target.value)}>
+    <select
+      id={id}
+      className="form-select"
+      aria-label={ariaLabel}
+      value={value}
+      onChange={e => {
+        onChange(e.target.value);
+        // On an iPhone a select that keeps its focus after a choice needed 3 taps to open again (the
+        // first open, from an unfocused select, always worked), so it lets go of the focus
+        if (isTouchScreen()) e.currentTarget.blur();
+      }}
+    >
       {options.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>
       ))}

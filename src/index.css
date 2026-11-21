@@ -1570,12 +1570,19 @@ body {
   cursor: pointer;
 }
 
-.gocrumbs-save-bottom {
+.gocrumbs-actions {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  flex-wrap: wrap;
   gap: 10px;
+}
+
+.gocrumbs-save-status {
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.gocrumbs-save-bottom {
   margin-bottom: 16px;
 }
 
@@ -1612,6 +1619,11 @@ body {
 }
 
 @media (max-width: 600px) {
+  /* Header actions always get their own row, so a changing save status can't change the header height */
+  .gocrumbs-actions {
+    flex-basis: 100%;
+  }
+
   .gocrumbs-row-2 {
     grid-template-columns: minmax(0, 1fr);
   }

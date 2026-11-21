@@ -1570,6 +1570,15 @@ body {
   cursor: pointer;
 }
 
+.gocrumbs-save-bottom {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
 .gocrumbs-bar {
   display: none;
 }

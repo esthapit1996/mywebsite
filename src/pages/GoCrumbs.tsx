@@ -13,13 +13,14 @@ import {
   MAX_CHILDREN,
   MAX_EXPENSE_AMOUNT,
   MAX_EXPENSE_LINES,
+  MAX_EXTRA_PAY_LINES,
   MAX_GROSS_MONTH,
   MAX_GROSS_YEAR,
   MAX_SIDE_GROSS,
   MAX_ZUSATZBEITRAG,
   STEUERKLASSEN,
 } from '../constants/gocrumbs';
-import type { GoCrumbsExpenseLine, GoCrumbsInput, GoCrumbsProfile, GoCrumbsResult } from '../types';
+import type { GoCrumbsExpenseLine, GoCrumbsExtraPayLine, GoCrumbsInput, GoCrumbsProfile, GoCrumbsResult } from '../types';
 
 // This feature is EUR-only and German: never run its amounts through the display-currency conversion
 const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -31,6 +32,10 @@ interface LineForm {
   id: number;
   name: string;
   amount: string;
+}
+
+interface ExtraLineForm extends LineForm {
+  taxFree: boolean;
 }
 
 interface FormState {
@@ -48,6 +53,7 @@ interface FormState {
   savings: string;
   subs: LineForm[];
   custom: LineForm[];
+  extra: ExtraLineForm[];
 }
 
 const emptyForm: FormState = {
@@ -65,10 +71,12 @@ const emptyForm: FormState = {
   savings: '',
   subs: [],
   custom: [],
+  extra: [],
 };
 
 let nextLineId = 1;
 const newLine = (name = '', amount = ''): LineForm => ({ id: nextLineId++, name, amount });
+const newExtraLine = (name = '', amount = '', taxFree = false): ExtraLineForm => ({ ...newLine(name, amount), taxFree });
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
 const money = (s: string, max: number) => clamp(parseMoney(s) ?? 0, 0, max);
@@ -79,10 +87,18 @@ function childrenOf(f: FormState): number {
 }
 
 // Lines the user left completely empty are dropped
+const keepLine = (l: LineForm) => l.name.trim() !== '' || money(l.amount, MAX_EXPENSE_AMOUNT) > 0;
+
 function linesToInput(lines: LineForm[]): GoCrumbsExpenseLine[] {
   return lines
-    .filter(l => l.name.trim() !== '' || money(l.amount, MAX_EXPENSE_AMOUNT) > 0)
+    .filter(keepLine)
     .map(l => ({ name: l.name.trim(), amount: money(l.amount, MAX_EXPENSE_AMOUNT), category: '' }));
+}
+
+function extraToInput(lines: ExtraLineForm[]): GoCrumbsExtraPayLine[] {
+  return lines
+    .filter(keepLine)
+    .map(l => ({ name: l.name.trim(), amount: money(l.amount, MAX_EXPENSE_AMOUNT), tax_free: l.taxFree }));
 }
 
 function formToInput(f: FormState): GoCrumbsInput {
@@ -101,6 +117,7 @@ function formToInput(f: FormState): GoCrumbsInput {
     savings: money(f.savings, MAX_EXPENSE_AMOUNT),
     subscriptions: linesToInput(f.subs),
     custom_expenses: linesToInput(f.custom),
+    extra_pay: extraToInput(f.extra),
   };
 }
 
@@ -121,6 +138,7 @@ function profileToForm(p: GoCrumbsProfile): FormState {
     savings: toField(p.savings),
     subs: lines(p.subscriptions),
     custom: lines(p.custom_expenses),
+    extra: (p.extra_pay ?? []).map(l => newExtraLine(l.name, toField(l.amount), l.tax_free)),
   };
 }
 
@@ -159,7 +177,7 @@ export default function GoCrumbs() {
 
   const input = useMemo(() => formToInput(form), [form]);
   const inputKey = useMemo(() => JSON.stringify(input), [input]);
-  const nameMissing = hasUnnamedAmount(form.subs) || hasUnnamedAmount(form.custom);
+  const nameMissing = hasUnnamedAmount(form.subs) || hasUnnamedAmount(form.custom) || hasUnnamedAmount(form.extra);
   const lineCount = form.subs.length + form.custom.length;
   const children = childrenOf(form);
   const dirty = savedKey === null ? input.gross_amount > 0 : savedKey !== inputKey;
@@ -249,6 +267,12 @@ export default function GoCrumbs() {
     setForm(f => (f.subs.length + f.custom.length >= MAX_EXPENSE_LINES ? f : { ...f, [kind]: [...f[kind], newLine()] }));
   const removeLine = (kind: 'subs' | 'custom', id: number) =>
     setForm(f => ({ ...f, [kind]: f[kind].filter(l => l.id !== id) }));
+
+  const updateExtra = (id: number, patch: Partial<ExtraLineForm>) =>
+    setForm(f => ({ ...f, extra: f.extra.map(l => (l.id === id ? { ...l, ...patch } : l)) }));
+  const addExtra = () =>
+    setForm(f => (f.extra.length >= MAX_EXTRA_PAY_LINES ? f : { ...f, extra: [...f.extra, newExtraLine()] }));
+  const removeExtra = (id: number) => setForm(f => ({ ...f, extra: f.extra.filter(l => l.id !== id) }));
 
   const handleSave = async () => {
     const body = input;
@@ -383,6 +407,38 @@ export default function GoCrumbs() {
             )}
           </div>
 
+          {/* Extra pay: flat monthly pay on top of the salary, e.g. on-call */}
+          <div className="card">
+            <h3>{t('gocrumbs.extraTitle')}</h3>
+            <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('gocrumbs.extraHint')}</p>
+            {form.extra.map(line => (
+              <div key={line.id} className="gocrumbs-extra">
+                <div className="gocrumbs-line">
+                  <input
+                    className="form-input"
+                    type="text"
+                    maxLength={60}
+                    value={line.name}
+                    placeholder={t('gocrumbs.extraPlaceholder')}
+                    aria-label={t('gocrumbs.namePlaceholder')}
+                    onChange={e => updateExtra(line.id, { name: e.target.value })}
+                  />
+                  <MoneyInput value={line.amount} ariaLabel={t('gocrumbs.namePlaceholder')} onChange={v => updateExtra(line.id, { amount: v })} />
+                  <button type="button" className="btn btn-outline btn-sm" title={t('gocrumbs.remove')} aria-label={t('gocrumbs.remove')} onClick={() => removeExtra(line.id)}>
+                    ×
+                  </button>
+                </div>
+                <label className="gocrumbs-extra-free">
+                  <input type="checkbox" checked={line.taxFree} onChange={e => updateExtra(line.id, { taxFree: e.target.checked })} />
+                  {t('gocrumbs.extraTaxFree')}
+                </label>
+              </div>
+            ))}
+            <button type="button" className="btn btn-outline btn-sm" disabled={form.extra.length >= MAX_EXTRA_PAY_LINES} onClick={addExtra}>
+              + {t('gocrumbs.addExtra')}
+            </button>
+          </div>
+
           {/* Tax settings */}
           <div className="card">
             <h3>{t('gocrumbs.taxTitle')}</h3>
@@ -477,6 +533,8 @@ export default function GoCrumbs() {
             ) : (
               <div style={{ opacity: calculating ? 0.6 : 1, transition: 'opacity 0.15s' }}>
                 <ResultRow label={t('gocrumbs.result.gross')} value={eur.format(result.gross)} bold />
+                {result.extra_taxable > 0 && <ResultRow indent label={t('gocrumbs.result.extraTaxable')} value={eur.format(result.extra_taxable)} />}
+                {result.extra_free > 0 && <ResultRow indent label={t('gocrumbs.result.extraFree')} value={eur.format(result.extra_free)} />}
                 {([
                   ['rv', result.rv], ['av', result.av], ['kv', result.kv], ['pv', result.pv],
                   ['lohnsteuer', result.lohnsteuer], ['soli', result.soli], ['kirchensteuer', result.kirchensteuer],

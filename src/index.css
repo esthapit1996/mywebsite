@@ -1553,6 +1553,23 @@ body {
   align-items: center;
 }
 
+.gocrumbs-extra {
+  margin-bottom: 10px;
+}
+
+.gocrumbs-extra .gocrumbs-line {
+  margin-bottom: 4px;
+}
+
+.gocrumbs-extra-free {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
 .gocrumbs-bar {
   display: none;
 }

@@ -393,6 +393,13 @@ export interface GoCrumbsExpenseLine {
   category: string;
 }
 
+// Flat monthly pay on top of the salary, e.g. on-call. Taxable unless tax_free (e.g. Sunday surcharges).
+export interface GoCrumbsExtraPayLine {
+  name: string;
+  amount: number; // EUR per month
+  tax_free: boolean;
+}
+
 // A profile: the user's inputs. Gross amounts are per gross_period, everything else EUR per month.
 export interface GoCrumbsInput {
   work_type: 'fte' | 'werkstudent';
@@ -409,6 +416,7 @@ export interface GoCrumbsInput {
   savings: number;
   subscriptions: GoCrumbsExpenseLine[];
   custom_expenses: GoCrumbsExpenseLine[];
+  extra_pay: GoCrumbsExtraPayLine[];
 }
 
 export interface GoCrumbsProfile extends GoCrumbsInput {
@@ -426,7 +434,9 @@ export interface GoCrumbsExpenseTotals {
 // POST /api/gocrumbs/calculate: monthly breakdown in EUR, rates are fractions (0.25 = 25%)
 export interface GoCrumbsResult {
   tax_year: number;
-  gross: number;
+  gross: number; // everything paid out before deductions, tax-free extra pay included
+  extra_taxable: number; // taxable extra pay (part of the taxed gross)
+  extra_free: number; // tax-free extra pay
   rv: number;
   av: number;
   kv: number;

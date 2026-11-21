@@ -737,7 +737,7 @@ export default function GoCrumbs() {
                     <div className="form-label">{t('gocrumbs.chart.title')}</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <PieChart>
-                        <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2} isAnimationActive={false}>
+                        <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2}>
                           {chartData.map(s => (
                             <Cell key={s.key} fill={s.color} stroke="var(--card-bg)" strokeWidth={2} />
                           ))}

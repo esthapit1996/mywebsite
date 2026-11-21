@@ -17,6 +17,11 @@ import {
   MAX_GROSS_MONTH,
   MAX_GROSS_YEAR,
   MAX_SIDE_GROSS,
+  MAX_WS_HOURS_MONTH,
+  MAX_WS_HOURS_WEEK,
+  MAX_WS_WAGE,
+  WEEKS_PER_MONTH,
+  WS_WEEKLY_HOURS_LIMIT,
   MAX_ZUSATZBEITRAG,
   STEUERKLASSEN,
 } from '../constants/gocrumbs';
@@ -43,6 +48,9 @@ interface FormState {
   gross: string;
   period: 'month' | 'year';
   side: string;
+  wsWage: string;
+  wsHours: string;
+  wsPeriod: 'week' | 'month';
   steuerklasse: number;
   churchTax: boolean;
   bundesland: string;
@@ -61,6 +69,9 @@ const emptyForm: FormState = {
   gross: '',
   period: 'month',
   side: '',
+  wsWage: '',
+  wsHours: '',
+  wsPeriod: 'month',
   steuerklasse: 1,
   churchTax: false,
   bundesland: DEFAULT_BUNDESLAND,
@@ -106,7 +117,10 @@ function formToInput(f: FormState): GoCrumbsInput {
     work_type: f.workType,
     gross_amount: money(f.gross, f.period === 'month' ? MAX_GROSS_MONTH : MAX_GROSS_YEAR),
     gross_period: f.period,
-    side_gross: f.workType === 'fte' ? money(f.side, MAX_SIDE_GROSS) : 0,
+    side_gross: money(f.side, MAX_SIDE_GROSS),
+    ws_hourly_wage: money(f.wsWage, MAX_WS_WAGE),
+    ws_hours: money(f.wsHours, f.wsPeriod === 'week' ? MAX_WS_HOURS_WEEK : MAX_WS_HOURS_MONTH),
+    ws_hours_period: f.wsPeriod,
     steuerklasse: f.steuerklasse,
     church_tax: f.churchTax,
     bundesland: f.bundesland,
@@ -121,6 +135,15 @@ function formToInput(f: FormState): GoCrumbsInput {
   };
 }
 
+// Hours of an average month (weekly hours count as 52 / 12 weeks)
+const monthlyHours = (hours: number, period: 'week' | 'month') => (period === 'week' ? hours * WEEKS_PER_MONTH : hours);
+
+// A Werkstudent's gross per month: hourly wage x hours, in whole cents like the API
+const wsMonthlyGross = (i: GoCrumbsInput) => Math.round(i.ws_hourly_wage * monthlyHours(i.ws_hours, i.ws_hours_period) * 100) / 100;
+
+// Only the income of the chosen work type counts; the other one stays saved untouched
+const hasIncome = (i: GoCrumbsInput) => (i.work_type === 'werkstudent' ? wsMonthlyGross(i) > 0 : i.gross_amount > 0);
+
 function profileToForm(p: GoCrumbsProfile): FormState {
   const lines = (list: GoCrumbsExpenseLine[]) => list.map(l => newLine(l.name, toField(l.amount)));
   return {
@@ -128,6 +151,9 @@ function profileToForm(p: GoCrumbsProfile): FormState {
     gross: toField(p.gross_amount),
     period: p.gross_period,
     side: toField(p.side_gross),
+    wsWage: toField(p.ws_hourly_wage ?? 0),
+    wsHours: toField(p.ws_hours ?? 0),
+    wsPeriod: p.ws_hours_period ?? 'month',
     steuerklasse: p.steuerklasse,
     churchTax: p.church_tax,
     bundesland: p.bundesland,
@@ -177,11 +203,14 @@ export default function GoCrumbs() {
 
   const input = useMemo(() => formToInput(form), [form]);
   const inputKey = useMemo(() => JSON.stringify(input), [input]);
-  const nameMissing = hasUnnamedAmount(form.subs) || hasUnnamedAmount(form.custom) || hasUnnamedAmount(form.extra);
+  // Extra pay only exists for employees, so a hidden line of it must not block anything
+  const nameMissing = hasUnnamedAmount(form.subs) || hasUnnamedAmount(form.custom) || (form.workType === 'fte' && hasUnnamedAmount(form.extra));
   const lineCount = form.subs.length + form.custom.length;
   const children = childrenOf(form);
-  const dirty = savedKey === null ? input.gross_amount > 0 : savedKey !== inputKey;
-  const canSave = dirty && input.gross_amount > 0 && !nameMissing && !saving;
+  const weeklyHours = input.ws_hours_period === 'week' ? input.ws_hours : input.ws_hours / WEEKS_PER_MONTH;
+  const incomeEntered = hasIncome(input);
+  const dirty = savedKey === null ? incomeEntered : savedKey !== inputKey;
+  const canSave = dirty && incomeEntered && !nameMissing && !saving;
 
   // Load the saved profile (first-time users start with defaults)
   useEffect(() => {
@@ -208,7 +237,7 @@ export default function GoCrumbs() {
   // sequence number drops answers from older requests, so a slow response can't overwrite a newer one.
   useEffect(() => {
     if (loading) return;
-    if (input.gross_amount <= 0) {
+    if (!incomeEntered) {
       setResult(null);
       setCalcError('');
       setCalculating(false);
@@ -386,58 +415,93 @@ export default function GoCrumbs() {
           {/* Income */}
           <div className="card">
             <h3>{t('gocrumbs.incomeTitle')}</h3>
-            <div className="gocrumbs-row-2">
-              <div className="form-group">
-                <label className="form-label" htmlFor="gc-gross">{t('gocrumbs.gross')}</label>
-                <MoneyInput id="gc-gross" value={form.gross} onChange={v => set('gross', v)} />
-              </div>
-              <div className="form-group">
-                <select id="gc-period" className="form-select" aria-label={t('gocrumbs.grossPeriod')} value={form.period} onChange={e => set('period', e.target.value as 'month' | 'year')}>
-                  <option value="month">{t('gocrumbs.perMonth')}</option>
-                  <option value="year">{t('gocrumbs.perYear')}</option>
-                </select>
-              </div>
-            </div>
-            {form.workType === 'fte' && (
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="gc-side">{t('gocrumbs.side')}</label>
-                <MoneyInput id="gc-side" value={form.side} onChange={v => set('side', v)} />
-                <small style={{ color: 'var(--text-muted)' }}>{t('gocrumbs.sideHint')}</small>
-              </div>
+            {form.workType === 'werkstudent' ? (
+              <>
+                <div className="gocrumbs-row-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="gc-ws-wage">{t('gocrumbs.wsWage')}</label>
+                    <MoneyInput id="gc-ws-wage" value={form.wsWage} onChange={v => set('wsWage', v)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="gc-ws-hours">{t('gocrumbs.wsHours')}</label>
+                    <MoneyInput id="gc-ws-hours" value={form.wsHours} onChange={v => set('wsHours', v)} />
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <select id="gc-ws-period" className="form-select" aria-label={t('gocrumbs.wsHoursPeriod')} value={form.wsPeriod} onChange={e => set('wsPeriod', e.target.value as 'week' | 'month')}>
+                    <option value="month">{t('gocrumbs.wsPerMonth')}</option>
+                    <option value="week">{t('gocrumbs.wsPerWeek')}</option>
+                  </select>
+                  {incomeEntered && (
+                    <small style={{ display: 'block', marginTop: '8px', color: 'var(--text-muted)' }}>
+                      {t('gocrumbs.wsPreview', {
+                        hours: monthlyHours(input.ws_hours, input.ws_hours_period).toLocaleString('de-DE', { maximumFractionDigits: 2 }),
+                        wage: eur.format(input.ws_hourly_wage),
+                        gross: eur.format(wsMonthlyGross(input)),
+                      })}
+                    </small>
+                  )}
+                  {weeklyHours > WS_WEEKLY_HOURS_LIMIT && (
+                    <small style={{ display: 'block', marginTop: '8px', color: 'var(--danger)' }}>{t('gocrumbs.wsHoursWarning', { limit: WS_WEEKLY_HOURS_LIMIT })}</small>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="gocrumbs-row-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="gc-gross">{t('gocrumbs.gross')}</label>
+                    <MoneyInput id="gc-gross" value={form.gross} onChange={v => set('gross', v)} />
+                  </div>
+                  <div className="form-group">
+                    <select id="gc-period" className="form-select" aria-label={t('gocrumbs.grossPeriod')} value={form.period} onChange={e => set('period', e.target.value as 'month' | 'year')}>
+                      <option value="month">{t('gocrumbs.perMonth')}</option>
+                      <option value="year">{t('gocrumbs.perYear')}</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" htmlFor="gc-side">{t('gocrumbs.side')}</label>
+                  <MoneyInput id="gc-side" value={form.side} onChange={v => set('side', v)} />
+                  <small style={{ color: 'var(--text-muted)' }}>{t('gocrumbs.sideHint')}</small>
+                </div>
+              </>
             )}
           </div>
 
-          {/* Extra pay: flat monthly pay on top of the salary, e.g. on-call */}
-          <div className="card">
-            <h3>{t('gocrumbs.extraTitle')}</h3>
-            <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('gocrumbs.extraHint')}</p>
-            {form.extra.map(line => (
-              <div key={line.id} className="gocrumbs-extra">
-                <div className="gocrumbs-line">
-                  <input
-                    className="form-input"
-                    type="text"
-                    maxLength={60}
-                    value={line.name}
-                    placeholder={t('gocrumbs.extraPlaceholder')}
-                    aria-label={t('gocrumbs.namePlaceholder')}
-                    onChange={e => updateExtra(line.id, { name: e.target.value })}
-                  />
-                  <MoneyInput value={line.amount} ariaLabel={t('gocrumbs.namePlaceholder')} onChange={v => updateExtra(line.id, { amount: v })} />
-                  <button type="button" className="btn btn-outline btn-sm" title={t('gocrumbs.remove')} aria-label={t('gocrumbs.remove')} onClick={() => removeExtra(line.id)}>
-                    ×
-                  </button>
+          {/* Extra pay: flat monthly pay on top of the salary, e.g. on-call (employees only; kept when switching) */}
+          {form.workType === 'fte' && (
+            <div className="card">
+              <h3>{t('gocrumbs.extraTitle')}</h3>
+              <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('gocrumbs.extraHint')}</p>
+              {form.extra.map(line => (
+                <div key={line.id} className="gocrumbs-extra">
+                  <div className="gocrumbs-line">
+                    <input
+                      className="form-input"
+                      type="text"
+                      maxLength={60}
+                      value={line.name}
+                      placeholder={t('gocrumbs.extraPlaceholder')}
+                      aria-label={t('gocrumbs.namePlaceholder')}
+                      onChange={e => updateExtra(line.id, { name: e.target.value })}
+                    />
+                    <MoneyInput value={line.amount} ariaLabel={t('gocrumbs.namePlaceholder')} onChange={v => updateExtra(line.id, { amount: v })} />
+                    <button type="button" className="btn btn-outline btn-sm" title={t('gocrumbs.remove')} aria-label={t('gocrumbs.remove')} onClick={() => removeExtra(line.id)}>
+                      ×
+                    </button>
+                  </div>
+                  <label className="gocrumbs-extra-free">
+                    <input type="checkbox" checked={line.taxFree} onChange={e => updateExtra(line.id, { taxFree: e.target.checked })} />
+                    {t('gocrumbs.extraTaxFree')}
+                  </label>
                 </div>
-                <label className="gocrumbs-extra-free">
-                  <input type="checkbox" checked={line.taxFree} onChange={e => updateExtra(line.id, { taxFree: e.target.checked })} />
-                  {t('gocrumbs.extraTaxFree')}
-                </label>
-              </div>
-            ))}
-            <button type="button" className="btn btn-outline btn-sm" disabled={form.extra.length >= MAX_EXTRA_PAY_LINES} onClick={addExtra}>
-              + {t('gocrumbs.addExtra')}
-            </button>
-          </div>
+              ))}
+              <button type="button" className="btn btn-outline btn-sm" disabled={form.extra.length >= MAX_EXTRA_PAY_LINES} onClick={addExtra}>
+                + {t('gocrumbs.addExtra')}
+              </button>
+            </div>
+          )}
 
           {/* Tax settings */}
           <div className="card">

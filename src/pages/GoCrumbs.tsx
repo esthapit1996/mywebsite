@@ -344,6 +344,12 @@ export default function GoCrumbs() {
   const overspent = result !== null && result.left < 0;
   const leftColor = overspent ? 'var(--danger)' : 'var(--primary)';
 
+  const saveButton = (
+    <button className="btn btn-primary" disabled={!canSave} onClick={handleSave}>
+      {saving ? t('gocrumbs.saving') : t('gocrumbs.save')}
+    </button>
+  );
+
   const renderLines = (kind: 'subs' | 'custom', lines: LineForm[], addLabel: string) => (
     <>
       {lines.map(line => (
@@ -382,9 +388,7 @@ export default function GoCrumbs() {
           <h2 className="card-title">🧮 {t('gocrumbs.name')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {dirty && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('gocrumbs.unsaved')}</span>}
-            <button className="btn btn-primary" disabled={!canSave} onClick={handleSave}>
-              {saving ? t('gocrumbs.saving') : t('gocrumbs.save')}
-            </button>
+            {saveButton}
           </div>
         </div>
         <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('gocrumbs.tagline')}</p>
@@ -580,6 +584,17 @@ export default function GoCrumbs() {
               <small style={{ display: 'block', marginTop: '8px', color: 'var(--text-muted)' }}>{t('gocrumbs.maxLines', { count: MAX_EXPENSE_LINES })}</small>
             )}
             {nameMissing && <div className="alert alert-error" style={{ marginTop: '12px' }}>{t('gocrumbs.nameRequired')}</div>}
+          </div>
+
+          {/* Second Save at the end of the form, so saving doesn't need a scroll back to the top */}
+          <div className="gocrumbs-save-bottom">
+            {/* An error stays visible; "Saved" gives way to "unsaved" as soon as something changes again */}
+            {saveMsg && (!saveMsg.ok || !dirty) ? (
+              <span style={{ fontSize: '0.85rem', color: saveMsg.ok ? 'var(--primary)' : 'var(--danger)' }}>{saveMsg.text}</span>
+            ) : (
+              dirty && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('gocrumbs.unsaved')}</span>
+            )}
+            {saveButton}
           </div>
         </div>
 

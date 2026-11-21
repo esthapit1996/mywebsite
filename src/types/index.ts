@@ -455,5 +455,5 @@ export interface GoCrumbsResult {
   savings_rate: number;
   expense_rate: number;
   tax_rate: number;
-  notes: string[]; // warning codes, translated under gocrumbs.notes.*
+  notes: string[] | null; // warning codes, translated under gocrumbs.notes.* (older API versions sent null for none)
 }

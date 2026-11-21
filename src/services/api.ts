@@ -27,6 +27,9 @@ import type {
   WishItem,
   WishLookupResult,
   WishList,
+  GoCrumbsInput,
+  GoCrumbsProfile,
+  GoCrumbsResult,
 } from '../types';
 
 // API Configuration
@@ -598,6 +601,21 @@ class ApiService {
 
   async deleteWishListItem(id: number, itemId: number): Promise<ApiResponse> {
     return this.request(`/wish-lists/${id}/items/${itemId}`, { method: 'DELETE' });
+  }
+
+  // GoCrumbs (monthly budget calculator, German tax)
+  // `data` is absent until the user has saved a profile
+  async getGoCrumbs(): Promise<ApiResponse<GoCrumbsProfile>> {
+    return this.request<GoCrumbsProfile>('/gocrumbs');
+  }
+
+  async saveGoCrumbs(input: GoCrumbsInput): Promise<ApiResponse<GoCrumbsProfile>> {
+    return this.request<GoCrumbsProfile>('/gocrumbs', { method: 'PUT', body: JSON.stringify(input) });
+  }
+
+  // Stateless: nothing is saved. Pass a signal to cancel a request that a newer edit makes obsolete.
+  async calculateGoCrumbs(input: GoCrumbsInput, signal?: AbortSignal): Promise<ApiResponse<GoCrumbsResult>> {
+    return this.request<GoCrumbsResult>('/gocrumbs/calculate', { method: 'POST', body: JSON.stringify(input), signal });
   }
 }
 

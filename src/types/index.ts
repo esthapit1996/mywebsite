@@ -382,3 +382,64 @@ export interface WishList {
   item_count: number;
   total_cost: number;
 }
+
+// ============================================
+// GoCrumbs Types (monthly budget calculator)
+// ============================================
+
+export interface GoCrumbsExpenseLine {
+  name: string;
+  amount: number; // EUR per month
+  category: string;
+}
+
+// A profile: the user's inputs. Gross amounts are per gross_period, everything else EUR per month.
+export interface GoCrumbsInput {
+  work_type: 'fte' | 'werkstudent';
+  gross_amount: number;
+  gross_period: 'month' | 'year';
+  side_gross: number;
+  steuerklasse: number; // 1-6
+  church_tax: boolean;
+  bundesland: string; // two-letter code
+  children: number;
+  under_23: boolean;
+  zusatzbeitrag: number; // % of the health insurer
+  rent: number;
+  savings: number;
+  subscriptions: GoCrumbsExpenseLine[];
+  custom_expenses: GoCrumbsExpenseLine[];
+}
+
+export interface GoCrumbsProfile extends GoCrumbsInput {
+  updated_at: string;
+}
+
+export interface GoCrumbsExpenseTotals {
+  rent: number;
+  savings: number;
+  subscriptions: number;
+  custom: number;
+  total: number;
+}
+
+// POST /api/gocrumbs/calculate: monthly breakdown in EUR, rates are fractions (0.25 = 25%)
+export interface GoCrumbsResult {
+  tax_year: number;
+  gross: number;
+  rv: number;
+  av: number;
+  kv: number;
+  pv: number;
+  lohnsteuer: number;
+  soli: number;
+  kirchensteuer: number;
+  total_deductions: number;
+  net: number;
+  expenses: GoCrumbsExpenseTotals;
+  left: number;
+  savings_rate: number;
+  expense_rate: number;
+  tax_rate: number;
+  notes: string[]; // warning codes, translated under gocrumbs.notes.*
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { memo, useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
@@ -190,6 +190,40 @@ function ResultRow({ label, value, bold, color, indent }: { label: string; value
     </div>
   );
 }
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface StableSelectProps {
+  id: string;
+  ariaLabel?: string;
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}
+
+const sameSelect = (a: StableSelectProps, b: StableSelectProps) =>
+  a.id === b.id &&
+  a.ariaLabel === b.ariaLabel &&
+  a.value === b.value &&
+  a.options.length === b.options.length &&
+  a.options.every((o, i) => o.value === b.options[i].value && o.label === b.options[i].label);
+
+// A <select> that only re-renders when its own value or options change. React re-selects the
+// current option of a controlled select on every render, and the page re-renders on every keystroke
+// and twice per calculation; on an iPhone that closes a picker the user has just opened, so it
+// needed 2-3 taps. onChange is left out of the comparison: callers must use functional state updates.
+const StableSelect = memo(function StableSelect({ id, ariaLabel, value, options, onChange }: StableSelectProps) {
+  return (
+    <select id={id} className="form-select" aria-label={ariaLabel} value={value} onChange={e => onChange(e.target.value)}>
+      {options.map(o => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}, sameSelect);
 
 // The expense lines behind the "Expenses" total, shown when the row is opened
 function ExpenseBreakdown({ input }: { input: GoCrumbsInput }) {
@@ -475,10 +509,13 @@ export default function GoCrumbs() {
                   </div>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <select id="gc-ws-period" className="form-select" aria-label={t('gocrumbs.wsHoursPeriod')} value={form.wsPeriod} onChange={e => set('wsPeriod', e.target.value as 'week' | 'month')}>
-                    <option value="month">{t('gocrumbs.wsPerMonth')}</option>
-                    <option value="week">{t('gocrumbs.wsPerWeek')}</option>
-                  </select>
+                  <StableSelect
+                    id="gc-ws-period"
+                    ariaLabel={t('gocrumbs.wsHoursPeriod')}
+                    value={form.wsPeriod}
+                    options={[{ value: 'month', label: t('gocrumbs.wsPerMonth') }, { value: 'week', label: t('gocrumbs.wsPerWeek') }]}
+                    onChange={v => set('wsPeriod', v as 'week' | 'month')}
+                  />
                   {incomeEntered && (
                     <small style={{ display: 'block', marginTop: '8px', color: 'var(--text-muted)' }}>
                       {t('gocrumbs.wsPreview', {
@@ -501,10 +538,13 @@ export default function GoCrumbs() {
                     <MoneyInput id="gc-gross" value={form.gross} onChange={v => set('gross', v)} />
                   </div>
                   <div className="form-group">
-                    <select id="gc-period" className="form-select" aria-label={t('gocrumbs.grossPeriod')} value={form.period} onChange={e => set('period', e.target.value as 'month' | 'year')}>
-                      <option value="month">{t('gocrumbs.perMonth')}</option>
-                      <option value="year">{t('gocrumbs.perYear')}</option>
-                    </select>
+                    <StableSelect
+                      id="gc-period"
+                      ariaLabel={t('gocrumbs.grossPeriod')}
+                      value={form.period}
+                      options={[{ value: 'month', label: t('gocrumbs.perMonth') }, { value: 'year', label: t('gocrumbs.perYear') }]}
+                      onChange={v => set('period', v as 'month' | 'year')}
+                    />
                   </div>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -556,19 +596,21 @@ export default function GoCrumbs() {
             <div className="gocrumbs-row-2">
               <div className="form-group">
                 <label className="form-label" htmlFor="gc-class">{t('gocrumbs.taxClass')}</label>
-                <select id="gc-class" className="form-select" value={form.steuerklasse} onChange={e => set('steuerklasse', Number(e.target.value))}>
-                  {STEUERKLASSEN.map(c => (
-                    <option key={c} value={c}>{t(`gocrumbs.classes.${c}` as never)}</option>
-                  ))}
-                </select>
+                <StableSelect
+                  id="gc-class"
+                  value={String(form.steuerklasse)}
+                  options={STEUERKLASSEN.map(c => ({ value: String(c), label: t(`gocrumbs.classes.${c}` as never) }))}
+                  onChange={v => set('steuerklasse', Number(v))}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="gc-state">{t('gocrumbs.bundesland')}</label>
-                <select id="gc-state" className="form-select" value={form.bundesland} onChange={e => set('bundesland', e.target.value)}>
-                  {BUNDESLAENDER.map(b => (
-                    <option key={b.code} value={b.code}>{b.name}</option>
-                  ))}
-                </select>
+                <StableSelect
+                  id="gc-state"
+                  value={form.bundesland}
+                  options={BUNDESLAENDER.map(b => ({ value: b.code, label: b.name }))}
+                  onChange={v => set('bundesland', v)}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="gc-children">{t('gocrumbs.children')}</label>

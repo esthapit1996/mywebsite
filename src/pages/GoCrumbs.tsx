@@ -90,7 +90,9 @@ const newLine = (name = '', amount = ''): LineForm => ({ id: nextLineId++, name,
 const newExtraLine = (name = '', amount = '', taxFree = false): ExtraLineForm => ({ ...newLine(name, amount), taxFree });
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
-const money = (s: string, max: number) => clamp(parseMoney(s) ?? 0, 0, max);
+// Whole cents, like the database stores them, so a result never shifts after saving and reloading
+const cents = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const money = (s: string, max: number) => clamp(cents(parseMoney(s) ?? 0), 0, max);
 const toField = (n: number) => (n === 0 ? '' : String(n));
 
 function childrenOf(f: FormState): number {
@@ -131,7 +133,9 @@ function formToInput(f: FormState): GoCrumbsInput {
     savings: money(f.savings, MAX_EXPENSE_AMOUNT),
     subscriptions: linesToInput(f.subs),
     custom_expenses: linesToInput(f.custom),
-    extra_pay: extraToInput(f.extra),
+    // Extra pay is hidden for a Werkstudent: a line without a name can't be saved and must not
+    // fail the request there. Named lines are kept for switching back.
+    extra_pay: extraToInput(f.workType === 'fte' ? f.extra : f.extra.filter(l => l.name.trim() !== '')),
   };
 }
 
@@ -592,7 +596,7 @@ export default function GoCrumbs() {
             {!result ? (
               <div className="empty-state" style={{ padding: '24px 8px' }}>
                 <div className="empty-state-icon">🧮</div>
-                <p>{t('gocrumbs.emptyHint')}</p>
+                <p>{t(form.workType === 'werkstudent' ? 'gocrumbs.emptyHintWs' : 'gocrumbs.emptyHint')}</p>
               </div>
             ) : (
               <div style={{ opacity: calculating ? 0.6 : 1, transition: 'opacity 0.15s' }}>

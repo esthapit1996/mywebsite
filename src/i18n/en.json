@@ -672,6 +672,7 @@
     "nameRequired": "Give every expense that has an amount a name.",
     "resultTitle": "Your month",
     "emptyHint": "Enter your gross income to see what is left.",
+    "emptyHintWs": "Enter your hourly wage and hours to see what is left.",
     "result": {
       "gross": "Gross",
       "extraTaxable": "of which extra pay (taxed)",

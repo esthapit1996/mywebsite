@@ -55,7 +55,7 @@ const API_BASE = 'https://your-backend-url.com/api';
 | React 18 | UI library |
 | TypeScript | Type safety |
 | Vite | Build tool & dev server |
-| react-router-dom | Client-side routing |
+| react-router-dom | Client-side routing (a hash data router, `createHashRouter`, so pages can block navigation with `useBlocker`) |
 | react-i18next | Internationalization (EN + IT) |
 | recharts | Pie & bar charts for GopherStash and GoCrumbs |
 | CSS Variables | Theming with 14 themes |

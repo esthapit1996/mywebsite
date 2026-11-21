@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useBlocker } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
@@ -340,6 +340,14 @@ export default function GoCrumbs() {
     // `input` changes exactly when `inputKey` does
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputKey, nameMissing, loading, t]);
+
+  // Ask before leaving the page inside the app (links, menu, back button) with unsaved changes
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm(t('gocrumbs.leaveConfirm'))) blocker.proceed();
+    else blocker.reset();
+  }, [blocker, t]);
 
   // Warn before closing the tab with unsaved changes
   useEffect(() => {

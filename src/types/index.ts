@@ -406,6 +406,10 @@ export interface GoCrumbsInput {
   gross_amount: number;
   gross_period: 'month' | 'year';
   side_gross: number;
+  // Werkstudent income (own fields: switching work type keeps the employee's gross and the other way round)
+  ws_hourly_wage: number;
+  ws_hours: number;
+  ws_hours_period: 'week' | 'month';
   steuerklasse: number; // 1-6
   church_tax: boolean;
   bundesland: string; // two-letter code

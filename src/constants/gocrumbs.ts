@@ -17,6 +17,13 @@ export const MAX_GROSS_YEAR = 10_000_000;
 export const MAX_SIDE_GROSS = 100_000;
 export const MAX_EXPENSE_AMOUNT = 1_000_000;
 
+// Werkstudent income is hourly wage x hours; limits mirror the API
+export const MAX_WS_WAGE = 1_000;
+export const MAX_WS_HOURS_MONTH = 744;
+export const MAX_WS_HOURS_WEEK = 168;
+export const WEEKS_PER_MONTH = 52 / 12; // weekly hours count as an average month
+export const WS_WEEKLY_HOURS_LIMIT = 20; // Werkstudent rules: at most 20 hours a week during lectures
+
 export const STEUERKLASSEN = [1, 2, 3, 4, 5, 6] as const;
 
 // Federal states: the code is what the API stores (it sets the church tax rate and the Sachsen care-insurance rule)

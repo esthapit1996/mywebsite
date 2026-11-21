@@ -344,6 +344,15 @@ export default function GoCrumbs() {
   const overspent = result !== null && result.left < 0;
   const leftColor = overspent ? 'var(--danger)' : 'var(--primary)';
 
+  // Save status next to both Save buttons. It is inline on purpose: an alert above the form, or a
+  // hint that wraps the header, would move every field on a phone just as the user taps the next one.
+  // An error stays visible; "Saved" gives way to "unsaved" as soon as something changes again.
+  const saveStatus = (
+    <span className="gocrumbs-save-status" style={{ color: saveMsg && !saveMsg.ok ? 'var(--danger)' : saveMsg && !dirty ? 'var(--primary)' : 'var(--text-muted)' }}>
+      {saveMsg && (!saveMsg.ok || !dirty) ? saveMsg.text : dirty ? t('gocrumbs.unsaved') : ''}
+    </span>
+  );
+
   const saveButton = (
     <button className="btn btn-primary" disabled={!canSave} onClick={handleSave}>
       {saving ? t('gocrumbs.saving') : t('gocrumbs.save')}
@@ -386,8 +395,8 @@ export default function GoCrumbs() {
       <div className="card">
         <div className="card-header" style={{ marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
           <h2 className="card-title">🧮 {t('gocrumbs.name')}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {dirty && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('gocrumbs.unsaved')}</span>}
+          <div className="gocrumbs-actions">
+            {saveStatus}
             {saveButton}
           </div>
         </div>
@@ -395,7 +404,6 @@ export default function GoCrumbs() {
       </div>
 
       {loadError && <div className="alert alert-error">{loadError}</div>}
-      {saveMsg && <div className={`alert ${saveMsg.ok ? 'alert-success' : 'alert-error'}`}>{saveMsg.text}</div>}
 
       <div className="gocrumbs-layout">
         <div>
@@ -587,13 +595,8 @@ export default function GoCrumbs() {
           </div>
 
           {/* Second Save at the end of the form, so saving doesn't need a scroll back to the top */}
-          <div className="gocrumbs-save-bottom">
-            {/* An error stays visible; "Saved" gives way to "unsaved" as soon as something changes again */}
-            {saveMsg && (!saveMsg.ok || !dirty) ? (
-              <span style={{ fontSize: '0.85rem', color: saveMsg.ok ? 'var(--primary)' : 'var(--danger)' }}>{saveMsg.text}</span>
-            ) : (
-              dirty && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('gocrumbs.unsaved')}</span>
-            )}
+          <div className="gocrumbs-actions gocrumbs-save-bottom">
+            {saveStatus}
             {saveButton}
           </div>
         </div>

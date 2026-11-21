@@ -275,6 +275,8 @@ export default function GoCrumbs() {
   const nameMissing = hasUnnamedAmount(form.subs) || hasUnnamedAmount(form.custom) || (form.workType === 'fte' && hasUnnamedAmount(form.extra));
   const lineCount = form.subs.length + form.custom.length;
   const children = childrenOf(form);
+  const isEmployee = form.workType === 'fte';
+  const showUnder23 = isEmployee && children === 0; // the care-insurance surcharge only exists for employees
   const weeklyHours = input.ws_hours_period === 'week' ? input.ws_hours : input.ws_hours / WEEKS_PER_MONTH;
   const incomeEntered = hasIncome(input);
   const dirty = savedKey === null ? incomeEntered : savedKey !== inputKey;
@@ -623,17 +625,21 @@ export default function GoCrumbs() {
                   onChange={e => { if (/^\d{0,2}$/.test(e.target.value)) set('children', e.target.value); }}
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="gc-zusatz">{t('gocrumbs.zusatzbeitrag')}</label>
-                <MoneyInput id="gc-zusatz" value={form.zusatz} onChange={v => set('zusatz', v)} />
-              </div>
+              {/* Employees only: a Werkstudent pays no health or care insurance, so the additional rate
+                  and the under-23 rule change nothing there. The saved values stay for switching back. */}
+              {isEmployee && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="gc-zusatz">{t('gocrumbs.zusatzbeitrag')}</label>
+                  <MoneyInput id="gc-zusatz" value={form.zusatz} onChange={v => set('zusatz', v)} />
+                </div>
+              )}
             </div>
-            <small style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '12px' }}>{t('gocrumbs.zusatzHint')}</small>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: children === 0 ? '10px' : 0, cursor: 'pointer' }}>
+            {isEmployee && <small style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '12px' }}>{t('gocrumbs.zusatzHint')}</small>}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: showUnder23 ? '10px' : 0, cursor: 'pointer' }}>
               <input type="checkbox" checked={form.churchTax} onChange={e => set('churchTax', e.target.checked)} />
               {t('gocrumbs.churchTax')}
             </label>
-            {children === 0 && (
+            {showUnder23 && (
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.under23} onChange={e => set('under23', e.target.checked)} />
                 {t('gocrumbs.under23')}

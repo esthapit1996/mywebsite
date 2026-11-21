@@ -332,6 +332,12 @@
   --btn-text: #1e293b;
 }
 
+/* Controls react to the first tap on phones: no waiting for a possible double-tap zoom, which on
+   iOS could swallow a quick second tap (pinch-to-zoom still works) */
+a, button, input, select, textarea, label {
+  touch-action: manipulation;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);

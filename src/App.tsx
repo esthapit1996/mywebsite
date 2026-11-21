@@ -9,6 +9,7 @@ import api from './services/api';
 import logo from './images/GopherDebt_Mascot.png';
 import Avatar from './components/Avatar';
 import LoadingSpinner from './components/LoadingSpinner';
+import { GOCRUMBS_ROUTE } from './constants/gocrumbs';
 
 // Lazy-loaded page components — each gets its own chunk
 const Login = lazy(() => import('./pages/Login'));
@@ -25,6 +26,7 @@ const Community = lazy(() => import('./pages/Community'));
 const GopherStash = lazy(() => import('./pages/GopherStash'));
 const GoWish = lazy(() => import('./pages/GoWish'));
 const GoWishList = lazy(() => import('./pages/GoWishList'));
+const GoCrumbs = lazy(() => import('./pages/GoCrumbs'));
 
 interface RouteProps {
   children: ReactNode;
@@ -238,6 +240,12 @@ function Header(): JSX.Element | null {
                 </button>
                 <button 
                   className="user-menu-item"
+                  onClick={() => handleNavigation(GOCRUMBS_ROUTE)}
+                >
+                  {t('header.goCrumbs')}
+                </button>
+                <button 
+                  className="user-menu-item"
                   onClick={() => handleNavigation('/suggestions')}
                 >
                   {t('header.suggestionBox')}
@@ -383,6 +391,14 @@ function AppRoutes(): JSX.Element {
             element={
               <ProtectedRoute>
                 <GoWishList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={GOCRUMBS_ROUTE}
+            element={
+              <ProtectedRoute>
+                <GoCrumbs />
               </ProtectedRoute>
             }
           />

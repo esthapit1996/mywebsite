@@ -1511,3 +1511,86 @@ body {
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
 }
+
+/* GoCrumbs */
+.container.gocrumbs-page {
+  max-width: 1040px;
+}
+
+.gocrumbs-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+  gap: 16px;
+  align-items: start;
+}
+
+.gocrumbs-result {
+  position: sticky;
+  top: 16px;
+}
+
+.gocrumbs-page h3 {
+  margin: 0 0 14px;
+}
+
+.gocrumbs-page .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gocrumbs-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  align-items: end;
+}
+
+.gocrumbs-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.gocrumbs-bar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .gocrumbs-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gocrumbs-result {
+    position: static;
+  }
+
+  .gocrumbs-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    position: sticky;
+    bottom: 12px;
+    z-index: 5;
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 600px) {
+  .gocrumbs-row-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gocrumbs-line {
+    grid-template-columns: minmax(0, 1fr) 90px auto;
+  }
+}

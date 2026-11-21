@@ -244,6 +244,14 @@ async request(endpoint, options = {}) {
 | `updateWishListItem` | `id, itemId, name, why, link, cost` | PUT | `/wish-lists/:id/items/:itemId` | Edit a wish |
 | `deleteWishListItem` | `id, itemId` | DELETE | `/wish-lists/:id/items/:itemId` | Delete a wish |
 
+### GoCrumbs Methods
+
+| Method | Parameters | HTTP | Endpoint | Description |
+|--------|------------|------|----------|-------------|
+| `getGoCrumbs` | - | GET | `/gocrumbs` | My saved profile; `data` is absent until the first save |
+| `saveGoCrumbs` | `input: GoCrumbsInput` | PUT | `/gocrumbs` | Create or replace my profile (inputs only) |
+| `calculateGoCrumbs` | `input: GoCrumbsInput, signal?: AbortSignal` | POST | `/gocrumbs/calculate` | Net pay and what is left for the given inputs, nothing is saved. Pass a signal to cancel an outdated request |
+
 ---
 
 ### Access Control Methods (Founder Only)

@@ -30,6 +30,7 @@ Pages are the main **route components** - each represents a full screen in the a
 | `GopherStash.tsx` | `/stash` | ✅ | Personal expense tracker with charts |
 | `GoWish.tsx` | `/wish` | ✅ | Shared wish groups + personal wishlist |
 | `GoWishList.tsx` | `/wish/lists/:id` | ✅ | One shared wish group: a wish section per member |
+| `GoCrumbs.tsx` | `/gocrumbs` | ✅ | Monthly "what's left" calculator with German tax |
 | `PaymentHistory.tsx` | `/payment-history` | ✅ | User's payment history |
 | `Suggestions.tsx` | `/suggestions` | ✅ | Feature suggestion box with voting & comments |
 | `CurrencyConverter.tsx` | `/currency` | ✅ | Currency converter tool with trend chart |
@@ -415,6 +416,23 @@ One shared wish group (`/wish/lists/:id`). Each member has their own section of 
 | **Members** | Chips under the title; the members modal adds users (from `getAllUsers`), removes members, or leaves |
 | **Leave / Remove** | The member's wishes in this group are deleted with them; if the last member leaves, the group is deleted (confirmations warn about this) |
 | **Edit group** | ✎ button next to the title: icon, name (max 64) and description (max 128); the description shows under the title |
+
+## 🔧 GoCrumbs.tsx
+
+Opened from the user dropdown menu (🧮 GoCrumbs). Enter your gross income and expenses and see what is left each month. The tax maths runs in the backend; this page only collects inputs and shows the answer.
+
+| Feature | Description |
+|---------|-------------|
+| **Form** | Work situation (full-time employee or Werkstudent), income (month or year, side income for employees), tax settings (class, federal state, children, Zusatzbeitrag, church tax, under 23) and monthly expenses (rent, savings, subscriptions, other lines; 50 lines at most) |
+| **Live result** | Every edit is sent to `POST /gocrumbs/calculate` after 400 ms of quiet. The previous request is cancelled and a sequence number drops answers from older requests, so a slow response can't overwrite a newer one. The old result stays dimmed while a new one loads |
+| **Result card** | Gross, each deduction, net, expenses and "Left this month" (red "Over budget by" when negative), effective tax rate, savings rate, a donut of where the money goes, translated notes (Minijob, Midijob, ceilings, ...) and the tax-year disclaimer with what is not included |
+| **Saving** | One profile per user (`GET`/`PUT /gocrumbs`). Only inputs are saved; results are always recalculated. The Save button is enabled when there are unsaved changes, and closing the tab warns about them |
+| **Amounts** | `MoneyInput` is a text input that accepts `4000,50`, `4.000,50` and `4000.5`, and ignores letters. Empty counts as 0. Values are clamped to the API's ranges |
+| **Currency** | Always EUR, formatted `de-DE`. It does not use `formatAmount`, so the display-currency setting never converts tax figures |
+| **Layout** | Two columns on desktop with a sticky result card. On phones one column plus a sticky bar that shows "Left this month" and scrolls to the result |
+| **Language** | English only for now (`gocrumbs.*` keys exist only in `en.json`; Italian falls back to English) |
+
+Limits and the federal-state list are in `src/constants/gocrumbs.ts`. The display name is the `gocrumbs.name` and `header.goCrumbs` translations, so renaming the feature means changing those and `GOCRUMBS_ROUTE`.
 
 ## 🔧 WishBoard.tsx (component)
 

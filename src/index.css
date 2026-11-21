@@ -1586,6 +1586,55 @@ body {
   margin-bottom: 16px;
 }
 
+.gocrumbs-expenses-toggle {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 5px 0 5px 12px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gocrumbs-expenses-toggle > span:first-child {
+  color: var(--text-muted);
+}
+
+.gocrumbs-chevron {
+  display: inline-block;
+  width: 1.1em;
+  margin-left: -1.1em;
+  font-size: 1em;
+}
+
+.gocrumbs-breakdown {
+  padding: 2px 0 6px 24px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.gocrumbs-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.gocrumbs-breakdown-row > span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.gocrumbs-breakdown-group {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .gocrumbs-bar {
   display: none;
 }

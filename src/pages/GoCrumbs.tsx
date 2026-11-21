@@ -191,6 +191,33 @@ function ResultRow({ label, value, bold, color, indent }: { label: string; value
   );
 }
 
+// The expense lines behind the "Expenses" total, shown when the row is opened
+function ExpenseBreakdown({ input }: { input: GoCrumbsInput }) {
+  const { t } = useTranslation();
+  const row = (key: string, label: string, amount: number) =>
+    amount > 0 && (
+      <div key={key} className="gocrumbs-breakdown-row">
+        <span>{label}</span>
+        <span style={{ whiteSpace: 'nowrap' }}>− {eur.format(amount)}</span>
+      </div>
+    );
+  const group = (title: string, lines: GoCrumbsExpenseLine[]) =>
+    lines.some(l => l.amount > 0) && (
+      <>
+        <div className="gocrumbs-breakdown-group">{title}</div>
+        {lines.map((l, i) => row(`${title}-${i}`, l.name, l.amount))}
+      </>
+    );
+  return (
+    <div className="gocrumbs-breakdown">
+      {row('rent', t('gocrumbs.rent'), input.rent)}
+      {row('savings', t('gocrumbs.savings'), input.savings)}
+      {group(t('gocrumbs.subscriptions'), input.subscriptions)}
+      {group(t('gocrumbs.custom'), input.custom_expenses)}
+    </div>
+  );
+}
+
 export default function GoCrumbs() {
   const { t } = useTranslation();
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -198,6 +225,9 @@ export default function GoCrumbs() {
   const [loadError, setLoadError] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null); // last saved input as JSON; null = never saved
   const [result, setResult] = useState<GoCrumbsResult | null>(null);
+  // The input the shown result was calculated from, so the expense breakdown always adds up to its total
+  const [resultInput, setResultInput] = useState<GoCrumbsInput | null>(null);
+  const [showExpenses, setShowExpenses] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [calcError, setCalcError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -257,6 +287,7 @@ export default function GoCrumbs() {
         const res = await api.calculateGoCrumbs(input, controller.signal);
         if (controller.signal.aborted || mySeq !== requestSeq.current) return;
         setResult(res.data ?? null);
+        setResultInput(input);
         setCalcError('');
       } catch (err) {
         if (controller.signal.aborted || mySeq !== requestSeq.current) return;
@@ -633,7 +664,19 @@ export default function GoCrumbs() {
                 <ResultRow label={t('gocrumbs.result.net')} value={eur.format(result.net)} bold />
                 {result.expenses.total > 0 && (
                   <>
-                    <ResultRow indent label={t('gocrumbs.result.expenses')} value={`− ${eur.format(result.expenses.total)}`} />
+                    <button
+                      type="button"
+                      className="gocrumbs-expenses-toggle"
+                      aria-expanded={showExpenses}
+                      onClick={() => setShowExpenses(v => !v)}
+                    >
+                      <span>
+                        <span className="gocrumbs-chevron" aria-hidden="true">{showExpenses ? '▾' : '▸'}</span>
+                        {t('gocrumbs.result.expenses')}
+                      </span>
+                      <span style={{ whiteSpace: 'nowrap' }}>− {eur.format(result.expenses.total)}</span>
+                    </button>
+                    {showExpenses && resultInput && <ExpenseBreakdown input={resultInput} />}
                     <div style={{ borderTop: '1px solid var(--border)', margin: '6px 0' }} />
                   </>
                 )}

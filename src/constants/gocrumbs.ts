@@ -5,6 +5,7 @@ export const GOCRUMBS_ROUTE = '/gocrumbs';
 
 export const CALC_DEBOUNCE_MS = 400;
 export const MAX_EXPENSE_LINES = 50; // subscriptions + custom lines, same limit as the API
+export const MAX_EXTRA_PAY_LINES = 20; // same limit as the API
 export const MAX_CHILDREN = 20;
 export const MAX_ZUSATZBEITRAG = 10;
 export const DEFAULT_ZUSATZBEITRAG = '2.9'; // 2026 average Zusatzbeitrag in %

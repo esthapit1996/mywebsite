@@ -249,7 +249,7 @@ async request(endpoint, options = {}) {
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
 | `getGoCrumbs` | - | GET | `/gocrumbs` | My saved profile; `data` is absent until the first save |
-| `saveGoCrumbs` | `input: GoCrumbsInput` | PUT | `/gocrumbs` | Create or replace my profile (inputs only) |
+| `saveGoCrumbs` | `input: GoCrumbsInput` | PUT | `/gocrumbs` | Create or replace my profile (inputs only, including `extra_pay` lines) |
 | `calculateGoCrumbs` | `input: GoCrumbsInput, signal?: AbortSignal` | POST | `/gocrumbs/calculate` | Net pay and what is left for the given inputs, nothing is saved. Pass a signal to cancel an outdated request |
 
 ---

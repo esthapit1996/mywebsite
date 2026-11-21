@@ -631,6 +631,11 @@
     "perYear": "per year",
     "side": "Side income (gross, per month)",
     "sideHint": "Up to €603 a month is a Minijob and stays untaxed. Anything above that is taxed as a second job (tax class VI).",
+    "extraTitle": "Extra pay (on-call and similar)",
+    "extraHint": "Flat amounts you get on top of your salary every month, for example on-call pay. They are taxed and charged social insurance like salary. Tick \"tax-free\" only for amounts your payslip shows without tax, such as Sunday or holiday surcharges.",
+    "extraPlaceholder": "e.g. On-call",
+    "extraTaxFree": "Tax-free (no tax or social insurance)",
+    "addExtra": "Add extra pay",
     "taxTitle": "Tax settings",
     "taxClass": "Tax class (Steuerklasse)",
     "classes": {
@@ -662,6 +667,8 @@
     "emptyHint": "Enter your gross income to see what is left.",
     "result": {
       "gross": "Gross",
+      "extraTaxable": "of which extra pay (taxed)",
+      "extraFree": "of which extra pay (tax-free)",
       "rv": "Pension insurance",
       "av": "Unemployment insurance",
       "kv": "Health insurance",

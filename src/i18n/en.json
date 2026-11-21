@@ -618,6 +618,7 @@
     "saved": "Saved",
     "saveFailed": "Failed to save your budget",
     "unsaved": "You have unsaved changes",
+    "leaveConfirm": "You have unsaved changes. Leave without saving?",
     "workTitle": "Work situation",
     "workType": {
       "fte": "Full-time employee",

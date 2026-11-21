@@ -770,9 +770,10 @@ export default function GoCrumbs() {
                   </div>
                 )}
 
-                {result.notes.length > 0 && (
+                {/* The API sent null instead of [] when no note applied (fixed in GopherDebt #44); tolerate both */}
+                {(result.notes ?? []).length > 0 && (
                   <ul style={{ margin: '16px 0 0', paddingLeft: '18px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {result.notes.map(code => (
+                    {(result.notes ?? []).map(code => (
                       <li key={code} style={{ marginBottom: '4px' }}>{t(`gocrumbs.notes.${code}` as never, { defaultValue: code })}</li>
                     ))}
                   </ul>

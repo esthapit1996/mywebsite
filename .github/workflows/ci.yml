@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Read Dependabot metadata
         id: meta
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
 
       # A merge made with GITHUB_TOKEN doesn't trigger push workflows, so the deploy is started here
       - name: Merge and deploy

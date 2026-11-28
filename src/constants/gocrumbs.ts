@@ -4,6 +4,8 @@
 export const GOCRUMBS_ROUTE = '/gocrumbs';
 
 export const CALC_DEBOUNCE_MS = 400;
+export const MAX_PAGES = 15; // pages per work type, same limit as the API
+export const MAX_PAGE_NAME = 40; // characters, same limit as the API
 export const MAX_EXPENSE_LINES = 50; // subscriptions + custom lines, same limit as the API
 export const MAX_EXTRA_PAY_LINES = 20; // same limit as the API
 export const MAX_CHILDREN = 20;

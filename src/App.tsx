@@ -395,7 +395,7 @@ function AppRoutes(): JSX.Element {
             }
           />
           <Route
-            path={GOCRUMBS_ROUTE}
+            path={`${GOCRUMBS_ROUTE}/:pageId?`}
             element={
               <ProtectedRoute>
                 <GoCrumbs />

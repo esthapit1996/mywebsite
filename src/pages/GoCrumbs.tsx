@@ -1,5 +1,5 @@
-import { memo, useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useBlocker } from 'react-router-dom';
+import { memo, useState, useEffect, useMemo, useRef, type FormEvent } from 'react';
+import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
@@ -10,12 +10,15 @@ import {
   CALC_DEBOUNCE_MS,
   DEFAULT_BUNDESLAND,
   DEFAULT_ZUSATZBEITRAG,
+  GOCRUMBS_ROUTE,
   MAX_CHILDREN,
   MAX_EXPENSE_AMOUNT,
   MAX_EXPENSE_LINES,
   MAX_EXTRA_PAY_LINES,
   MAX_GROSS_MONTH,
   MAX_GROSS_YEAR,
+  MAX_PAGE_NAME,
+  MAX_PAGES,
   MAX_SIDE_GROSS,
   MAX_WS_HOURS_MONTH,
   MAX_WS_HOURS_WEEK,
@@ -25,7 +28,10 @@ import {
   MAX_ZUSATZBEITRAG,
   STEUERKLASSEN,
 } from '../constants/gocrumbs';
-import type { GoCrumbsExpenseLine, GoCrumbsExtraPayLine, GoCrumbsInput, GoCrumbsProfile, GoCrumbsResult } from '../types';
+import type { GoCrumbsExpenseLine, GoCrumbsExtraPayLine, GoCrumbsInput, GoCrumbsPageSummary, GoCrumbsResult } from '../types';
+
+type WorkType = GoCrumbsInput['work_type'];
+const WORK_TYPES: readonly WorkType[] = ['fte', 'werkstudent'];
 
 // This feature is EUR-only and German: never run its amounts through the display-currency conversion
 const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -44,7 +50,7 @@ interface ExtraLineForm extends LineForm {
 }
 
 interface FormState {
-  workType: 'fte' | 'werkstudent';
+  workType: WorkType; // fixed per page
   gross: string;
   period: 'month' | 'year';
   side: string;
@@ -148,7 +154,7 @@ const wsMonthlyGross = (i: GoCrumbsInput) => Math.round(i.ws_hourly_wage * month
 // Only the income of the chosen work type counts; the other one stays saved untouched
 const hasIncome = (i: GoCrumbsInput) => (i.work_type === 'werkstudent' ? wsMonthlyGross(i) > 0 : i.gross_amount > 0);
 
-function profileToForm(p: GoCrumbsProfile): FormState {
+function inputToForm(p: GoCrumbsInput): FormState {
   const lines = (list: GoCrumbsExpenseLine[]) => list.map(l => newLine(l.name, toField(l.amount)));
   return {
     workType: p.work_type,
@@ -171,6 +177,18 @@ function profileToForm(p: GoCrumbsProfile): FormState {
     extra: (p.extra_pay ?? []).map(l => newExtraLine(l.name, toField(l.amount), l.tax_free)),
   };
 }
+
+// The page to open for a work type: the one saved most recently
+function latestPage(pages: GoCrumbsPageSummary[]): GoCrumbsPageSummary | undefined {
+  let latest: GoCrumbsPageSummary | undefined;
+  for (const p of pages) {
+    if (!latest || Date.parse(p.updated_at) > Date.parse(latest.updated_at)) latest = p;
+  }
+  return latest;
+}
+
+const pagePath = (id: number) => `${GOCRUMBS_ROUTE}/${id}`;
+const draftPath = (type: WorkType) => `${GOCRUMBS_ROUTE}?type=${type}`;
 
 // An amount without a name can't be saved (the API requires a name)
 const hasUnnamedAmount = (lines: LineForm[]) =>
@@ -252,10 +270,107 @@ function ExpenseBreakdown({ input }: { input: GoCrumbsInput }) {
   );
 }
 
+interface PageDialogProps {
+  title: string;
+  submitLabel: string;
+  initialName: string;
+  // New page only: start from a copy of the open page (with a hint when it has unsaved changes) or blank
+  copyChoice?: { defaultCopy: boolean; hint: string | null };
+  onSubmit: (name: string, copy: boolean) => Promise<void>;
+  onClose: () => void;
+}
+
+// Asks for a page name (new page, rename, saving an unsaved budget). On success the caller closes it;
+// on failure the server's message (name taken, 15 pages reached) is shown here.
+function PageDialog({ title, submitLabel, initialName, copyChoice, onSubmit, onClose }: PageDialogProps) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(initialName);
+  const [copy, setCopy] = useState(copyChoice?.defaultCopy ?? false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const trimmed = name.trim();
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onSubmit(trimmed, copy);
+    } catch (err) {
+      setError(errorMessage(err, t('gocrumbs.pages.failed')));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={busy ? undefined : onClose}>
+      <div className="modal-content card" role="dialog" aria-modal="true" aria-labelledby="gc-page-dialog-title" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 id="gc-page-dialog-title">{title}</h2>
+          <button type="button" className="modal-close" aria-label={t('common.cancel')} disabled={busy} onClick={onClose}>✕</button>
+        </div>
+        {error && <div className="alert alert-error">{error}</div>}
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="gc-page-name">{t('gocrumbs.pages.nameLabel')}</label>
+            <input
+              id="gc-page-name"
+              className="form-input"
+              type="text"
+              maxLength={MAX_PAGE_NAME}
+              value={name}
+              placeholder={t('gocrumbs.pages.namePlaceholder')}
+              autoFocus
+              onChange={e => setName(e.target.value)}
+            />
+          </div>
+          {copyChoice && (
+            <div className="form-group gocrumbs-start" role="radiogroup" aria-label={t('gocrumbs.pages.startLabel')}>
+              <label>
+                <input type="radio" name="gc-page-start" checked={copy} onChange={() => setCopy(true)} />
+                {t('gocrumbs.pages.copyCurrent')}
+              </label>
+              <label>
+                <input type="radio" name="gc-page-start" checked={!copy} onChange={() => setCopy(false)} />
+                {t('gocrumbs.pages.startBlank')}
+              </label>
+              {copy && copyChoice.hint && <small>{copyChoice.hint}</small>}
+            </div>
+          )}
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" disabled={busy} onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={!trimmed || busy}>
+              {busy ? t('gocrumbs.saving') : submitLabel}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function GoCrumbs() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { pageId: pageParam } = useParams();
+  const [searchParams] = useSearchParams();
+  // /gocrumbs/:pageId opens a saved page; /gocrumbs?type=... opens that work type's latest page, or an
+  // unsaved budget when it has none yet
+  const pageId = pageParam && /^\d+$/.test(pageParam) ? Number(pageParam) : null;
+  const typeParam: WorkType | null = WORK_TYPES.find(w => w === searchParams.get('type')) ?? null;
+
+  const [pages, setPages] = useState<GoCrumbsPageSummary[]>([]);
+  const pagesRef = useRef(pages);
+  pagesRef.current = pages;
+  const [pagesLoading, setPagesLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageName, setPageName] = useState(''); // the open page's saved name; '' for an unsaved budget
+  const [dialog, setDialog] = useState<'new' | 'rename' | 'saveDraft' | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const allowNav = useRef(false); // set right before a navigation that must not ask about unsaved changes
+
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null); // last saved input as JSON; null = never saved
   const [result, setResult] = useState<GoCrumbsResult | null>(null);
@@ -268,7 +383,13 @@ export default function GoCrumbs() {
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const requestSeq = useRef(0);
   const resultRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
+  const loading = pagesLoading || pageLoading;
+  const openPage = pageId === null ? undefined : pages.find(p => p.id === pageId);
+  const viewType: WorkType = openPage?.work_type ?? typeParam ?? 'fte';
+  const typePages = pages.filter(p => p.work_type === viewType);
+  const atLimit = typePages.length >= MAX_PAGES;
   const input = useMemo(() => formToInput(form), [form]);
   const inputKey = useMemo(() => JSON.stringify(input), [input]);
   // Extra pay only exists for employees, so a hidden line of it must not block anything
@@ -282,26 +403,76 @@ export default function GoCrumbs() {
   const dirty = savedKey === null ? incomeEntered : savedKey !== inputKey;
   const canSave = dirty && incomeEntered && !nameMissing && !saving;
 
-  // Load the saved profile (first-time users start with defaults)
+  // Load the list of pages (the tabs) once
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.getGoCrumbs();
-        if (cancelled) return;
-        if (res.data) {
-          const loaded = profileToForm(res.data);
-          setForm(loaded);
-          setSavedKey(JSON.stringify(formToInput(loaded)));
-        }
+        const res = await api.getGoCrumbsPages();
+        if (!cancelled) setPages(res.data ?? []);
       } catch (err) {
         if (!cancelled) setLoadError(errorMessage(err, t('gocrumbs.loadFailed')));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setPagesLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, [t]);
+
+  // Open what the URL names. A missing or foreign page goes back to /gocrumbs; without a page the
+  // latest one (of the asked work type) opens, or an unsaved budget when there is none.
+  useEffect(() => {
+    if (pagesLoading) return;
+    allowNav.current = false;
+    const list = pagesRef.current;
+    const clearResult = () => {
+      setResult(null);
+      setResultInput(null);
+      setShowExpenses(false);
+      setCalcError('');
+      setSaveMsg(null);
+    };
+    const redirect = (to: string) => {
+      allowNav.current = true; // the form is about to be replaced anyway
+      navigate(to, { replace: true });
+    };
+
+    if (pageParam !== undefined) {
+      if (pageId === null || !list.some(p => p.id === pageId)) {
+        redirect(GOCRUMBS_ROUTE);
+        return;
+      }
+      let cancelled = false;
+      setPageLoading(true);
+      setLoadError('');
+      clearResult();
+      (async () => {
+        try {
+          const res = await api.getGoCrumbsPage(pageId);
+          if (cancelled || !res.data) return;
+          const loaded = inputToForm(res.data);
+          setForm(loaded);
+          setSavedKey(JSON.stringify(formToInput(loaded)));
+          setPageName(res.data.name);
+        } catch (err) {
+          if (!cancelled) setLoadError(errorMessage(err, t('gocrumbs.pages.loadFailed')));
+        } finally {
+          if (!cancelled) setPageLoading(false);
+        }
+      })();
+      return () => { cancelled = true; };
+    }
+
+    const latest = latestPage(typeParam ? list.filter(p => p.work_type === typeParam) : list);
+    if (latest) {
+      redirect(pagePath(latest.id));
+      return;
+    }
+    setForm({ ...emptyForm, workType: typeParam ?? 'fte' });
+    setSavedKey(null);
+    setPageName('');
+    clearResult();
+  }, [pagesLoading, pageParam, pageId, typeParam, navigate, t]);
 
   // Recalculate shortly after the last edit. Each run cancels the previous request and the
   // sequence number drops answers from older requests, so a slow response can't overwrite a newer one.
@@ -341,8 +512,19 @@ export default function GoCrumbs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputKey, nameMissing, loading, t]);
 
-  // Ask before leaving the page inside the app (links, menu, back button) with unsaved changes
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
+  // Keep the open tab visible in the sideways-scrolling tab row (only the row scrolls, never the page)
+  useEffect(() => {
+    const row = tabsRef.current;
+    const tab = row?.querySelector<HTMLElement>('.gocrumbs-tab.active');
+    if (!row || !tab) return;
+    if (tab.offsetLeft < row.scrollLeft || tab.offsetLeft + tab.offsetWidth > row.scrollLeft + row.clientWidth) {
+      row.scrollLeft = tab.offsetLeft - (row.clientWidth - tab.offsetWidth) / 2;
+    }
+  }, [pageId, pages.length, pagesLoading]);
+
+  // Ask before leaving the page or switching tabs inside the app (links, menu, back button) with unsaved changes
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    dirty && !allowNav.current && (currentLocation.pathname !== nextLocation.pathname || currentLocation.search !== nextLocation.search));
   useEffect(() => {
     if (blocker.state !== 'blocked') return;
     if (window.confirm(t('gocrumbs.leaveConfirm'))) blocker.proceed();
@@ -382,19 +564,75 @@ export default function GoCrumbs() {
     setForm(f => (f.extra.length >= MAX_EXTRA_PAY_LINES ? f : { ...f, extra: [...f.extra, newExtraLine()] }));
   const removeExtra = (id: number) => setForm(f => ({ ...f, extra: f.extra.filter(l => l.id !== id) }));
 
+  // Replace one tab's name and save time after the server confirmed a save
+  const updateTab = (saved: GoCrumbsPageSummary) =>
+    setPages(list => list.map(p => (p.id === saved.id ? { ...p, name: saved.name, updated_at: saved.updated_at } : p)));
+
+  // An unsaved budget has no page yet: saving asks for a name and creates one
   const handleSave = async () => {
-    const body = input;
+    if (pageId === null) {
+      setDialog('saveDraft');
+      return;
+    }
+    const id = pageId;
     const key = inputKey;
     setSaving(true);
     setSaveMsg(null);
     try {
-      await api.saveGoCrumbs(body);
+      const res = await api.saveGoCrumbsPage(id, { ...input, name: pageName });
       setSavedKey(key);
+      if (res.data) updateTab(res.data);
       setSaveMsg({ ok: true, text: t('gocrumbs.saved') });
     } catch (err) {
       setSaveMsg({ ok: false, text: errorMessage(err, t('gocrumbs.saveFailed')) });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Create a page and open it. `carried` means the form's content went into the new page, so leaving
+  // this one must not ask about unsaved changes; a blank page asks as usual.
+  const createPage = async (name: string, body: GoCrumbsInput, carried: boolean) => {
+    const res = await api.createGoCrumbsPage({ ...body, name });
+    const page = res.data;
+    if (!page) throw new Error(t('gocrumbs.pages.failed'));
+    setPages(list => [...list, { id: page.id, name: page.name, work_type: page.work_type, updated_at: page.updated_at }]);
+    setDialog(null);
+    if (carried) {
+      if (pageId === null) setSavedKey(inputKey); // the unsaved budget is now that page
+      allowNav.current = true;
+    }
+    navigate(pagePath(page.id));
+  };
+
+  const handleNewPage = (name: string, copy: boolean) =>
+    createPage(name, copy ? input : formToInput({ ...emptyForm, workType: viewType }), copy);
+
+  // Renaming keeps the last saved inputs: unsaved edits stay unsaved
+  const handleRename = async (name: string) => {
+    if (pageId === null || savedKey === null) return;
+    const res = await api.saveGoCrumbsPage(pageId, { ...(JSON.parse(savedKey) as GoCrumbsInput), name });
+    if (res.data) {
+      updateTab(res.data);
+      setPageName(res.data.name);
+    }
+    setDialog(null);
+  };
+
+  const handleDelete = async () => {
+    if (pageId === null || !window.confirm(t('gocrumbs.pages.deleteConfirm', { name: pageName }))) return;
+    setDeleting(true);
+    try {
+      await api.deleteGoCrumbsPage(pageId);
+      const rest = pages.filter(p => p.id !== pageId);
+      setPages(rest);
+      const next = latestPage(rest.filter(p => p.work_type === viewType));
+      allowNav.current = true;
+      navigate(next ? pagePath(next.id) : draftPath(viewType), { replace: true });
+    } catch (err) {
+      setSaveMsg({ ok: false, text: errorMessage(err, t('gocrumbs.pages.deleteFailed')) });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -414,7 +652,7 @@ export default function GoCrumbs() {
       .map(s => ({ ...s, name: t(`gocrumbs.chart.${s.key}` as never), color: CHART_COLORS[s.key] }));
   }, [result, t]);
 
-  if (loading) return <LoadingSpinner message={t('gocrumbs.loading')} />;
+  if (pagesLoading) return <LoadingSpinner message={t('gocrumbs.loading')} />;
 
   const overspent = result !== null && result.left < 0;
   const leftColor = overspent ? 'var(--danger)' : 'var(--primary)';
@@ -429,8 +667,8 @@ export default function GoCrumbs() {
   );
 
   const saveButton = (
-    <button className="btn btn-primary" disabled={!canSave} onClick={handleSave}>
-      {saving ? t('gocrumbs.saving') : t('gocrumbs.save')}
+    <button className="btn btn-primary" disabled={!canSave || loading || !!loadError} onClick={handleSave}>
+      {saving ? t('gocrumbs.saving') : pageId === null ? t('gocrumbs.pages.saveAsPage') : t('gocrumbs.save')}
     </button>
   );
 
@@ -476,36 +714,85 @@ export default function GoCrumbs() {
           </div>
         </div>
         <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('gocrumbs.tagline')}</p>
+
+        {/* Pages: each work type has its own tabs. A page's work type is fixed, so this switches lists. */}
+        <div className="gocrumbs-types" role="group" aria-label={t('gocrumbs.workTitle')}>
+          {WORK_TYPES.map(type => (
+            <button
+              key={type}
+              type="button"
+              className={`btn btn-sm ${viewType === type ? 'btn-primary' : 'btn-outline'}`}
+              aria-pressed={viewType === type}
+              onClick={() => { if (type !== viewType) navigate(draftPath(type)); }}
+            >
+              {t(`gocrumbs.workType.${type}`)} ({pages.filter(p => p.work_type === type).length})
+            </button>
+          ))}
+        </div>
+        {/* "+" sits outside the scrolling row, so it stays visible with many pages */}
+        <div className="gocrumbs-tabbar">
+          <div className="gocrumbs-tabs" role="tablist" aria-label={t('gocrumbs.pages.tabsLabel')} ref={tabsRef}>
+            {typePages.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-selected={p.id === pageId}
+                className={`gocrumbs-tab${p.id === pageId ? ' active' : ''}`}
+                onClick={() => { if (p.id !== pageId) navigate(pagePath(p.id)); }}
+              >
+                {p.name}
+              </button>
+            ))}
+            {pageId === null && (
+              <span role="tab" aria-selected="true" className="gocrumbs-tab active draft">{t('gocrumbs.pages.unsavedTab')}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="gocrumbs-tab gocrumbs-tab-add"
+            disabled={atLimit}
+            title={atLimit ? t('gocrumbs.pages.limitReached', { max: MAX_PAGES }) : t('gocrumbs.pages.new')}
+            aria-label={t('gocrumbs.pages.new')}
+            onClick={() => setDialog('new')}
+          >
+            +
+          </button>
+        </div>
+        <div className="gocrumbs-tab-info">
+          <span>
+            {atLimit
+              ? t('gocrumbs.pages.limitReached', { max: MAX_PAGES })
+              : pageId === null
+                ? t('gocrumbs.pages.draftHint')
+                : t('gocrumbs.pages.count', { count: typePages.length, max: MAX_PAGES })}
+          </span>
+          {pageId !== null && (
+            <span className="gocrumbs-tab-actions">
+              <button type="button" className="btn btn-outline btn-sm" disabled={pageLoading || !!loadError} onClick={() => setDialog('rename')}>
+                {t('gocrumbs.pages.rename')}
+              </button>
+              <button type="button" className="btn btn-outline btn-sm" disabled={deleting} onClick={handleDelete}>
+                {t('common.delete')}
+              </button>
+            </span>
+          )}
+        </div>
       </div>
 
       {loadError && <div className="alert alert-error">{loadError}</div>}
 
+      {pageLoading ? (
+        <LoadingSpinner message={t('gocrumbs.loading')} />
+      ) : !loadError && (
       <div className="gocrumbs-layout">
         <div>
-          {/* Work situation */}
-          <div className="card">
-            <h3>{t('gocrumbs.workTitle')}</h3>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {(['fte', 'werkstudent'] as const).map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`btn btn-sm ${form.workType === type ? 'btn-primary' : 'btn-outline'}`}
-                  aria-pressed={form.workType === type}
-                  onClick={() => set('workType', type)}
-                >
-                  {t(`gocrumbs.workType.${type}`)}
-                </button>
-              ))}
-            </div>
-            {form.workType === 'werkstudent' && (
-              <p style={{ margin: '12px 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('gocrumbs.werkstudentInfo')}</p>
-            )}
-          </div>
-
           {/* Income */}
           <div className="card">
             <h3>{t('gocrumbs.incomeTitle')}</h3>
+            {form.workType === 'werkstudent' && (
+              <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('gocrumbs.werkstudentInfo')}</p>
+            )}
             {form.workType === 'werkstudent' ? (
               <>
                 <div className="gocrumbs-row-2">
@@ -791,9 +1078,42 @@ export default function GoCrumbs() {
           </div>
         </div>
       </div>
+      )}
+
+      {dialog === 'new' && (
+        <PageDialog
+          title={t('gocrumbs.pages.newTitle')}
+          submitLabel={t('gocrumbs.pages.create')}
+          initialName=""
+          copyChoice={{
+            defaultCopy: pageId !== null || incomeEntered,
+            hint: dirty && pageId !== null ? t('gocrumbs.pages.copyUnsaved', { name: pageName }) : null,
+          }}
+          onSubmit={handleNewPage}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'saveDraft' && (
+        <PageDialog
+          title={t('gocrumbs.pages.saveTitle')}
+          submitLabel={t('gocrumbs.save')}
+          initialName=""
+          onSubmit={name => createPage(name, input, true)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'rename' && (
+        <PageDialog
+          title={t('gocrumbs.pages.renameTitle')}
+          submitLabel={t('gocrumbs.save')}
+          initialName={pageName}
+          onSubmit={handleRename}
+          onClose={() => setDialog(null)}
+        />
+      )}
 
       {/* Phone: keep the answer in view while editing */}
-      {result && (
+      {result && !loading && (
         <button type="button" className="gocrumbs-bar" onClick={() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
           <span>{overspent ? t('gocrumbs.result.overspent') : t('gocrumbs.result.left')}</span>
           <span style={{ color: leftColor, fontWeight: 800 }}>{eur.format(Math.abs(result.left))}</span>

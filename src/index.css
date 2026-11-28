@@ -1576,6 +1576,104 @@ body {
   cursor: pointer;
 }
 
+.gocrumbs-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Page tabs scroll sideways instead of wrapping, so the header keeps its height on phones */
+.gocrumbs-tabbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.gocrumbs-tabs {
+  position: relative; /* offsetLeft of the tabs is measured against this row */
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 6px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.gocrumbs-tab {
+  flex: 0 0 auto;
+  max-width: 220px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.gocrumbs-tab.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  cursor: default;
+}
+
+.gocrumbs-tab.draft {
+  border-style: dashed;
+  background: transparent;
+  color: var(--primary);
+}
+
+.gocrumbs-tab-add {
+  min-width: 40px;
+  font-weight: 700;
+}
+
+.gocrumbs-tab-add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gocrumbs-tab-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.gocrumbs-tab-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gocrumbs-start {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gocrumbs-start label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.gocrumbs-start small {
+  color: var(--text-muted);
+}
+
 .gocrumbs-actions {
   display: flex;
   justify-content: flex-end;

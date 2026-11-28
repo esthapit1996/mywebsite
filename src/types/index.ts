@@ -400,13 +400,13 @@ export interface GoCrumbsExtraPayLine {
   tax_free: boolean;
 }
 
-// A profile: the user's inputs. Gross amounts are per gross_period, everything else EUR per month.
+// A budget's inputs. Gross amounts are per gross_period, everything else EUR per month.
 export interface GoCrumbsInput {
   work_type: 'fte' | 'werkstudent';
   gross_amount: number;
   gross_period: 'month' | 'year';
   side_gross: number;
-  // Werkstudent income (own fields: switching work type keeps the employee's gross and the other way round)
+  // Werkstudent income (own fields, apart from the employee's gross; work_type decides which one counts)
   ws_hourly_wage: number;
   ws_hours: number;
   ws_hours_period: 'week' | 'month';
@@ -423,7 +423,22 @@ export interface GoCrumbsInput {
   extra_pay: GoCrumbsExtraPayLine[];
 }
 
-export interface GoCrumbsProfile extends GoCrumbsInput {
+// A saved page: a named budget. Its work_type is fixed when it is created.
+export interface GoCrumbsPageInput extends GoCrumbsInput {
+  name: string; // chosen by the user, 1-40 characters, unique per work type (ignoring case)
+}
+
+export interface GoCrumbsPage extends GoCrumbsPageInput {
+  id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// One entry of GET /gocrumbs/pages (one tab)
+export interface GoCrumbsPageSummary {
+  id: number;
+  name: string;
+  work_type: GoCrumbsInput['work_type'];
   updated_at: string;
 }
 

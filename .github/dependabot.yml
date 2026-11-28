@@ -9,20 +9,23 @@ updates:
         patterns:
           - "*"
 
+  # At most two npm PRs a week, so they never conflict over package.json and package-lock.json:
+  # all patch bumps in one (merged automatically by ci.yml once the build passes) and all minor and
+  # major bumps in another, for review
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
-      react:
+      npm-patch:
         patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-      build-tools:
+          - "*"
+        update-types:
+          - "patch"
+      npm-minor-major:
         patterns:
-          - "vite"
-          - "@vitejs/*"
-          - "typescript"
+          - "*"
+        update-types:
+          - "minor"
+          - "major"

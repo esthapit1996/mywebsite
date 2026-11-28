@@ -1,0 +1,61 @@
+name: CI
+
+# Builds every pull request, so nothing reaches main (and GitHub Pages) without a passing build
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p .
+
+      - name: Build
+        run: npm run build
+
+  # A Dependabot PR with only patch bumps merges itself once the build passes. Minor and major
+  # bumps wait for a review. A grouped PR counts as its biggest bump.
+  automerge-patch:
+    needs: build
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # merge
+      pull-requests: write # merge
+      actions: write # start the deploy
+    steps:
+      - name: Read Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+
+      # A merge made with GITHUB_TOKEN doesn't trigger push workflows, so the deploy is started here
+      - name: Merge and deploy
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          gh pr merge "$PR_URL" --merge --delete-branch
+          gh workflow run deploy.yml --ref main
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

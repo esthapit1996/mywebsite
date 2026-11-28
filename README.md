@@ -35,11 +35,13 @@ npm run build
 
 ## Deployment to GitHub Pages
 
-```bash
-npm run build
-cp dist/index.html dist/404.html
-# Push changes — GitHub Actions deploys from dist/
-```
+Merging to `main` deploys: `.github/workflows/deploy.yml` runs `npm run build` (output in `docs/`) and publishes it to GitHub Pages. It can also be started by hand from the Actions tab. No 404 page is needed, since the app uses a hash router.
+
+## CI and dependency updates
+
+- **CI** (`.github/workflows/ci.yml`): every pull request to `main` is typechecked (`tsc --noEmit`) and built.
+- **Dependabot** (`.github/dependabot.yml`) checks weekly and opens at most two npm PRs: all **patch** bumps in one, all **minor and major** bumps in another. GitHub Actions bumps come in one PR.
+- **Patch auto-merge:** a Dependabot PR with only patch bumps is merged by CI once the build passes, and CI then starts the deploy. A merge made with `GITHUB_TOKEN` doesn't trigger push workflows, so the Release workflow doesn't run for it. Minor and major bumps wait for review.
 
 ## Configuration
 

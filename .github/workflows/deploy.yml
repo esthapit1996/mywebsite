@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Started by ci.yml after it merges a Dependabot patch PR (a GITHUB_TOKEN merge doesn't trigger push)
+  workflow_dispatch:
 
 permissions:
   contents: read

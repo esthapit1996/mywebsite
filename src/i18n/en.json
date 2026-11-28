@@ -715,6 +715,30 @@
     },
     "disclaimer": "Estimate, not tax advice. Based on the rules of tax year {{year}}.",
     "notIncludedTitle": "What is not included",
-    "notIncluded": "Allowances on your tax card (Freibeträge), the Faktorverfahren, private health insurance, 13th salary and bonuses, church tax caps, your final tax return and refunds, and the exact rules for side income."
+    "notIncluded": "Allowances on your tax card (Freibeträge), the Faktorverfahren, private health insurance, 13th salary and bonuses, church tax caps, your final tax return and refunds, and the exact rules for side income.",
+    "pages": {
+      "tabsLabel": "Pages",
+      "new": "New page",
+      "newTitle": "New page",
+      "create": "Create",
+      "nameLabel": "Page name",
+      "namePlaceholder": "e.g. January",
+      "startLabel": "Start from",
+      "copyCurrent": "Copy the current page",
+      "startBlank": "Start blank",
+      "copyUnsaved": "Your unsaved changes on “{{name}}” go into the new page; “{{name}}” keeps its last saved version.",
+      "unsavedTab": "Not saved yet",
+      "draftHint": "Fill in your budget, then save it as a page.",
+      "saveAsPage": "Save as page",
+      "saveTitle": "Save as page",
+      "count": "{{count}} of {{max}} pages",
+      "limitReached": "You have {{max}} pages, the most per work type. Delete one to add another.",
+      "rename": "Rename",
+      "renameTitle": "Rename page",
+      "deleteConfirm": "Delete the page “{{name}}”? This can't be undone.",
+      "deleteFailed": "Failed to delete the page",
+      "loadFailed": "Failed to load this page",
+      "failed": "Something went wrong. Please try again."
+    }
   }
 }

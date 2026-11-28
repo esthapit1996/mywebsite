@@ -248,8 +248,11 @@ async request(endpoint, options = {}) {
 
 | Method | Parameters | HTTP | Endpoint | Description |
 |--------|------------|------|----------|-------------|
-| `getGoCrumbs` | - | GET | `/gocrumbs` | My saved profile; `data` is absent until the first save |
-| `saveGoCrumbs` | `input: GoCrumbsInput` | PUT | `/gocrumbs` | Create or replace my profile (inputs only, including `extra_pay` lines) |
+| `getGoCrumbsPages` | - | GET | `/gocrumbs/pages` | My pages (tabs) of both work types, oldest first: `id`, `name`, `work_type`, `updated_at` |
+| `getGoCrumbsPage` | `id: number` | GET | `/gocrumbs/pages/:id` | One page with all its inputs |
+| `createGoCrumbsPage` | `input: GoCrumbsPageInput` | POST | `/gocrumbs/pages` | Create a page (`name` + inputs). Fails with the server's message at 15 pages of that work type or for a name already used there |
+| `saveGoCrumbsPage` | `id: number, input: GoCrumbsPageInput` | PUT | `/gocrumbs/pages/:id` | Save or rename a page (inputs only, including `extra_pay` lines); the work type can't change |
+| `deleteGoCrumbsPage` | `id: number` | DELETE | `/gocrumbs/pages/:id` | Delete a page |
 | `calculateGoCrumbs` | `input: GoCrumbsInput, signal?: AbortSignal` | POST | `/gocrumbs/calculate` | Net pay and what is left for the given inputs, nothing is saved. Pass a signal to cancel an outdated request |
 
 ---

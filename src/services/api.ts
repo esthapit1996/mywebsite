@@ -28,7 +28,9 @@ import type {
   WishLookupResult,
   WishList,
   GoCrumbsInput,
-  GoCrumbsProfile,
+  GoCrumbsPage,
+  GoCrumbsPageInput,
+  GoCrumbsPageSummary,
   GoCrumbsResult,
 } from '../types';
 
@@ -603,14 +605,27 @@ class ApiService {
     return this.request(`/wish-lists/${id}/items/${itemId}`, { method: 'DELETE' });
   }
 
-  // GoCrumbs (monthly budget calculator, German tax)
-  // `data` is absent until the user has saved a profile
-  async getGoCrumbs(): Promise<ApiResponse<GoCrumbsProfile>> {
-    return this.request<GoCrumbsProfile>('/gocrumbs');
+  // GoCrumbs (monthly budget calculator, German tax). Budgets are named pages, up to 15 per work type.
+  async getGoCrumbsPages(): Promise<ApiResponse<GoCrumbsPageSummary[]>> {
+    return this.request<GoCrumbsPageSummary[]>('/gocrumbs/pages');
   }
 
-  async saveGoCrumbs(input: GoCrumbsInput): Promise<ApiResponse<GoCrumbsProfile>> {
-    return this.request<GoCrumbsProfile>('/gocrumbs', { method: 'PUT', body: JSON.stringify(input) });
+  async getGoCrumbsPage(id: number): Promise<ApiResponse<GoCrumbsPage>> {
+    return this.request<GoCrumbsPage>(`/gocrumbs/pages/${id}`);
+  }
+
+  // Fails with the server's message at 15 pages of that work type or for a name already used there
+  async createGoCrumbsPage(input: GoCrumbsPageInput): Promise<ApiResponse<GoCrumbsPage>> {
+    return this.request<GoCrumbsPage>('/gocrumbs/pages', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  // Saves and renames; the work type can't change
+  async saveGoCrumbsPage(id: number, input: GoCrumbsPageInput): Promise<ApiResponse<GoCrumbsPage>> {
+    return this.request<GoCrumbsPage>(`/gocrumbs/pages/${id}`, { method: 'PUT', body: JSON.stringify(input) });
+  }
+
+  async deleteGoCrumbsPage(id: number): Promise<ApiResponse> {
+    return this.request(`/gocrumbs/pages/${id}`, { method: 'DELETE' });
   }
 
   // Stateless: nothing is saved. Pass a signal to cancel a request that a newer edit makes obsolete.
